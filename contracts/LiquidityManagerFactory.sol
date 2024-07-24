@@ -8,6 +8,7 @@ import {ILiquidityManagerFactory} from "./interfaces/ILiquidityManagerFactory.so
 
 contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
     error LiquidityManagerAlreadyExists();
+    error LiquidityManagerNoExists();
 
     struct Parameters {
         address factory;
@@ -40,5 +41,13 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
         liquidityManagers[pool] = liquidityManager;
 
         delete parameters;
+    }
+
+    function resetLiquidityManager(address pool) external onlyOwner {
+        if (liquidityManagers[pool] == address(0)) {
+            revert LiquidityManagerNoExists();
+        }
+
+        liquidityManagers[pool] = address(0);
     }
 }

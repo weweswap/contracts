@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+// import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+// import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {ILiquidityManagerFactory} from "./interfaces/ILiquidityManagerFactory.sol";
 
-contract LiquidityManager is Ownable, IERC721Receiver {
+contract LiquidityManager is IERC721Receiver {
     address public immutable factory; // LMFactory
     address public immutable pool; // Original pool
     address public immutable nfpm; // Univ3 NFPM
     uint8 public immutable poolType;
+
+    bool public unlocked;
+    uint256 public totalLiquidity; // Total liquidity deposited
 
     constructor() {
         (factory, nfpm, pool, poolType) = ILiquidityManagerFactory(msg.sender).parameters();
