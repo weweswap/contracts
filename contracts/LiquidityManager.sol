@@ -16,7 +16,7 @@ contract LiquidityManager is IERC721Receiver {
     uint256 public totalLiquidity; // Total liquidity deposited
 
     constructor() {
-        (factory, nfpm, pool, poolType) = ILiquidityManagerFactory(msg.sender).parameters();
+        (factory, nfpm, pool, poolType) = ILiquidityManagerFactory(msg.sender).lmParameters();
     }
 
     function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
