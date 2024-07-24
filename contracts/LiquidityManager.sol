@@ -10,7 +10,7 @@ contract LiquidityManager is IERC721Receiver {
     address public immutable factory; // LMFactory
     address public immutable pool; // Original pool
     address public immutable nfpm; // Univ3 NFPM
-    uint8 public immutable poolType;
+    ILiquidityManagerFactory.PoolType public immutable poolType;
 
     bool public unlocked;
     uint256 public totalLiquidity; // Total liquidity deposited
