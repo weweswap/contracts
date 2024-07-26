@@ -23,7 +23,7 @@ contract LiquidityManager is IERC721Receiver {
     uint256 public wideBandTokenId;
 
     constructor() {
-        (factory, nfpm, token, usdc, poolType) = ILiquidityManagerFactory(msg.sender).lmParameters();
+        (factory, nfpm, token, usdc, pool, poolType) = ILiquidityManagerFactory(msg.sender).lmParameters();
         (
             uint256 targetPriceRange,
             uint256 narrowBandDelta,

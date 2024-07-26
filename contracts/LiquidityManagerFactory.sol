@@ -3,11 +3,12 @@ pragma solidity ^0.8.9;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IUniswapV3Factory} from "./univ3-0.8/IUniswapV3Factory.sol";
 import {LiquidityManager} from "./LiquidityManager.sol";
 import {ILiquidityManagerFactory} from "./interfaces/ILiquidityManagerFactory.sol";
 
 contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
-    address public immutable univ3Factory; // Univ3 Factory
+    IUniswapV3Factory public immutable univ3Factory; // Univ3 Factory
     address public immutable nfpm; // Univ3 NonFungiblePositionManager
     address public immutable usdc; // USDC
 
@@ -37,6 +38,7 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
     error NotAllowedToDeploy();
     error LiquidityManagerAlreadyExists();
     error LiquidityManagerNoExists();
+    error PoolNoExists();
 
     modifier onlyAllowedDeployer() {
         if (!allowAnyoneToRegister && msg.sender != owner()) {
@@ -46,7 +48,7 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
     }
 
     constructor(address _univ3Factory, address _nfpm, address _usdc) {
-        univ3Factory = _univ3Factory;
+        univ3Factory = IUniswapV3Factory(_univ3Factory);
         nfpm = _nfpm;
         usdc = _usdc;
     }
@@ -56,11 +58,18 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
             revert LiquidityManagerAlreadyExists();
         }
 
+        // Check if token-USDC pair exists
+        address pool = univ3Factory.getPool(token, usdc, getPoolConfiguration[poolType].fee);
+        if (pool == address(0)) {
+            revert PoolNoExists();
+        }
+
         lmParameters = LiquidityManagerParameters({
             factory: address(this),
             nfpm: nfpm,
             token: token,
             usdc: usdc,
+            pool: pool,
             poolType: poolType
         });
         address liquidityManager = address(new LiquidityManager{salt: keccak256(abi.encode(token, poolType))}());

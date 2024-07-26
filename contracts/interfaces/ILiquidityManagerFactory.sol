@@ -21,6 +21,7 @@ interface ILiquidityManagerFactory {
         address nfpm;
         address token;
         address usdc;
+        address pool; // Univ3 Token-USDC pool
         PoolType poolType;
     }
 
@@ -31,7 +32,7 @@ interface ILiquidityManagerFactory {
     function lmParameters()
         external
         view
-        returns (address factory, address nfpm, address token, address usdc, PoolType poolType);
+        returns (address factory, address nfpm, address token, address usdc, address pool, PoolType poolType);
 
     function getPoolConfiguration(
         PoolType poolType
