@@ -18,6 +18,7 @@ interface ILiquidityManagerFactory {
 
     struct LiquidityManagerParameters {
         address factory;
+        address ksZapRouter;
         address nfpm;
         address token;
         address usdc;
@@ -32,7 +33,15 @@ interface ILiquidityManagerFactory {
     function lmParameters()
         external
         view
-        returns (address factory, address nfpm, address token, address usdc, address pool, PoolType poolType);
+        returns (
+            address factory,
+            address ksZapRouter,
+            address nfpm,
+            address token,
+            address usdc,
+            address pool,
+            PoolType poolType
+        );
 
     function getPoolConfiguration(
         PoolType poolType

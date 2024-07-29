@@ -9,6 +9,7 @@ import {ILiquidityManagerFactory} from "./interfaces/ILiquidityManagerFactory.so
 
 contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
     IUniswapV3Factory public immutable univ3Factory; // Univ3 Factory
+    address public immutable ksZapRouter; // KS zap router address
     address public immutable nfpm; // Univ3 NonFungiblePositionManager
     address public immutable usdc; // USDC
 
@@ -47,8 +48,9 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
         _;
     }
 
-    constructor(address _univ3Factory, address _nfpm, address _usdc) {
+    constructor(address _univ3Factory, address _ksZapRouter, address _nfpm, address _usdc) {
         univ3Factory = IUniswapV3Factory(_univ3Factory);
+        ksZapRouter = _ksZapRouter;
         nfpm = _nfpm;
         usdc = _usdc;
     }
@@ -66,6 +68,7 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
 
         lmParameters = LiquidityManagerParameters({
             factory: address(this),
+            ksZapRouter: ksZapRouter,
             nfpm: nfpm,
             token: token,
             usdc: usdc,
