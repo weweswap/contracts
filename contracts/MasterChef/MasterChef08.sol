@@ -19,14 +19,14 @@ contract MasterChef is Ownable {
         IERC20 lpToken; // Address of LP token contract.
         uint256 allocPoint; // How many allocation points assigned to this pool. SUSHI to distribute per block.
         uint256 lastRewardBlock; // Last block number that SUSHI distribution occurs.
-        uint256 accSushiPerShare; // Accumulated SUSHI per share, times 1e12. See below.
+        uint256 accChaosPerShare; // Accumulated SUSHI per share, times 1e12. See below.
     }
 
     // The SUSHI TOKEN!
-    IERC20 public sushi;
+    IERC20 public chaos;
     // SUSHI tokens created per block.
-    uint256 public sushiPerBlock;
-    // Bonus multiplier for early sushi makers.
+    uint256 public chaosPerBlock;
+    // Bonus multiplier for early chaos makers.
     uint256 public BONUS_MULTIPLIER = 1;
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -41,9 +41,9 @@ contract MasterChef is Ownable {
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
-    constructor(IERC20 _sushi, uint256 _sushiPerBlock, uint256 _startBlock) {
-        sushi = _sushi;
-        sushiPerBlock = _sushiPerBlock;
+    constructor(IERC20 _chaos, uint256 _chaosPerBlock, uint256 _startBlock) {
+        chaos = _chaos;
+        chaosPerBlock = _chaosPerBlock;
         startBlock = _startBlock;
     }
 
@@ -59,7 +59,7 @@ contract MasterChef is Ownable {
                 lpToken: _lpToken,
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
-                accSushiPerShare: 0
+                accChaosPerShare: 0
             })
         );
     }
@@ -79,17 +79,17 @@ contract MasterChef is Ownable {
     }
 
     // View function to see pending SUSHIs on frontend.
-    function pendingSushi(uint256 _pid, address _user) external view returns (uint256) {
+    function pendingChaos(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accSushiPerShare = pool.accSushiPerShare;
+        uint256 accChaosPerShare = pool.accChaosPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 sushiReward = (multiplier * sushiPerBlock * pool.allocPoint) / totalAllocPoint;
-            accSushiPerShare += (sushiReward * 1e12) / lpSupply;
+            uint256 chaosReward = (multiplier * chaosPerBlock * pool.allocPoint) / totalAllocPoint;
+            accChaosPerShare += (chaosReward * 1e12) / lpSupply;
         }
-        return ((user.amount * accSushiPerShare) / 1e12) - user.rewardDebt;
+        return ((user.amount * accChaosPerShare) / 1e12) - user.rewardDebt;
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
@@ -112,8 +112,8 @@ contract MasterChef is Ownable {
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 sushiReward = (multiplier * sushiPerBlock * pool.allocPoint) / totalAllocPoint;
-        pool.accSushiPerShare += (sushiReward * 1e12) / lpSupply;
+        uint256 chaosReward = (multiplier * chaosPerBlock * pool.allocPoint) / totalAllocPoint;
+        pool.accChaosPerShare += (chaosReward * 1e12) / lpSupply;
         pool.lastRewardBlock = block.number;
     }
 
@@ -123,16 +123,16 @@ contract MasterChef is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 pending = ((user.amount * pool.accSushiPerShare) / 1e12) - user.rewardDebt;
+            uint256 pending = ((user.amount * pool.accChaosPerShare) / 1e12) - user.rewardDebt;
             if (pending > 0) {
-                safeSushiTransfer(msg.sender, pending);
+                safeChaosTransfer(msg.sender, pending);
             }
         }
         if (_amount > 0) {
             pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
             user.amount += _amount;
         }
-        user.rewardDebt = (user.amount * pool.accSushiPerShare) / 1e12;
+        user.rewardDebt = (user.amount * pool.accChaosPerShare) / 1e12;
         emit Deposit(msg.sender, _pid, _amount);
     }
 
@@ -142,15 +142,15 @@ contract MasterChef is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 pending = ((user.amount * pool.accSushiPerShare) / 1e12) - user.rewardDebt;
+        uint256 pending = ((user.amount * pool.accChaosPerShare) / 1e12) - user.rewardDebt;
         if (pending > 0) {
-            safeSushiTransfer(msg.sender, pending);
+            safeChaosTransfer(msg.sender, pending);
         }
         if (_amount > 0) {
             user.amount -= _amount;
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
         }
-        user.rewardDebt = (user.amount * pool.accSushiPerShare) / 1e12;
+        user.rewardDebt = (user.amount * pool.accChaosPerShare) / 1e12;
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
@@ -165,13 +165,13 @@ contract MasterChef is Ownable {
         emit EmergencyWithdraw(msg.sender, _pid, amount);
     }
 
-    // Safe sushi transfer function, just in case if rounding error causes pool to not have enough SUSHIs.
-    function safeSushiTransfer(address _to, uint256 _amount) internal {
-        uint256 sushiBal = sushi.balanceOf(address(this));
-        if (_amount > sushiBal) {
-            sushi.transfer(_to, sushiBal);
+    // Safe chaos transfer function, just in case if rounding error causes pool to not have enough SUSHIs.
+    function safeChaosTransfer(address _to, uint256 _amount) internal {
+        uint256 chaosBal = chaos.balanceOf(address(this));
+        if (_amount > chaosBal) {
+            chaos.transfer(_to, chaosBal);
         } else {
-            sushi.transfer(_to, _amount);
+            chaos.transfer(_to, _amount);
         }
     }
 }
