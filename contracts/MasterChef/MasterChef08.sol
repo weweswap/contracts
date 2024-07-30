@@ -17,14 +17,14 @@ contract MasterChef is Ownable {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. SUSHI to distribute per block.
-        uint256 lastRewardBlock; // Last block number that SUSHI distribution occurs.
-        uint256 accChaosPerShare; // Accumulated SUSHI per share, times 1e12. See below.
+        uint256 allocPoint; // How many allocation points assigned to this pool. CHAOS to distribute per block.
+        uint256 lastRewardBlock; // Last block number that CHAOS distribution occurs.
+        uint256 accChaosPerShare; // Accumulated CHAOS per share, times 1e12. See below.
     }
 
-    // The SUSHI TOKEN!
+    // The CHAOS TOKEN!
     IERC20 public chaos;
-    // SUSHI tokens created per block.
+    // CHAOS tokens created per block.
     uint256 public chaosPerBlock;
     // Bonus multiplier for early chaos makers.
     uint256 public BONUS_MULTIPLIER = 1;
@@ -34,7 +34,7 @@ contract MasterChef is Ownable {
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
-    // The block number when SUSHI mining starts.
+    // The block number when CHAOS mining starts.
     uint256 public startBlock;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
@@ -64,7 +64,7 @@ contract MasterChef is Ownable {
         );
     }
 
-    // Update the given pool's SUSHI allocation point. Can only be called by the owner.
+    // Update the given pool's CHAOS allocation point. Can only be called by the owner.
     function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner {
         if (_withUpdate) {
             massUpdatePools();
@@ -78,7 +78,7 @@ contract MasterChef is Ownable {
         return (_to - _from) * BONUS_MULTIPLIER;
     }
 
-    // View function to see pending SUSHIs on frontend.
+    // View function to see pending CHAOSs on frontend.
     function pendingChaos(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
@@ -117,7 +117,7 @@ contract MasterChef is Ownable {
         pool.lastRewardBlock = block.number;
     }
 
-    // Deposit LP tokens to MasterChef for SUSHI allocation.
+    // Deposit LP tokens to MasterChef for CHAOS allocation.
     function deposit(uint256 _pid, uint256 _amount) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
@@ -165,7 +165,7 @@ contract MasterChef is Ownable {
         emit EmergencyWithdraw(msg.sender, _pid, amount);
     }
 
-    // Safe chaos transfer function, just in case if rounding error causes pool to not have enough SUSHIs.
+    // Safe chaos transfer function, just in case if rounding error causes pool to not have enough CHAOSs.
     function safeChaosTransfer(address _to, uint256 _amount) internal {
         uint256 chaosBal = chaos.balanceOf(address(this));
         if (_amount > chaosBal) {
