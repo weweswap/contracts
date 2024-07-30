@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ChaosFarming is Ownable {
+    using SafeERC20 for IERC20;
+
     IERC20 public token; // The token users will stake
     IERC20 public rewardToken; // The token used for rewards
     uint256 public totalStaked;
@@ -14,11 +17,24 @@ contract ChaosFarming is Ownable {
 
     uint256 public constant BLOCKS_PER_DAY = 5760; // Assuming 15 seconds per block
     uint256 public rewardRateDecay = 1; // Rate at which reward rate decreases (per day)
+
+    error ZeroAmount();
+
     constructor(address _token, address _rewardToken) {
         token = IERC20(_token);
         rewardToken = IERC20(_rewardToken);
         lastRewardBlock = block.number;
     }
+
+    function deposit(address _rewardToken, uint256 amount) external onlyOwner {
+        if (amount == 0) {
+            revert ZeroAmount();
+        }
+
+        // Deposit any whitelisted reward tokens
+        IERC20(_rewardToken).safeTransferFrom(msg.sender, address(this), amount);
+    }
+
     // Stake tokens to earn rewards
     function stake(uint256 amount) external {
         require(amount > 0, "Amount must be greater than 0");

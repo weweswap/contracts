@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract MasterChef is Ownable {
+contract LMFarming is Ownable {
     using SafeERC20 for IERC20;
 
     // Info of each user.
@@ -16,8 +16,6 @@ contract MasterChef is Ownable {
 
     // Info of each pool.
     struct PoolInfo {
-        IERC20 lpToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. CHAOS to distribute per block.
         uint256 lastRewardBlock; // Last block number that CHAOS distribution occurs.
         uint256 accChaosPerShare; // Accumulated CHAOS per share, times 1e12. See below.
     }
@@ -28,8 +26,6 @@ contract MasterChef is Ownable {
     uint256 public chaosPerBlock;
     // Bonus multiplier for early chaos makers.
     uint256 public BONUS_MULTIPLIER = 1;
-    // Info of each pool.
-    PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     // Total allocation points. Must be the sum of all allocation points in all pools.
@@ -56,14 +52,14 @@ contract MasterChef is Ownable {
         }
         uint256 lastRewardBlock = block.number > startBlock ? block.number : startBlock;
         totalAllocPoint += _allocPoint;
-        poolInfo.push(
-            PoolInfo({
-                lpToken: _lpToken,
-                allocPoint: _allocPoint,
-                lastRewardBlock: lastRewardBlock,
-                accChaosPerShare: 0
-            })
-        );
+        // poolInfo.push(
+        //     PoolInfo({
+        //         lpToken: _lpToken,
+        //         allocPoint: _allocPoint,
+        //         lastRewardBlock: lastRewardBlock,
+        //         accChaosPerShare: 0
+        //     })
+        // );
     }
 
     // Update the given pool's CHAOS allocation point. Can only be called by the owner.
