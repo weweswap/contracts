@@ -55,4 +55,6 @@ interface ILiquidityManagerFactory {
             uint256 wideBandDelta,
             uint24 fee
         );
+
+    function rebalancers(address) external view returns (bool);
 }

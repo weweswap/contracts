@@ -15,7 +15,7 @@ import {ILiquidityManagerFactory} from "./interfaces/ILiquidityManagerFactory.so
 contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManager, IERC721Receiver {
     using SafeERC20 for IERC20;
 
-    address public immutable factory; // LMFactory
+    ILiquidityManagerFactory public immutable factory; // LMFactory
     address public immutable ksZapRouter; // Zap router address
     INonfungiblePositionManager public immutable nfpm; // Univ3 NFPM
     IERC20 public immutable token; // Token address
@@ -26,23 +26,31 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
     ILiquidityManagerFactory.PoolConfiguration public poolConfiguration;
     ZapInParams public zapInParams; // Temporary bandType and tokenId to validate if it's mint or addLiquidity
     mapping(BandType => uint256) public bandTokenId; // Band tokenIds
-    mapping(BandType => uint256) public totalLiquidityForBand; // Total liquidity deposited
-    mapping(address => mapping(BandType => uint256)) public liquidities; // Deposited liquidity
+    mapping(BandType => uint128) public totalLiquidityForBand; // Total liquidity deposited
+    mapping(address => mapping(BandType => uint128)) public liquidities; // Deposited liquidity
 
     error ZeroAmount();
+    error NotAllowedRebalancer();
     error BandDepositFailed(bytes data);
     error NotZappingIn();
     error InvalidNFT();
     error InvalidZapInBandType(BandType inputType, BandType correctType);
 
     constructor() {
+        address factoryAddress;
         address tokenAddress;
         address usdcAddress;
         address nfpmAddress;
 
-        (factory, ksZapRouter, nfpmAddress, tokenAddress, usdcAddress, pool, poolType) = ILiquidityManagerFactory(
-            msg.sender
-        ).lmParameters();
+        (
+            factoryAddress,
+            ksZapRouter,
+            nfpmAddress,
+            tokenAddress,
+            usdcAddress,
+            pool,
+            poolType
+        ) = ILiquidityManagerFactory(msg.sender).lmParameters();
         (
             uint256 targetPriceRange,
             uint256 narrowBandDelta,
@@ -50,6 +58,8 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
             uint256 wideBandDelta,
             uint24 fee
         ) = ILiquidityManagerFactory(msg.sender).getPoolConfiguration(poolType);
+
+        factory = ILiquidityManagerFactory(factoryAddress);
         token = IERC20(tokenAddress);
         usdc = IERC20(usdcAddress);
         nfpm = INonfungiblePositionManager(nfpmAddress);
@@ -73,6 +83,13 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
 
     function renounceOwnership() public override(ILiquidityManager, Ownable) {
         Ownable.renounceOwnership();
+    }
+
+    function rebalance() external {
+        if (!factory.rebalancers(msg.sender)) {
+            revert NotAllowedRebalancer();
+        }
+        // Implement rebalance
     }
 
     function zapIn(uint256 amount, BandType bandType, bytes calldata bandData) external nonReentrant whenNotPaused {
@@ -108,7 +125,29 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
         delete zapInParams;
     }
 
-    function withdraw() external nonReentrant {}
+    function withdraw(BandType bandType) external nonReentrant {
+        // Withdraw liquidity from a band
+        uint128 liquidity = liquidities[msg.sender][bandType];
+        if (liquidity == 0) {
+            revert ZeroAmount();
+        }
+
+        // amount0Min and amount1Min are price slippage checks
+        // if the amount received after burning is not greater than these minimums, transaction will fail
+        INonfungiblePositionManager.DecreaseLiquidityParams memory params = INonfungiblePositionManager
+            .DecreaseLiquidityParams({
+                tokenId: bandTokenId[bandType],
+                liquidity: liquidity,
+                amount0Min: 0,
+                amount1Min: 0,
+                deadline: block.timestamp
+            });
+
+        (uint256 amount0, uint256 amount1) = nfpm.decreaseLiquidity(params);
+
+        //send liquidity back to owner
+        // _sendToOwner(tokenId, amount0, amount1);
+    }
 
     function _ksZapIn(bytes calldata data) private returns (ZapUniswapV3Results memory zapResult) {
         (bool success, bytes memory zapResultData) = ksZapRouter.call(data);
