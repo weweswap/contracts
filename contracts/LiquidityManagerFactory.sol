@@ -3,18 +3,23 @@ pragma solidity ^0.8.9;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IUniswapV3Factory} from "./univ3-0.8/IUniswapV3Factory.sol";
 import {LiquidityManager} from "./LiquidityManager.sol";
 import {ILiquidityManagerFactory} from "./interfaces/ILiquidityManagerFactory.sol";
+import {ILiquidityManager} from "./interfaces/ILiquidityManager.sol";
 
 contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
+    IUniswapV3Factory public immutable univ3Factory; // Univ3 Factory
+    address public immutable ksZapRouter; // KS zap router address
     address public immutable nfpm; // Univ3 NonFungiblePositionManager
+    address public immutable usdc; // USDC
 
     /// @inheritdoc ILiquidityManagerFactory
     LiquidityManagerParameters public override lmParameters;
     // poolType 0: Stable pool params: +/- 1% range: 5bps
     // poolType 1: Blue chip pool params: +/- 10% range: 30bps
     // poolType 2: Small cap pool params: +/- 50% range: 100bps
-    // pool => liquidity manager
+    // token => liquidity manager
     mapping(address => address) public getLiquidityManager;
 
     // Band and Fee params
@@ -29,12 +34,13 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
     uint256 public yieldCollectInterval = 86400; // Default: Collect fee once a day
     uint256 public secondsOutsideRangeBeforeRebalance; // To-do: Do we need this one?
 
-    event LiquidityManagerCreated(address indexed pool, address liquidityManager);
-    event LiquidityManagerReset(address indexed pool);
+    event LiquidityManagerCreated(address indexed token, address liquidityManager);
+    event LiquidityManagerReset(address indexed token);
 
     error NotAllowedToDeploy();
     error LiquidityManagerAlreadyExists();
     error LiquidityManagerNoExists();
+    error PoolNoExists();
 
     modifier onlyAllowedDeployer() {
         if (!allowAnyoneToRegister && msg.sender != owner()) {
@@ -42,33 +48,72 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
         }
         _;
     }
-    constructor(address _nfpm) {
-        nfpm = _nfpm;
+
+    modifier onlyWhitelistedToken(address token) {
+        if (getLiquidityManager[token] == address(0)) {
+            revert LiquidityManagerNoExists();
+        }
+        _;
     }
 
-    function deployLiquidityManager(address pool, PoolType poolType) external onlyAllowedDeployer {
-        if (getLiquidityManager[pool] != address(0)) {
+    constructor(address _univ3Factory, address _ksZapRouter, address _nfpm, address _usdc) {
+        univ3Factory = IUniswapV3Factory(_univ3Factory);
+        ksZapRouter = _ksZapRouter;
+        nfpm = _nfpm;
+        usdc = _usdc;
+    }
+
+    function deployLiquidityManager(address token, PoolType poolType) external onlyAllowedDeployer {
+        if (getLiquidityManager[token] != address(0)) {
             revert LiquidityManagerAlreadyExists();
         }
 
-        lmParameters = LiquidityManagerParameters({factory: address(this), nfpm: nfpm, pool: pool, poolType: poolType});
-        address liquidityManager = address(new LiquidityManager{salt: keccak256(abi.encode(pool, poolType))}());
+        // Check if token-USDC pair exists
+        address pool = univ3Factory.getPool(token, usdc, getPoolConfiguration[poolType].fee);
+        if (pool == address(0)) {
+            revert PoolNoExists();
+        }
+
+        lmParameters = LiquidityManagerParameters({
+            factory: address(this),
+            ksZapRouter: ksZapRouter,
+            nfpm: nfpm,
+            token: token,
+            usdc: usdc,
+            pool: pool,
+            poolType: poolType
+        });
+        address liquidityManager = address(new LiquidityManager{salt: keccak256(abi.encode(token, poolType))}());
         delete lmParameters;
 
-        getLiquidityManager[pool] = liquidityManager;
-        emit LiquidityManagerCreated(pool, liquidityManager);
+        getLiquidityManager[token] = liquidityManager;
+
+        // Check if univ3 pool is created or not
+        emit LiquidityManagerCreated(token, liquidityManager);
+    }
+
+    function setPoolConfiguration(PoolType poolType, PoolConfiguration calldata poolConfiguration) external onlyOwner {
+        getPoolConfiguration[poolType] = poolConfiguration;
+    }
+
+    function pauseLiquidityManager(address token) external onlyOwner onlyWhitelistedToken(token) {
+        ILiquidityManager(getLiquidityManager[token]).pause();
+    }
+
+    function unpauseLiquidityManager(address token) external onlyOwner onlyWhitelistedToken(token) {
+        ILiquidityManager(getLiquidityManager[token]).unpause();
+    }
+
+    function renounceLiquidityManagerOwnership(address token) external onlyOwner onlyWhitelistedToken(token) {
+        ILiquidityManager(getLiquidityManager[token]).renounceOwnership();
     }
 
     function setAllowAnyoneToRegister(bool _allowAnyoneToRegister) external onlyOwner {
         allowAnyoneToRegister = _allowAnyoneToRegister;
     }
 
-    function resetLiquidityManager(address pool) external onlyOwner {
-        if (getLiquidityManager[pool] == address(0)) {
-            revert LiquidityManagerNoExists();
-        }
-
-        getLiquidityManager[pool] = address(0);
-        emit LiquidityManagerReset(pool);
+    function resetLiquidityManager(address token) external onlyOwner onlyWhitelistedToken(token) {
+        getLiquidityManager[token] = address(0);
+        emit LiquidityManagerReset(token);
     }
 }

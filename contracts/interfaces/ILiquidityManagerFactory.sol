@@ -18,8 +18,11 @@ interface ILiquidityManagerFactory {
 
     struct LiquidityManagerParameters {
         address factory;
+        address ksZapRouter;
         address nfpm;
-        address pool;
+        address token;
+        address usdc;
+        address pool; // Univ3 Token-USDC pool
         PoolType poolType;
     }
 
@@ -27,7 +30,18 @@ interface ILiquidityManagerFactory {
     /// @dev Called by the liquidity manager constructor to fetch the parameters of the liquidity manager
     /// @dev This is used to avoid having constructor arguments in the liquidity manager contract, which results in the init code hash
     /// of the liquidity manager being constant allowing the CREATE2 address of the liquidity manager to be cheaply computed on-chain
-    function lmParameters() external view returns (address factory, address nfpm, address pool, PoolType poolType);
+    function lmParameters()
+        external
+        view
+        returns (
+            address factory,
+            address ksZapRouter,
+            address nfpm,
+            address token,
+            address usdc,
+            address pool,
+            PoolType poolType
+        );
 
     function getPoolConfiguration(
         PoolType poolType
