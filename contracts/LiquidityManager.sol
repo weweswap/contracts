@@ -24,7 +24,7 @@ contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard
 
     ILiquidityManagerFactory.PoolConfiguration public poolConfiguration;
     bool public unlocked;
-    mapping(BandType => uint256) public totalLiquidity; // Total liquidity deposited
+    mapping(BandType => uint256) public totalLiquidityForBand; // Total liquidity deposited
     mapping(BandType => uint256) public bandTokenId; // Band tokenIds
     mapping(address => mapping(BandType => uint256)) public liquidities; // Deposited liquidity
 
@@ -32,6 +32,7 @@ contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard
     error BandDepositFailed(bytes data);
     error ZapInFailed();
     error InvalidNFT();
+    error InvalidZapInBandType(BandType inputType, BandType correctType);
 
     constructor() {
         address tokenAddress;
@@ -62,6 +63,15 @@ contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard
     }
 
     function zapIn(uint256 amount, BandType bandType, bytes calldata bandData) external nonReentrant {
+        if (amount == 0) {
+            revert ZeroAmount();
+        }
+
+        BandType correctBandType = getBandTypeForZapIn();
+        if (correctBandType != bandType) {
+            revert InvalidZapInBandType(bandType, correctBandType);
+        }
+
         token.safeTransferFrom(msg.sender, address(this), amount);
         token.safeApprove(ksZapRouter, amount);
 
@@ -76,8 +86,8 @@ contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard
             usdc.safeTransfer(msg.sender, zapResult.remainAmount0);
         }
 
-        totalLiquidity += zapResult.liquidity;
-        liquidities[msg.sender] += zapResult.liquidity;
+        totalLiquidityForBand[bandType] += zapResult.liquidity;
+        liquidities[msg.sender][bandType] += zapResult.liquidity;
     }
 
     function _ksZapIn(bytes calldata data) private returns (ZapUniswapV3Results memory zapResult) {
@@ -89,23 +99,65 @@ contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard
         zapResult = abi.decode(zapResultData, (ZapUniswapV3Results));
     }
 
+    function getBandTypeForZapIn() public view returns (BandType) {
+        // Find minimum liquidity
+        uint256 minLiquidity = _min(
+            totalLiquidityForBand[BandType.Narrow],
+            totalLiquidityForBand[BandType.Mid],
+            totalLiquidityForBand[BandType.Wide]
+        );
+
+        if (totalLiquidityForBand[BandType.Narrow] == minLiquidity) {
+            return BandType.Narrow;
+        }
+        if (totalLiquidityForBand[BandType.Mid] == minLiquidity) {
+            return BandType.Mid;
+        }
+
+        return BandType.Wide;
+    }
+
+    function totalLiquidity() external view returns (uint256) {
+        return
+            totalLiquidityForBand[BandType.Narrow] +
+            totalLiquidityForBand[BandType.Mid] +
+            totalLiquidityForBand[BandType.Wide];
+    }
+
+    function liquidityOf(address user) external view returns (uint256) {
+        return liquidities[user][BandType.Narrow] + liquidities[user][BandType.Mid] + liquidities[user][BandType.Wide];
+    }
+
+    function _min(uint256 a, uint256 b, uint256 c) private pure returns (uint256) {
+        uint256 minValue = a;
+
+        if (b < minValue) {
+            minValue = b;
+        }
+        if (c < minValue) {
+            minValue = c;
+        }
+
+        return minValue;
+    }
+
     function onERC721Received(address, address, uint256 tokenId, bytes calldata) external returns (bytes4) {
         if (unlocked) {
             // Already 3 NFT bands created
             revert InvalidNFT();
         }
 
-        // // Store band tokenIds
-        if (narrowBandTokenId == 0) {
-            narrowBandTokenId = tokenId;
-        } else if (midBandTokenId == 0) {
-            midBandTokenId = tokenId;
-        } else if (wideBandTokenId == 0) {
-            wideBandTokenId = tokenId;
-        } else {
-            // There are already 3 NFTs minted
-            revert InvalidNFT();
-        }
+        // // // Store band tokenIds
+        // if (narrowBandTokenId == 0) {
+        //     narrowBandTokenId = tokenId;
+        // } else if (midBandTokenId == 0) {
+        //     midBandTokenId = tokenId;
+        // } else if (wideBandTokenId == 0) {
+        //     wideBandTokenId = tokenId;
+        // } else {
+        //     // There are already 3 NFTs minted
+        //     revert InvalidNFT();
+        // }
         // Return this value to confirm that the contract can receive ERC721 tokens
         return this.onERC721Received.selector;
     }
