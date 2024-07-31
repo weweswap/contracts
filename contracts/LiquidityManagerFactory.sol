@@ -6,6 +6,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {IUniswapV3Factory} from "./univ3-0.8/IUniswapV3Factory.sol";
 import {LiquidityManager} from "./LiquidityManager.sol";
 import {ILiquidityManagerFactory} from "./interfaces/ILiquidityManagerFactory.sol";
+import {ILiquidityManager} from "./interfaces/ILiquidityManager.sol";
 
 contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
     IUniswapV3Factory public immutable univ3Factory; // Univ3 Factory
@@ -48,6 +49,13 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
         _;
     }
 
+    modifier onlyWhitelistedToken(address token) {
+        if (getLiquidityManager[token] == address(0)) {
+            revert LiquidityManagerNoExists();
+        }
+        _;
+    }
+
     constructor(address _univ3Factory, address _ksZapRouter, address _nfpm, address _usdc) {
         univ3Factory = IUniswapV3Factory(_univ3Factory);
         ksZapRouter = _ksZapRouter;
@@ -84,15 +92,27 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
         emit LiquidityManagerCreated(token, liquidityManager);
     }
 
+    function setPoolConfiguration(PoolType poolType, PoolConfiguration calldata poolConfiguration) external onlyOwner {
+        getPoolConfiguration[poolType] = poolConfiguration;
+    }
+
+    function pauseLiquidityManager(address token) external onlyOwner onlyWhitelistedToken(token) {
+        ILiquidityManager(getLiquidityManager[token]).pause();
+    }
+
+    function unpauseLiquidityManager(address token) external onlyOwner onlyWhitelistedToken(token) {
+        ILiquidityManager(getLiquidityManager[token]).unpause();
+    }
+
+    function renounceLiquidityManagerOwnership(address token) external onlyOwner onlyWhitelistedToken(token) {
+        ILiquidityManager(getLiquidityManager[token]).renounceOwnership();
+    }
+
     function setAllowAnyoneToRegister(bool _allowAnyoneToRegister) external onlyOwner {
         allowAnyoneToRegister = _allowAnyoneToRegister;
     }
 
-    function resetLiquidityManager(address token) external onlyOwner {
-        if (getLiquidityManager[token] == address(0)) {
-            revert LiquidityManagerNoExists();
-        }
-
+    function resetLiquidityManager(address token) external onlyOwner onlyWhitelistedToken(token) {
         getLiquidityManager[token] = address(0);
         emit LiquidityManagerReset(token);
     }

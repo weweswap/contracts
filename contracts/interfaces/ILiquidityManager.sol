@@ -20,4 +20,8 @@ interface ILiquidityManager {
         uint256 remainAmount0;
         uint256 remainAmount1;
     }
+
+    function pause() external;
+    function unpause() external;
+    function renounceOwnership() external;
 }

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-// import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -11,7 +12,7 @@ import {INonfungiblePositionManager} from "./univ3-0.8/INonfungiblePositionManag
 import {ILiquidityManager} from "./interfaces/ILiquidityManager.sol";
 import {ILiquidityManagerFactory} from "./interfaces/ILiquidityManagerFactory.sol";
 
-contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard {
+contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManager, IERC721Receiver {
     using SafeERC20 for IERC20;
 
     address public immutable factory; // LMFactory
@@ -62,7 +63,19 @@ contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard
         );
     }
 
-    function zapIn(uint256 amount, BandType bandType, bytes calldata bandData) external nonReentrant {
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    function renounceOwnership() public override(ILiquidityManager, Ownable) {
+        Ownable.renounceOwnership();
+    }
+
+    function zapIn(uint256 amount, BandType bandType, bytes calldata bandData) external nonReentrant whenNotPaused {
         if (amount == 0) {
             revert ZeroAmount();
         }
@@ -94,6 +107,8 @@ contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard
 
         delete zapInParams;
     }
+
+    function withdraw() external nonReentrant {}
 
     function _ksZapIn(bytes calldata data) private returns (ZapUniswapV3Results memory zapResult) {
         (bool success, bytes memory zapResultData) = ksZapRouter.call(data);
