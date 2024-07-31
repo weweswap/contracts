@@ -23,14 +23,14 @@ contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard
     ILiquidityManagerFactory.PoolType public immutable poolType;
 
     ILiquidityManagerFactory.PoolConfiguration public poolConfiguration;
-    bool public unlocked;
-    mapping(BandType => uint256) public totalLiquidityForBand; // Total liquidity deposited
+    ZapInParams public zapInParams; // Temporary bandType and tokenId to validate if it's mint or addLiquidity
     mapping(BandType => uint256) public bandTokenId; // Band tokenIds
+    mapping(BandType => uint256) public totalLiquidityForBand; // Total liquidity deposited
     mapping(address => mapping(BandType => uint256)) public liquidities; // Deposited liquidity
 
     error ZeroAmount();
     error BandDepositFailed(bytes data);
-    error ZapInFailed();
+    error NotZappingIn();
     error InvalidNFT();
     error InvalidZapInBandType(BandType inputType, BandType correctType);
 
@@ -72,6 +72,9 @@ contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard
             revert InvalidZapInBandType(bandType, correctBandType);
         }
 
+        // Store zapInBandTokenId, and inside onERC721Received, will validate if new NFT is minted or not
+        zapInParams = ZapInParams({zappingIn: true, bandType: bandType, tokenId: bandTokenId[bandType]});
+
         token.safeTransferFrom(msg.sender, address(this), amount);
         token.safeApprove(ksZapRouter, amount);
 
@@ -88,6 +91,8 @@ contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard
 
         totalLiquidityForBand[bandType] += zapResult.liquidity;
         liquidities[msg.sender][bandType] += zapResult.liquidity;
+
+        delete zapInParams;
     }
 
     function _ksZapIn(bytes calldata data) private returns (ZapUniswapV3Results memory zapResult) {
@@ -128,6 +133,24 @@ contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard
         return liquidities[user][BandType.Narrow] + liquidities[user][BandType.Mid] + liquidities[user][BandType.Wide];
     }
 
+    function onERC721Received(address, address, uint256 tokenId, bytes calldata) external returns (bytes4) {
+        if (!zapInParams.zappingIn) {
+            // NFTs should be minted only during zapIn
+            revert NotZappingIn();
+        }
+
+        if (zapInParams.tokenId != 0) {
+            // Band NFT is already minted
+            revert InvalidNFT();
+        }
+
+        // Store newly minted tokenId
+        bandTokenId[zapInParams.bandType] = tokenId;
+
+        // Return this value to confirm that the contract can receive ERC721 tokens
+        return this.onERC721Received.selector;
+    }
+
     function _min(uint256 a, uint256 b, uint256 c) private pure returns (uint256) {
         uint256 minValue = a;
 
@@ -139,26 +162,5 @@ contract LiquidityManager is ILiquidityManager, IERC721Receiver, ReentrancyGuard
         }
 
         return minValue;
-    }
-
-    function onERC721Received(address, address, uint256 tokenId, bytes calldata) external returns (bytes4) {
-        if (unlocked) {
-            // Already 3 NFT bands created
-            revert InvalidNFT();
-        }
-
-        // // // Store band tokenIds
-        // if (narrowBandTokenId == 0) {
-        //     narrowBandTokenId = tokenId;
-        // } else if (midBandTokenId == 0) {
-        //     midBandTokenId = tokenId;
-        // } else if (wideBandTokenId == 0) {
-        //     wideBandTokenId = tokenId;
-        // } else {
-        //     // There are already 3 NFTs minted
-        //     revert InvalidNFT();
-        // }
-        // Return this value to confirm that the contract can receive ERC721 tokens
-        return this.onERC721Received.selector;
     }
 }

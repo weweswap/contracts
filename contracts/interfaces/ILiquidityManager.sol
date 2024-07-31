@@ -8,6 +8,12 @@ interface ILiquidityManager {
         Wide
     }
 
+    struct ZapInParams {
+        bool zappingIn;
+        BandType bandType;
+        uint256 tokenId;
+    }
+
     struct ZapUniswapV3Results {
         uint256 tokenId;
         uint128 liquidity;
