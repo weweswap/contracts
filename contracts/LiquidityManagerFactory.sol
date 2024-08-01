@@ -34,10 +34,14 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
     uint256 public yieldCollectInterval = 86400; // Default: Collect fee once a day
     uint256 public secondsOutsideRangeBeforeRebalance; // To-do: Do we need this one?
 
+    /// @inheritdoc ILiquidityManagerFactory
+    mapping(address => bool) public rebalancers;
+
     event LiquidityManagerCreated(address indexed token, address liquidityManager);
     event LiquidityManagerReset(address indexed token);
 
     error NotAllowedToDeploy();
+    error NotAllowedToRebalance();
     error LiquidityManagerAlreadyExists();
     error LiquidityManagerNoExists();
     error PoolNoExists();
@@ -45,6 +49,13 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
     modifier onlyAllowedDeployer() {
         if (!allowAnyoneToRegister && msg.sender != owner()) {
             revert NotAllowedToDeploy();
+        }
+        _;
+    }
+
+    modifier onlyAllowedRebalancer() {
+        if (!allowAnyRebalancer && !rebalancers[msg.sender]) {
+            revert NotAllowedToRebalance();
         }
         _;
     }
@@ -94,6 +105,10 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
 
     function setPoolConfiguration(PoolType poolType, PoolConfiguration calldata poolConfiguration) external onlyOwner {
         getPoolConfiguration[poolType] = poolConfiguration;
+    }
+
+    function setRebalancer(address rebalancer, bool flag) external onlyOwner {
+        rebalancers[rebalancer] = flag;
     }
 
     function pauseLiquidityManager(address token) external onlyOwner onlyWhitelistedToken(token) {
