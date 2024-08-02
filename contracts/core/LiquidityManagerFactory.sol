@@ -3,10 +3,10 @@ pragma solidity ^0.8.9;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {IUniswapV3Factory} from "./univ3-0.8/IUniswapV3Factory.sol";
+import {IUniswapV3Factory} from "../univ3-0.8/IUniswapV3Factory.sol";
 import {LiquidityManager} from "./LiquidityManager.sol";
-import {ILiquidityManagerFactory} from "./interfaces/ILiquidityManagerFactory.sol";
-import {ILiquidityManager} from "./interfaces/ILiquidityManager.sol";
+import {ILiquidityManagerFactory} from "../interfaces/ILiquidityManagerFactory.sol";
+import {ILiquidityManager} from "../interfaces/ILiquidityManager.sol";
 
 contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
     IUniswapV3Factory public immutable univ3Factory; // Univ3 Factory
