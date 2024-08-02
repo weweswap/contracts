@@ -7,10 +7,10 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import {IUniswapV3Factory} from "./univ3-0.8/IUniswapV3Factory.sol";
-import {INonfungiblePositionManager} from "./univ3-0.8/INonfungiblePositionManager.sol";
-import {ILiquidityManager} from "./interfaces/ILiquidityManager.sol";
-import {ILiquidityManagerFactory} from "./interfaces/ILiquidityManagerFactory.sol";
+import {IUniswapV3Factory} from "../univ3-0.8/IUniswapV3Factory.sol";
+import {INonfungiblePositionManager} from "../univ3-0.8/INonfungiblePositionManager.sol";
+import {ILiquidityManager} from "../interfaces/ILiquidityManager.sol";
+import {ILiquidityManagerFactory} from "../interfaces/ILiquidityManagerFactory.sol";
 
 contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManager, IERC721Receiver {
     using SafeERC20 for IERC20;

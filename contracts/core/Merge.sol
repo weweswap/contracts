@@ -3,8 +3,8 @@ pragma solidity ^0.8.9;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20Vult} from "./interfaces/IERC20Vult.sol";
-import {IApproveAndCallReceiver} from "./interfaces/IApproveAndCallReceiver.sol";
+import {IERC20Vult} from "../interfaces/IERC20Vult.sol";
+import {IApproveAndCallReceiver} from "../interfaces/IApproveAndCallReceiver.sol";
 
 contract Merge is Ownable, IApproveAndCallReceiver {
     using SafeERC20 for IERC20Vult;
