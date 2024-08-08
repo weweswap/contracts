@@ -10,5 +10,6 @@ interface IMerge {
 
     error MergeLocked();
     error VultToWeweNotAllwed();
-    error InvalidToken();
+    error InvalidTokenReceived();
+    error ZeroAmount();
 }
