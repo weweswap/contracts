@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.20;
-
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /**
  * @title IERC1363
@@ -11,17 +7,52 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
  *
  * An extension interface for ERC-20 tokens that supports executing code on a recipient contract after `transfer` or `transferFrom`, or code on a spender contract after `approve`, in a single transaction.
  */
-interface IERC1363 is IERC20, IERC165 {
-    /*
-     * NOTE: the ERC-165 identifier for this interface is 0xb0202a11.
-     * 0xb0202a11 ===
-     *   bytes4(keccak256('transferAndCall(address,uint256)')) ^
-     *   bytes4(keccak256('transferAndCall(address,uint256,bytes)')) ^
-     *   bytes4(keccak256('transferFromAndCall(address,address,uint256)')) ^
-     *   bytes4(keccak256('transferFromAndCall(address,address,uint256,bytes)')) ^
-     *   bytes4(keccak256('approveAndCall(address,uint256)')) ^
-     *   bytes4(keccak256('approveAndCall(address,uint256,bytes)'))
+interface IERC1363 {
+    /**
+     * @dev Indicates a failure with the token `receiver` as it can't be an EOA. Used in transfers.
+     * @param receiver The address to which tokens are being transferred.
      */
+    error ERC1363EOAReceiver(address receiver);
+
+    /**
+     * @dev Indicates a failure with the token `spender` as it can't be an EOA. Used in approvals.
+     * @param spender The address which will spend the funds.
+     */
+    error ERC1363EOASpender(address spender);
+
+    /**
+     * @dev Indicates a failure with the token `receiver`. Used in transfers.
+     * @param receiver The address to which tokens are being transferred.
+     */
+    error ERC1363InvalidReceiver(address receiver);
+
+    /**
+     * @dev Indicates a failure with the token `spender`. Used in approvals.
+     * @param spender The address which will spend the funds.
+     */
+    error ERC1363InvalidSpender(address spender);
+
+    /**
+     * @dev Indicates a failure with the ERC-20 `transfer` during a `transferAndCall` operation. Used in transfers.
+     * @param receiver The address to which tokens are being transferred.
+     * @param value The amount of tokens to be transferred.
+     */
+    error ERC1363TransferFailed(address receiver, uint256 value);
+
+    /**
+     * @dev Indicates a failure with the ERC-20 `transferFrom` during a `transferFromAndCall` operation. Used in transfers.
+     * @param sender The address from which to send tokens.
+     * @param receiver The address to which tokens are being transferred.
+     * @param value The amount of tokens to be transferred.
+     */
+    error ERC1363TransferFromFailed(address sender, address receiver, uint256 value);
+
+    /**
+     * @dev Indicates a failure with the ERC-20 `approve` during a `approveAndCall` operation. Used in approvals.
+     * @param spender The address which will spend the funds.
+     * @param value The amount of tokens to be spent.
+     */
+    error ERC1363ApproveFailed(address spender, uint256 value);
 
     /**
      * @dev Moves a `value` amount of tokens from the caller's account to `to` and then calls `IERC1363Receiver::onTransferReceived` on `to`.
