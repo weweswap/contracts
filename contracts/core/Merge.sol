@@ -12,11 +12,12 @@ import {IMerge} from "../interfaces/IMerge.sol";
 contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    IERC20 public immutable wewe;
+    IERC20 public immutable vult;
+
     uint256 public virtualWeweBalance;
     uint256 public weweBalance;
     uint256 public vultBalance;
-    IERC20 public immutable wewe;
-    IERC20 public immutable vult;
 
     LockedStatus public lockedStatus;
 
@@ -102,14 +103,20 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
     }
 
     function quoteVult(uint256 w) public view returns (uint256 v) {
-        uint256 W = weweBalance + virtualWeweBalance;
-        uint256 V = vultBalance;
-        v = (w * V) / (w + W);
+        v = (w * V()) / (w + W());
     }
 
     function quoteWewe(uint256 v) public view returns (uint256 w) {
-        uint256 W = weweBalance + virtualWeweBalance;
-        uint256 V = vultBalance;
-        w = (v * W) / (v + V);
+        w = (v * W()) / (v + V());
+    }
+
+    /// @notice For total wewe balance, virtual balance should be added
+    function W() internal view returns (uint256) {
+        return weweBalance + virtualWeweBalance;
+    }
+
+    /// @notice For total vult balance accounting logic
+    function V() internal view returns (uint256) {
+        return vultBalance;
     }
 }
