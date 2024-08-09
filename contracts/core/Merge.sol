@@ -6,13 +6,13 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IWeweReceiver} from "../interfaces/IWeweReceiver.sol";
-import {IERC1363Receiver} from "../token/ERC1363/IERC1363Receiver.sol";
+import {IERC1363Spender} from "../token/ERC1363/IERC1363Spender.sol";
 import {IMerge} from "../interfaces/IMerge.sol";
 
-contract Merge is IMerge, IWeweReceiver, IERC1363Receiver, Ownable, ReentrancyGuard {
+contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    uint256 public virtualWeweBalance = 10_000_000_000 * 1e18;
+    uint256 public virtualWeweBalance;
     uint256 public weweBalance;
     uint256 public vultBalance;
     IERC20 public immutable wewe;
@@ -51,11 +51,10 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Receiver, Ownable, ReentrancyGu
     }
 
     /*
-     * @inheritdoc IERC1363Receiver
-     * Vult token transferAndCall
+     * @inheritdoc IERC1363Spender
+     * Vult token approveAndCall
      */
-    function onTransferReceived(
-        address operator,
+    function onApprovalReceived(
         address from,
         uint256 amount,
         bytes calldata data
@@ -77,7 +76,7 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Receiver, Ownable, ReentrancyGu
         vultBalance += amount;
         weweBalance -= weweOut;
 
-        return this.onTransferReceived.selector;
+        return this.onApprovalReceived.selector;
     }
 
     function deposit(IERC20 token, uint256 amount) external onlyOwner {
