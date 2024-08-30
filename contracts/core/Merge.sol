@@ -21,7 +21,7 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
 
     LockedStatus public lockedStatus;
 
-    private immutable address _self;
+    address private immutable _self;
 
     constructor(address _wewe, address _vault) {
         require(_wewe != address(0), "Wewe address cannot be 0");
@@ -69,7 +69,7 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
             revert InvalidTokenReceived();
         }
         if (lockedStatus != LockedStatus.TwoWay) {
-            revert VaultToWeweNotAllwed();
+            revert VaultToWeweNotAllowed();
         }
         if (amount == 0) {
             revert ZeroAmount();
