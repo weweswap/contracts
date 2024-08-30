@@ -10,7 +10,7 @@ describe("Merge Contract", function () {
     const Wewe = await ethers.getContractFactory("Wewe");
 
     const vault = await Vault.deploy("", "");
-    const mockvault = await vault.deploy("", "");
+    const mockvault = await Vault.deploy("", "");
 
     const wewe = await Wewe.deploy();
     const mockWewe = await Wewe.deploy();
