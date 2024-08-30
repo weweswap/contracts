@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.19;
 
 interface IMerge {
     enum LockedStatus {
@@ -9,7 +9,7 @@ interface IMerge {
     }
 
     error MergeLocked();
-    error VultToWeweNotAllwed();
+    error VaultToWeweNotAllowed();
     error InvalidTokenReceived();
     error ZeroAmount();
 }
