@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.19;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -13,17 +13,22 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
     using SafeERC20 for IERC20;
 
     IERC20 public immutable wewe;
-    IERC20 public immutable vult;
+    IERC20 public immutable vault;
 
     uint256 public virtualWeweBalance;
     uint256 public weweBalance;
-    uint256 public vultBalance;
+    uint256 public vaultBalance;
 
     LockedStatus public lockedStatus;
 
-    constructor(address _wewe, address _vult) {
+    private immutable address _self;
+
+    constructor(address _wewe, address _vault) {
+        require(_wewe != address(0), "Wewe address cannot be 0");
+        require(_vault != address(0), "Vault address cannot be 0");
         wewe = IERC20(_wewe);
-        vult = IERC20(_vult);
+        vault = IERC20(_vault);
+        _self = address(this);
     }
 
     /// @notice Wewe token approveAndCall
@@ -43,45 +48,45 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
             revert ZeroAmount();
         }
 
-        // wewe in, vult out
-        uint256 vultOut = quoteVult(amount);
-        wewe.safeTransferFrom(from, address(this), amount);
-        vult.safeTransfer(from, vultOut);
+        // wewe in, vault out
+        uint256 vaultOut = quoteVault(amount);
+        wewe.safeTransferFrom(from, _self, amount);
+        vault.safeTransfer(from, vaultOut);
         weweBalance += amount;
-        vultBalance -= vultOut;
+        vaultBalance -= vaultOut;
     }
 
     /*
      * @inheritdoc IERC1363Spender
-     * Vult token approveAndCall
+     * Vault token approveAndCall
      */
     function onApprovalReceived(
         address from,
         uint256 amount,
         bytes calldata data
     ) external nonReentrant returns (bytes4) {
-        if (msg.sender != address(vult)) {
+        if (msg.sender != address(vault)) {
             revert InvalidTokenReceived();
         }
         if (lockedStatus != LockedStatus.TwoWay) {
-            revert VultToWeweNotAllwed();
+            revert VaultToWeweNotAllwed();
         }
         if (amount == 0) {
             revert ZeroAmount();
         }
 
-        // vult in, wewe out
+        // vault in, wewe out
         uint256 weweOut = quoteWewe(amount);
-        vult.safeTransferFrom(from, address(this), amount);
+        vault.safeTransferFrom(from, _self, amount);
         wewe.safeTransfer(from, weweOut);
-        vultBalance += amount;
+        vaultBalance += amount;
         weweBalance -= weweOut;
 
         return this.onApprovalReceived.selector;
     }
 
     function deposit(IERC20 token, uint256 amount) external onlyOwner {
-        if (token != wewe && token != vult) {
+        if (token != wewe && token != vault) {
             revert InvalidTokenReceived();
         }
 
@@ -89,8 +94,8 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
         if (token == wewe) {
             weweBalance += amount;
         } else {
-            // Vult
-            vultBalance += amount;
+            // Vault
+            vaultBalance += amount;
         }
     }
 
@@ -102,7 +107,7 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
         virtualWeweBalance = newVirtualBalance;
     }
 
-    function quoteVult(uint256 w) public view returns (uint256 v) {
+    function quoteVault(uint256 w) public view returns (uint256 v) {
         v = (w * V()) / (w + W());
     }
 
@@ -115,8 +120,8 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
         return weweBalance + virtualWeweBalance;
     }
 
-    /// @notice For total vult balance accounting logic
+    /// @notice For total vault balance accounting logic
     function V() internal view returns (uint256) {
-        return vultBalance;
+        return vaultBalance;
     }
 }
