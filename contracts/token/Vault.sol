@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC1363Spender} from "./ERC1363/IERC1363Spender.sol";
 
-contract Vult is ERC20 {
+contract Vault is ERC20 {
     constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {
         _mint(msg.sender, 10_000_000 * 1e18);
     }
