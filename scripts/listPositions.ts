@@ -35,8 +35,9 @@ type PositionResume = {
 }
 
 async function main() {
-  const owner = '' // Owner address
   const signers = await ethers.getSigners()
+  // const owner = "0x32cf4d1df6fb7bB173183CF8b51EF9499c803634"
+  const owner = signers[0]
 
   const positionsContract = new ethers.Contract(UNI_V3_POS, UNI_V3_POS_ABI, signers[0])
   const balance = await positionsContract.balanceOf(owner)
