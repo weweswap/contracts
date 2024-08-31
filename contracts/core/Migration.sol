@@ -7,12 +7,21 @@ import {INonfungiblePositionManager} from "../univ3-0.8/INonfungiblePositionMana
 import "hardhat/console.sol";
 
 contract Migration is IERC721Receiver {
-    INonfungiblePositionManager public immutable nfpm; // Univ3 NFPM
+    INonfungiblePositionManager public immutable nfpm;
+    address public immutable WEWE; 
+    address public immutable WETH;
 
-    constructor(address _nfpm) {
+    struct PositionTokens {
+        address token0;
+        address token1;
+    }
+
+    constructor(address _nfpm, address _WEWE, address _WETH) {
         require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
 
         nfpm = INonfungiblePositionManager(_nfpm);
+        WEWE = _WEWE;
+        WETH = _WETH;
     }
 
     function _decreaseAllLiquidity(uint256 tokenId) private returns (uint256 amount0, uint256 amount1) {
@@ -52,13 +61,21 @@ contract Migration is IERC721Receiver {
     function _swap() private {
     }
 
+    function getPositionTokens(uint256 tokenId) internal view returns (PositionTokens memory) {
+        ( , , address token0, address token1, , , , , , , , ) = nfpm.positions(tokenId);
+        return PositionTokens(token0, token1);
+    }
+
+    function isWEWEWETHPool(uint256 tokenId) internal view returns (bool) {
+        PositionTokens memory tokens = getPositionTokens(tokenId);
+        return (tokens.token0 == WEWE && tokens.token1 == WETH) || (tokens.token0 == WETH && tokens.token1 == WEWE);
+        // return false;
+    }
+
     function onERC721Received(address, address, uint256 tokenId, bytes calldata) external returns (bytes4) {
-        console.log('Received tokenId', tokenId);
-        // 1. Receive NFT possition
-        // 2. (uint256 amountToken0, uint256 amountToken1) = _decreaseAllLiquidityAndCollectFees(tokenId)
-        // 3. Call swap (All WETH to USDC)
-        // 4. Call deposit of Liquidity Manager
-        // 5. Get ERC20 token
-        // 6. Send to user
+        require(isWEWEWETHPool(tokenId), "Invalid NFT: Not a WEWE-WETH pool token");
+        (uint256 amountToken0, uint256 amountToken1) = _decreaseAllLiquidityAndCollectFees(tokenId);
+        _swap();
+        return IERC721Receiver.onERC721Received.selector;
     }
 }
