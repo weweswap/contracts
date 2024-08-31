@@ -3,9 +3,12 @@ pragma solidity ^0.8.19;
 
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-contract Migrate is IERC721Receiver {
+import "hardhat/console.sol";
+
+contract Migration is IERC721Receiver {
 
     constructor() {
+        console.log('Deployed');
     }
 
     function _decreaseAllLiquidityAndCollectFees() private {
@@ -15,6 +18,7 @@ contract Migrate is IERC721Receiver {
     }
 
     function onERC721Received(address, address, uint256 tokenId, bytes calldata) external returns (bytes4) {
+        console.log('Received tokenId', tokenId);
         // 1. Receive NFT possition
         // 2. Call method _decreaseAllLiquidityAndCollectFees
         // 3. Call swap (All WETH to USDC)
