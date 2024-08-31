@@ -26,12 +26,12 @@ async function main() {
 
     console.log('WETH balance', await WETH.balanceOf(signers[0].address));
     
-    /* Check Initial DAI Balance */ 
-    const DAI = new ethers.Contract(WEWE_ADDRESS, ercAbi, signers[0]);
-    const expandedDAIBalanceBefore = await DAI.balanceOf(signers[0].address);
-    const DAIBalanceBefore = Number(ethers.formatUnits(expandedDAIBalanceBefore, WEWE_DECIMALS));
+    /* Check Initial WEWE Balance */ 
+    const WEWE = new ethers.Contract(WEWE_ADDRESS, ercAbi, signers[0]);
+    const expandedWEWEBalanceBefore = await WEWE.balanceOf(signers[0].address);
+    const WEWEBalanceBefore = Number(ethers.formatUnits(expandedWEWEBalanceBefore, WEWE_DECIMALS));
 
-    console.log('WEWE balance', await DAI.balanceOf(signers[0].address));
+    console.log('WEWE balance', await WEWE.balanceOf(signers[0].address));
 
     /* Approve the swapper contract to spend WETH for me */
     await WETH.approve(await simpleSwap.getAddress(), ethers.parseEther("0.1"));
@@ -44,9 +44,9 @@ async function main() {
     const swap = await simpleSwap.swapWETHForWEWE(amountIn, { gasLimit: 30000000 });
     swap.wait(); 
     
-    /* Check DAI end balance */
-    const expandedDAIBalanceAfter = await DAI.balanceOf(signers[0].address);
-    const DAIBalanceAfter = Number(ethers.formatUnits(expandedDAIBalanceAfter, WEWE_DECIMALS));
+    /* Check WEWE end balance */
+    const expandedWEWEBalanceAfter = await WEWE.balanceOf(signers[0].address);
+    const WEWEBalanceAfter = Number(ethers.formatUnits(expandedWEWEBalanceAfter, WEWE_DECIMALS));
 }
 
 // We recommend this pattern to be able to use async/await everywhere
