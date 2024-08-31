@@ -9,10 +9,10 @@ import "hardhat/console.sol";
 contract Migration is IERC721Receiver {
     INonfungiblePositionManager public immutable nfpm; // Univ3 NFPM
 
-    constructor() {
-        address _nfpm;
+    constructor(address _nfpm) {
+        require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
 
-        nfpm = INonfungiblePositionManager(_nfpm); // TODO: Invstigar como rellenar esta variable
+        nfpm = INonfungiblePositionManager(_nfpm);
     }
 
     function _decreaseAllLiquidity(uint256 tokenId) private returns (uint256 amount0, uint256 amount1) {
