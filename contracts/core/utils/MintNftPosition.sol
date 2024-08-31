@@ -14,6 +14,7 @@ contract MintNftPosition {
     INonfungiblePositionManager public immutable nonfungiblePositionManager;
     address public immutable WEWE;
     address public immutable WETH;
+    address public immutable POOL_ADDRESS;
     uint24 public constant poolFee = 10000;
 
     /// @notice Represents the deposit of an NFT
@@ -24,10 +25,11 @@ contract MintNftPosition {
         address token1;
     }
 
-    constructor(address _token0, address _token1, INonfungiblePositionManager _nonfungiblePositionManager) {
+    constructor(address _token0, address _token1, address _poolAddress, INonfungiblePositionManager _nonfungiblePositionManager) {
         nonfungiblePositionManager = _nonfungiblePositionManager;
         WETH = _token0;
         WEWE = _token1;
+        POOL_ADDRESS = _poolAddress;
     }
 
     /// @notice Calls the mint function defined in periphery, mints the same amount of each token.
@@ -62,7 +64,7 @@ contract MintNftPosition {
         console.log('Balance del contrato despues de transferir WEWE:', IERC20(WEWE).balanceOf(address(this)));
 
         // Get the pool address
-        address pool = 0x5E9BB3d7682A9537DB831060176C4247aB80D1Ec;
+        address pool = POOL_ADDRESS;
         require(pool != address(0), "Pool doesn't exist");
 
         // Get tick spacing from the pool
@@ -99,6 +101,7 @@ contract MintNftPosition {
         (tokenId, liquidity, amount0, amount1) = nonfungiblePositionManager.mint(params);
 
         console.log('position minted...');
+        console.log(tokenId);
 
         // Remove allowance and refund in both assets.
         if (amount0 < amount0ToMint) {
@@ -112,5 +115,7 @@ contract MintNftPosition {
             uint256 refund1 = amount1ToMint - amount1;
             TransferHelper.safeTransfer(WEWE, msg.sender, refund1);
         }
+
+        return (tokenId, liquidity, amount0, amount1);
     }
 }
