@@ -1,5 +1,29 @@
-import { HardhatUserConfig } from "hardhat/config";
+import { HardhatUserConfig, task } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+
+task("list-positions", "List the positions for a given owner")
+  .addParam("owner", "The address of the owner")
+  .setAction(async (taskArgs) => {
+    const { main } = require("./scripts/listPositions.ts");
+    await main(taskArgs.owner);
+  });
+
+task("simple-swap", "Executes a swap from WETH to WEWE")
+  .addParam("owner", "The address of the owner")
+  .addOptionalParam("asset", "The address of the aditional", "0x6b9bb36519538e0C073894E964E90172E1c0B41F")
+  .setAction(async (taskArgs) => {
+    const { main } = require("./scripts/getAssetFromEth.ts");
+    await main(taskArgs.owner, taskArgs.asset);
+  });
+
+task("mint-nft-position", "Mints a new NFT position on Uniswap")
+  .addParam("owner", "The address of the owner")
+  .addOptionalParam("asset", "The address of the aditional", "0x6b9bb36519538e0C073894E964E90172E1c0B41F")
+  .setAction(async (taskArgs) => {
+    const { main } = require("./scripts/mintNftPosition.ts");
+    await main(taskArgs.owner, taskArgs.asset);
+  });
+
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -12,6 +36,7 @@ const config: HardhatUserConfig = {
       viaIR: true,
     },
   },
+  defaultNetwork: "localhost",
   networks: {
     hardhat: {
       chains: { // Fix local hardfork from BASE mainnet

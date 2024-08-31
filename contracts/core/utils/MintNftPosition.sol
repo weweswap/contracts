@@ -25,10 +25,10 @@ contract MintNftPosition {
         address token1;
     }
 
-    constructor(address _token0, address _token1, address _poolAddress, INonfungiblePositionManager _nonfungiblePositionManager) {
+    constructor(address _token, address _poolAddress, INonfungiblePositionManager _nonfungiblePositionManager) {
         nonfungiblePositionManager = _nonfungiblePositionManager;
-        WETH = _token0;
-        WEWE = _token1;
+        WETH = 0x4200000000000000000000000000000000000006;
+        WEWE = _token;
         POOL_ADDRESS = _poolAddress;
     }
 
@@ -38,7 +38,7 @@ contract MintNftPosition {
     /// @return liquidity The amount of liquidity for the position
     /// @return amount0 The amount of token0
     /// @return amount1 The amount of token1
-    function mintNewPosition(uint256 amountToDeposit0, uint256 amountToDeposit1)
+    function mintNewPosition(uint256 amountToDeposit0, uint256 amountToDeposit1, address owner)
         external
         returns (
             uint256 tokenId,
@@ -53,7 +53,9 @@ contract MintNftPosition {
         uint256 amount1ToMint = amountToDeposit1;
 
         // transfer tokens to contract
+        console.log('WETH Transfering..');
         TransferHelper.safeTransferFrom(WETH, msg.sender, address(this), amount0ToMint);
+        console.log('WETH Transfered');
         TransferHelper.safeTransferFrom(WEWE, msg.sender, address(this), amount1ToMint);
 
         // Approve the position manager
@@ -91,7 +93,7 @@ contract MintNftPosition {
                 amount1Desired: amount1ToMint,
                 amount0Min: 0,
                 amount1Min: 0,
-                recipient: address(this),
+                recipient: owner,
                 deadline: block.timestamp + 365 days
             });
 
