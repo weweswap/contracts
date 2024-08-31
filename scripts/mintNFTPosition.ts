@@ -36,8 +36,8 @@ export async function main(owner: string, asset?: string) {
     const wethContract = await ethers.getContractAt("IERC20", WETH_ADDRESS, deployer);
     const weweContract = await ethers.getContractAt("IERC20", asset || WEWE_ADDRESS, deployer);
 
-    await wethContract.approve(await mintNftPosition.getAddress(), amountToDeposit0, deployer);
-    await weweContract.approve(await mintNftPosition.getAddress(), amountToDeposit1, deployer);
+    await wethContract.approve(await mintNftPosition.getAddress(), amountToDeposit0);
+    await weweContract.approve(await mintNftPosition.getAddress(), amountToDeposit1);
 
     const tx = await mintNftPosition.connect(deployer).mintNewPosition(amountToDeposit0, amountToDeposit1, owner);
     await tx.wait();
