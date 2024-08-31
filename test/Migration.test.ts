@@ -98,20 +98,7 @@ describe("Migration contract", function () {
       // Verify that the position's liquidity has been reduced to zero
       const position = await positionsContract.positions(tokenId);
       expect(position.liquidity).to.equal(0);
-    });
 
-    it("Should collect fees and keep them in the contract", async function () {
-      const { migration, otherAccount } = await loadFixture(deployFixture);
-      await mintNewPosition(otherAccount.address);
-      const positions = await listPositions(otherAccount.address);
-      const tokenId = positions[0].id;
-    
-      const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, otherAccount);
-    
-      // Transfer the NFT to the migration contract
-      const tx = await positionsContract.safeTransferFrom(otherAccount.address, await migration.getAddress(), tokenId);
-      await tx.wait();
-      
       // Assuming migration contract holds the tokens, check balance of tokens inside the contract
       const token0 = await migration.WEWE();
       const token1 = await migration.WETH();
