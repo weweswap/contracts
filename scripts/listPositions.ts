@@ -34,10 +34,8 @@ type PositionResume = {
   maxTick: number
 }
 
-async function main() {
+export async function main(owner: string ) {
   const signers = await ethers.getSigners()
-  // const owner = "0x32cf4d1df6fb7bB173183CF8b51EF9499c803634"
-  const owner = signers[0]
 
   const positionsContract = new ethers.Contract(UNI_V3_POS, UNI_V3_POS_ABI, signers[0])
   const balance = await positionsContract.balanceOf(owner)
@@ -81,9 +79,20 @@ async function main() {
   )
 
   console.table(positions)
+
+  return positions
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  const owner = process.argv[2];
+
+  if (!owner) {
+    console.error("Se requiere la dirección del propietario como parámetro.");
+    process.exit(1);
+  }
+
+  main(owner).catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}
