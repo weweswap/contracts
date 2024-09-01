@@ -29,6 +29,8 @@ jobs:
         run: npm install
 
       - name: Run Hardhat tests
+        env:
+          FORKING_URL: ${{ secrets.FORKING_URL }}
         run: npx hardhat test
 
       - name: Cache node_modules
