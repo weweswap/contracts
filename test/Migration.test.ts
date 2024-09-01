@@ -150,9 +150,6 @@ describe("Migration contract", function () {
       const weweBalance = await token0Contract.balanceOf(migration.getAddress());
       const usdcBalance = await usdcContract.balanceOf(migration.getAddress());
       
-      console.log(weweBalance)
-      console.log(usdcBalance)
-      
       expect(weweBalance).to.equal(DETERMINISTIC_OWED_TOKEN1_AMOUNT);
       expect(usdcBalance).to.equal(DETERMINISTIC_OWED_TOKEN0_AMOUNT);
     });
