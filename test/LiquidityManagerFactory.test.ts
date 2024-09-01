@@ -35,9 +35,6 @@ describe("Liquidity Manager Factory contract", function () {
       USDC_ADDRESS
     )
 
-
-    // await deployTokenLiquidityManager(lmfAddress, WEWE_ADDRESS, 2)
-
     return { owner, otherAccount, liquidityManagerFactory };
   }
   describe("Pool Configuration", function () {
@@ -58,7 +55,6 @@ describe("Liquidity Manager Factory contract", function () {
       expect(confExpected.midRange).to.be.equals(Number(confGot[2]))
       expect(confExpected.wideRange).to.be.equals(Number(confGot[3]))
       expect(confExpected.fee).to.be.equals(Number(confGot[4]))
-
     })
   })
 
