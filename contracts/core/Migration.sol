@@ -34,6 +34,7 @@ contract Migration is IERC721Receiver {
     /// @notice Constructor to initialize the Migration contract
     /// @param _nfpm Address of the Uniswap NonfungiblePositionManager
     /// @param _swapRouter Address of the Uniswap SwapRouter02
+    /// @param _lmf Address of the Liquidity Manager factory
     /// @param _tokenToMigrate Address of the token to be migrated
     /// @param _usdc Address of the USDC token
     /// @param _feeTier Fee tier for the Uniswap swap
@@ -47,12 +48,13 @@ contract Migration is IERC721Receiver {
     ) {
         require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
         require(_swapRouter != address(0), "Migration: Invalid SwapRouter address");
+        require(_lmf != address(0), "Migration: Invalid Liquidity Manager Factory address");
         swapRouter = ISwapRouter02(_swapRouter);
         nfpm = INonfungiblePositionManager(_nfpm);
+        lmf = ILiquidityManagerFactory(_lmf);
         tokenToMigrate = _tokenToMigrate;
         usdc = _usdc;
         feeTier = _feeTier;
-        lmf = ILiquidityManagerFactory(_lmf);
     }
 
     /// @notice Decreases all liquidity for a given token ID
