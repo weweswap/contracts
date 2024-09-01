@@ -27,6 +27,18 @@ task("mint-nft-position", "Mints a new NFT position on Uniswap")
     await main(taskArgs.owner, taskArgs.asset);
   });
 
+task("transfer-nft", "Transfers an NFT from one owner to another")
+  .addParam("owner", "The address of the current owner")
+  .addParam("newowner", "The address of the new owner")
+  .addParam("tokenid", "The ID of the NFT to transfer")
+  .setAction(async (taskArgs) => {
+    const { owner, newowner, tokenid } = taskArgs;
+
+    const { main } = require("./scripts/stoleNftPositionFromAddress.ts");
+
+    await main(owner, newowner, tokenid);
+});
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.19",
