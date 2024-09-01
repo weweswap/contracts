@@ -19,7 +19,6 @@ export async function main(currentOwner: string, newOwner: string, tokenId: numb
 
     const tx = await nftContract.transferFrom(currentOwner, newOwner, tokenId);
     await tx.wait();
-    console.log(`Transfer complete: NFT with ID ${tokenId} from ${currentOwner} to ${newOwner}`);
 
     await network.provider.request({
         method: "hardhat_stopImpersonatingAccount",

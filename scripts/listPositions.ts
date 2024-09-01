@@ -87,7 +87,7 @@ if (require.main === module) {
   const owner = process.argv[2];
 
   if (!owner) {
-    console.error("Se requiere la dirección del propietario como parámetro.");
+    console.error("The owner parameter is mandatory");
     process.exit(1);
   }
 
