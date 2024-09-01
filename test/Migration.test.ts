@@ -3,22 +3,51 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { main as mintNewPosition } from "../scripts/mintNFTPosition";
 import { main as listPositions } from "../scripts/listPositions";
+import { main as setPoolConfiguration } from "../scripts/setPoolConfiguration";
+import { main as getPoolConfiguration } from "../scripts/getPoolConfiguration";
+import { main as deployTokenLiquidityManager } from "../scripts/deployTokenLiquidityManager";
 
 const INonfungiblePositionManager = require('@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json').abi;
-const UNI_V3_POS = '0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1' 
+
+const UNI_V3_POS = '0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1';
+const UNISWAP_V3_FACTORY_ADDRESS = '0x33128a8fC17869897dcE68Ed026d694621f6FDfD';
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 const WEWE_ADDRESS = "0x6b9bb36519538e0C073894E964E90172E1c0B41F";
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const SwapRouterAddress = "0x2626664c2603336E57B271c5C0b26F421741e481"; 
+const SwapRouterAddress = "0x2626664c2603336E57B271c5C0b26F421741e481";
+const KYBERSWAP_ZAP_ROUTER_ADDRESS = '0x0e97C887b61cCd952a53578B04763E7134429e05';
 
 describe("Migration contract", function () {
   async function deployFixture() {
     const [owner, otherAccount] = await ethers.getSigners();
+
+    const LiquidityManagerFactory = await ethers.getContractFactory('LiquidityManagerFactory')
+    const liquidityManagerFactory = await LiquidityManagerFactory.deploy(
+      UNISWAP_V3_FACTORY_ADDRESS,
+      KYBERSWAP_ZAP_ROUTER_ADDRESS,
+      UNI_V3_POS,
+      USDC_ADDRESS
+    )
+
+    const liquidityManagerFactoryAddress = await liquidityManagerFactory.getAddress()
+
+    await setPoolConfiguration(liquidityManagerFactoryAddress, 0, { targetPriceDelta: 100, narrowRange: 4000, midRange: 10000, wideRange: 17000, fee: 500 })
+    await setPoolConfiguration(liquidityManagerFactoryAddress, 1, { targetPriceDelta: 1000, narrowRange: 4000, midRange: 10000, wideRange: 17000, fee: 3000 })
+    await setPoolConfiguration(liquidityManagerFactoryAddress, 2, { targetPriceDelta: 5000, narrowRange: 4000, midRange: 10000, wideRange: 17000, fee: 10000 })
+
+    await deployTokenLiquidityManager(liquidityManagerFactoryAddress, WEWE_ADDRESS, 2)
+
     const Migration = await ethers.getContractFactory("Migration");
+    const migration = await Migration.deploy(
+      UNI_V3_POS,
+      SwapRouterAddress,
+      liquidityManagerFactoryAddress,
+      WEWE_ADDRESS,
+      WETH_ADDRESS,
+      USDC_ADDRESS,
+    );
 
-    const migration = await Migration.deploy(UNI_V3_POS, SwapRouterAddress, WEWE_ADDRESS, WETH_ADDRESS, USDC_ADDRESS);
-
-    return { migration, owner, otherAccount };
+    return { migration, liquidityManagerFactory, owner, otherAccount };
   }
 
   describe("On receive", function () {
@@ -114,5 +143,12 @@ describe("Migration contract", function () {
       expect(weweBalance).to.be.greaterThan(0);
       expect(usdcBalance).to.be.greaterThan(0);
     });
+
+    it('Should set Pools configuration', async () => {
+      const { liquidityManagerFactory } = await loadFixture(deployFixture)
+      console.log(await getPoolConfiguration(await liquidityManagerFactory.getAddress(), 0))
+      console.log(await getPoolConfiguration(await liquidityManagerFactory.getAddress(), 1))
+      console.log(await getPoolConfiguration(await liquidityManagerFactory.getAddress(), 2))
+    })
   });
 });

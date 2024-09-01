@@ -6,12 +6,14 @@ import {INonfungiblePositionManager} from "../univ3-0.8/INonfungiblePositionMana
 import { IV3SwapRouter } from "../univ3-0.8/IV3SwapRouter.sol";
 import { ISwapRouter02 } from "../univ3-0.8/ISwapRouter02.sol";
 import { TransferHelper } from "../univ3-0.8/TransferHelper.sol";
+import { ILiquidityManagerFactory } from "../interfaces/ILiquidityManagerFactory.sol";
 
 import "hardhat/console.sol";
 
 contract Migration is IERC721Receiver {
     INonfungiblePositionManager public immutable nfpm;
     ISwapRouter02 public immutable swapRouter;
+    ILiquidityManagerFactory public immutable lmf;
     address public immutable WEWE; 
     address public immutable WETH;
     address public immutable USDC;
@@ -21,11 +23,13 @@ contract Migration is IERC721Receiver {
         address token1;
     }
 
-    constructor(address _nfpm, address _swapRouter, address _WEWE, address _WETH, address _USDC) {
+    constructor(address _nfpm, address _swapRouter, address _lmf, address _WEWE, address _WETH, address _USDC) {
         require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
         require(_swapRouter != address(0), "_swapRouter: Invalid SwapRouter address");
+        require(_lmf != address(0), "_swapRouter: Invalid Liquidity manager factory address");
         swapRouter = ISwapRouter02(_swapRouter);
         nfpm = INonfungiblePositionManager(_nfpm);
+        lmf = ILiquidityManagerFactory(_lmf);
         WEWE = _WEWE;
         WETH = _WETH;
         USDC = _USDC;
