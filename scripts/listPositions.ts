@@ -32,6 +32,10 @@ type PositionResume = {
   feeBps: number
   minTick: number
   maxTick: number
+  token0: number,
+  token1: number,
+  tokensOwed0: number,
+  tokensOwed1: number
 }
 
 export async function main(owner: string ) {
@@ -74,6 +78,10 @@ export async function main(owner: string ) {
         minTick: Number(nft.tickLower),
         maxTick: Number(nft.tickUpper),
         feeBps: Number(nft.fee),
+        token0: Number(data[2]),
+        token1: Number(data[3]),
+        tokensOwed0: Number(nft.tokensOwed0),
+        tokensOwed1: Number(nft.tokensOwed1),
       }
     })
   )
