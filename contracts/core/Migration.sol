@@ -12,23 +12,24 @@ import "hardhat/console.sol";
 contract Migration is IERC721Receiver {
     INonfungiblePositionManager public immutable nfpm;
     ISwapRouter02 public immutable swapRouter;
-    address public immutable WEWE; 
-    address public immutable WETH;
-    address public immutable USDC;
+    address public immutable tokenToMigrate;
+    address public immutable usdc;
+    uint24 public immutable feeTier;
 
-    struct PositionTokens {
-        address token0;
-        address token1;
-    }
-
-    constructor(address _nfpm, address _swapRouter, address _WEWE, address _WETH, address _USDC) {
+    /// @notice Constructor
+    /// @param _nfpm NonfungiblePositionManager
+    /// @param _swapRouter Uniswap SwapRouter02
+    /// @param _tokenToMigrate Address of the token to be migrated to liquidity manager
+    /// @param _usdc Address of the token USDC
+    /// @param _feeTier Fee tier form uniswap router swap
+    constructor(address _nfpm, address _swapRouter, address _tokenToMigrate, address _usdc, uint24 _feeTier) {
         require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
-        require(_swapRouter != address(0), "_swapRouter: Invalid SwapRouter address");
+        require(_swapRouter != address(0), "Migration: Invalid SwapRouter address");
         swapRouter = ISwapRouter02(_swapRouter);
         nfpm = INonfungiblePositionManager(_nfpm);
-        WEWE = _WEWE;
-        WETH = _WETH;
-        USDC = _USDC;
+        tokenToMigrate = _tokenToMigrate;
+        usdc = _usdc;
+        feeTier = _feeTier;
     }
 
     function _decreaseAllLiquidity(uint256 tokenId) private {
@@ -68,8 +69,8 @@ contract Migration is IERC721Receiver {
         IV3SwapRouter.ExactInputSingleParams memory params =
             IV3SwapRouter.ExactInputSingleParams({
                 tokenIn: tokenIn,
-                tokenOut: USDC,
-                fee: 3000, // TODO: Parametrize
+                tokenOut: usdc,
+                fee: feeTier,
                 recipient: address(this),
                 amountIn: amountIn,
                 amountOutMinimum: 0,
@@ -79,21 +80,30 @@ contract Migration is IERC721Receiver {
         return amountOut; 
     }
 
-    function getPositionTokens(uint256 tokenId) internal view returns (PositionTokens memory) {
-        ( , , address token0, address token1, , , , , , , , ) = nfpm.positions(tokenId);
-        return PositionTokens(token0, token1);
+    function _getPositionTokens(uint256 tokenId) internal view returns (address token0, address token1) {
+        ( , , token0, token1, , , , , , , , ) = nfpm.positions(tokenId);
     }
 
-    function isWEWEWETHPool(uint256 tokenId) internal view returns (bool) {
-        PositionTokens memory tokens = getPositionTokens(tokenId);
-        return (tokens.token0 == WEWE && tokens.token1 == WETH) || (tokens.token0 == WETH && tokens.token1 == WEWE);
-        // return false;
+    function _isValidNftPosition(address token0, address token1) internal view returns (bool) {
+        return (token0 == tokenToMigrate || token1 == tokenToMigrate);
+    }
+
+    function _getTokenAndAmountToSwap(address token0, address token1, uint256 amountToken0, uint256 amountToken1) internal view returns (address, uint256) {
+        if (token0 == tokenToMigrate) {
+            return (token1, amountToken1);
+        } else if (token1 == tokenToMigrate) {
+            return (token0, amountToken0);
+        } else {
+            revert("No matching token found for migration");
+        }
     }
 
     function onERC721Received(address, address, uint256 tokenId, bytes calldata) external returns (bytes4) {
-        require(isWEWEWETHPool(tokenId), "Invalid NFT: Not a WEWE-WETH pool token");
-        (uint256 amountToken0,) = _decreaseAllLiquidityAndCollectFees(tokenId);
-        _swap(WETH, amountToken0);
+        (address token0, address token1) = _getPositionTokens(tokenId);
+        require(_isValidNftPosition(token0, token1), "Invalid NFT: Does not have the correct token");
+        (uint256 amountToken0, uint256 amountToken1) = _decreaseAllLiquidityAndCollectFees(tokenId);
+        (address tokenIn, uint256 amountIn) = _getTokenAndAmountToSwap(token0, token1, amountToken0, amountToken1);
+        _swap(tokenIn, amountIn);
         return IERC721Receiver.onERC721Received.selector;
     }
 }
