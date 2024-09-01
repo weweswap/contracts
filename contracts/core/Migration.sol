@@ -84,13 +84,13 @@ contract Migration is IERC721Receiver {
     }
 
     /// @notice Decreases liquidity and collects fees for a given token ID
-    /// @dev Combines _decreaseAllLiquidity and _collectAllFees in a single function
+    /// @dev Combines _decreaseAllLiquidity and _collectAllLiquidity in a single function
     /// @param tokenId The ID of the token representing the liquidity position
     /// @return collectedAmount0 The amount of token0 collected
     /// @return collectedAmount1 The amount of token1 collected
     function _decreaseAllLiquidityAndCollectFees(uint256 tokenId) private returns (uint256 collectedAmount0, uint256 collectedAmount1) {
         _decreaseAllLiquidity(tokenId);
-        (collectedAmount0, collectedAmount1) = _collectAllFees(tokenId);
+        (collectedAmount0, collectedAmount1) = _collectAllLiquidity(tokenId);
     }
 
     /// @notice Swaps a specified amount of a given token to USDC
@@ -176,3 +176,4 @@ contract Migration is IERC721Receiver {
 
         return IERC721Receiver.onERC721Received.selector;
     }
+}

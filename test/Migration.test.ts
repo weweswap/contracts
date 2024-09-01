@@ -124,8 +124,6 @@ describe("Migration contract", function () {
       expect(position.liquidity).to.equal(DETERMINSITIC_LIQUIDITY)
       expect(position.feeGrowthInside0LastX128).to.equal(DETERMINISTIC_FEE0_AMOUNT)
       expect(position.feeGrowthInside1LastX128).to.equal(DETERMINISTIC_FEE1_AMOUNT)
-      expect(position.tokensOwed0).to.equal(DETERMINISTIC_OWED_TOKEN0_AMOUNT)
-      expect(position.tokensOwed1).to.equal(DETERMINISTIC_OWED_TOKEN1_AMOUNT)
 
       const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, accountWithFees)
 
@@ -147,16 +145,16 @@ describe("Migration contract", function () {
       // Assuming migration contract holds the tokens, check balance of tokens inside the contract
       const wewe = await migration.tokenToMigrate();
       const token0Contract = new ethers.Contract(wewe, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
+      const usdcContract = new ethers.Contract(USDC_ADDRESS, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
       
       const weweBalance = await token0Contract.balanceOf(migration.getAddress());
-      console.log(weweBalance)
-
-      const usdcContract = new ethers.Contract(USDC_ADDRESS, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
       const usdcBalance = await usdcContract.balanceOf(migration.getAddress());
+      
+      console.log(weweBalance)
       console.log(usdcBalance)
       
-      // expect(weweBalance).to.be.greaterThan(0);
-      // expect(usdcBalance).to.be.greaterThan(0);
+      expect(weweBalance).to.equal(DETERMINISTIC_OWED_TOKEN1_AMOUNT);
+      expect(usdcBalance).to.equal(DETERMINISTIC_OWED_TOKEN0_AMOUNT);
     });
   });
 });
