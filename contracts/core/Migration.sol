@@ -7,7 +7,6 @@ import {INonfungiblePositionManager} from "../univ3-0.8/INonfungiblePositionMana
 import "hardhat/console.sol";
 
 contract Migration is IERC721Receiver {
-
     INonfungiblePositionManager public immutable nfpm;
     address public immutable WEWE; 
     address public immutable WETH;
@@ -17,13 +16,46 @@ contract Migration is IERC721Receiver {
         address token1;
     }
 
-    constructor(address _nfpmAddress, address _WEWE, address _WETH) {
-        nfpm = INonfungiblePositionManager(_nfpmAddress);
+    constructor(address _nfpm, address _WEWE, address _WETH) {
+        require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
+
+        nfpm = INonfungiblePositionManager(_nfpm);
         WEWE = _WEWE;
         WETH = _WETH;
     }
 
-    function _decreaseAllLiquidityAndCollectFees() private {
+    function _decreaseAllLiquidity(uint256 tokenId) private returns (uint256 amount0, uint256 amount1) {
+        (, , , , , , , uint128 liquidity, , , , ) = nfpm.positions(tokenId);
+        require(liquidity > 0, "Migration: No liquidity in this LP");
+        
+        (amount0, amount1) = nfpm.decreaseLiquidity(
+                INonfungiblePositionManager.DecreaseLiquidityParams({
+                tokenId: tokenId,
+                liquidity: liquidity,
+                amount0Min: 0,
+                amount1Min: 0,
+                deadline: block.timestamp
+            })
+        );
+    }
+
+    function _collectAllFees(uint256 tokenId) private returns (uint256 amount0, uint256 amount1) {
+        (amount0, amount1) = nfpm.collect(
+            INonfungiblePositionManager.CollectParams({
+                tokenId: tokenId,
+                recipient: address(this),
+                amount0Max: type(uint128).max,
+                amount1Max: type(uint128).max
+            })
+        );
+    }
+
+    function _decreaseAllLiquidityAndCollectFees(uint256 tokenId) private returns (uint256 amount0, uint256 amount1) {
+        (uint256 amountToken0, uint256 amountToken1) = _decreaseAllLiquidity(tokenId);
+        (uint256 collectedAmount0, uint256 collectedAmount1) = _collectAllFees(tokenId);
+        
+        amount0 = amountToken0 + collectedAmount0;
+        amount1 = amountToken1 + collectedAmount1;
     }
 
     function _swap() private {
@@ -42,7 +74,7 @@ contract Migration is IERC721Receiver {
 
     function onERC721Received(address, address, uint256 tokenId, bytes calldata) external returns (bytes4) {
         require(isWEWEWETHPool(tokenId), "Invalid NFT: Not a WEWE-WETH pool token");
-        _decreaseAllLiquidityAndCollectFees();
+        (uint256 amountToken0, uint256 amountToken1) = _decreaseAllLiquidityAndCollectFees(tokenId);
         _swap();
         return IERC721Receiver.onERC721Received.selector;
     }

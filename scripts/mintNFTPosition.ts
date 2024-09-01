@@ -20,15 +20,11 @@ export async function main(owner: string, asset?: string) {
     if (poolAddress === ethers.ZeroAddress) {
         console.error("El pool no existe. Debes crear el pool primero.");
         return;
-    } else {
-        console.log("Pool address:", poolAddress);
     }
 
     const MintNftPositionFactory = await ethers.getContractFactory("MintNftPosition");
     const mintNftPosition = await MintNftPositionFactory.deploy(asset || WEWE_ADDRESS, poolAddress, NonFungiblePositionManager);
     await mintNftPosition.waitForDeployment();
-
-    console.log("MintNftPosition deployed to:", await mintNftPosition.getAddress());
 
     const amountToDeposit0 = ethers.parseEther("0.5");
     const amountToDeposit1 = ethers.parseEther("1000.0");
@@ -36,8 +32,8 @@ export async function main(owner: string, asset?: string) {
     const wethContract = await ethers.getContractAt("IERC20", WETH_ADDRESS, deployer);
     const weweContract = await ethers.getContractAt("IERC20", asset || WEWE_ADDRESS, deployer);
 
-    await wethContract.approve(await mintNftPosition.getAddress(), amountToDeposit0, deployer);
-    await weweContract.approve(await mintNftPosition.getAddress(), amountToDeposit1, deployer);
+    await wethContract.approve(await mintNftPosition.getAddress(), amountToDeposit0);
+    await weweContract.approve(await mintNftPosition.getAddress(), amountToDeposit1);
 
     const tx = await mintNftPosition.connect(deployer).mintNewPosition(amountToDeposit0, amountToDeposit1, owner);
     await tx.wait();
