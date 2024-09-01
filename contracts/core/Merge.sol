@@ -13,7 +13,7 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
     using SafeERC20 for IERC20;
 
     IERC20 public immutable wewe;
-    IERC20 public immutable vault;
+    IERC20 public immutable vultisig;
 
     uint256 public virtualWeweBalance;
     uint256 public weweBalance;
@@ -23,11 +23,11 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
 
     address private immutable _self;
 
-    constructor(address _wewe, address _vault) {
+    constructor(address _wewe, address _vultisig) {
         require(_wewe != address(0), "Wewe address cannot be 0");
-        require(_vault != address(0), "Vault address cannot be 0");
+        require(_vultisig != address(0), "Vultisig address cannot be 0");
         wewe = IERC20(_wewe);
-        vault = IERC20(_vault);
+        vultisig = IERC20(_vultisig);
         _self = address(this);
     }
 
@@ -51,7 +51,7 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
         // wewe in, vault out
         uint256 vaultOut = quoteVault(amount);
         wewe.safeTransferFrom(from, _self, amount);
-        vault.safeTransfer(from, vaultOut);
+        vultisig.safeTransfer(from, vaultOut);
         weweBalance += amount;
         vaultBalance -= vaultOut;
     }
@@ -65,7 +65,7 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
         uint256 amount,
         bytes calldata data
     ) external nonReentrant returns (bytes4) {
-        if (msg.sender != address(vault)) {
+        if (msg.sender != address(vultisig)) {
             revert InvalidTokenReceived();
         }
         if (lockedStatus != LockedStatus.TwoWay) {
@@ -77,7 +77,7 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
 
         // vault in, wewe out
         uint256 weweOut = quoteWewe(amount);
-        vault.safeTransferFrom(from, _self, amount);
+        vultisig.safeTransferFrom(from, _self, amount);
         wewe.safeTransfer(from, weweOut);
         vaultBalance += amount;
         weweBalance -= weweOut;
@@ -86,7 +86,7 @@ contract Merge is IMerge, IWeweReceiver, IERC1363Spender, Ownable, ReentrancyGua
     }
 
     function deposit(IERC20 token, uint256 amount) external onlyOwner {
-        if (token != wewe && token != vault) {
+        if (token != wewe && token != vultisig) {
             revert InvalidTokenReceived();
         }
 

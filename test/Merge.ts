@@ -25,7 +25,7 @@ describe("Merge Contract", function () {
     it("Should set the correct initial values", async function () {
       const { merge, vault, wewe } = await loadFixture(deployFixture);
       expect(await merge.wewe()).to.equal(await wewe.getAddress());
-      expect(await merge.vault()).to.equal(await vault.getAddress());
+      expect(await merge.vultisig()).to.equal(await vault.getAddress());
       expect(await merge.weweBalance()).to.equal(0);
       expect(await merge.vaultBalance()).to.equal(0);
       expect(await merge.lockedStatus()).to.equal(0);
