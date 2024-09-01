@@ -8,14 +8,15 @@ const INonfungiblePositionManager = require('@uniswap/v3-periphery/artifacts/con
 const UNI_V3_POS = '0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1' 
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 const WEWE_ADDRESS = "0x6b9bb36519538e0C073894E964E90172E1c0B41F";
-
+const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const SwapRouterAddress = "0x2626664c2603336E57B271c5C0b26F421741e481"; 
 
 describe("Migration contract", function () {
   async function deployFixture() {
     const [owner, otherAccount] = await ethers.getSigners();
     const Migration = await ethers.getContractFactory("Migration");
 
-    const migration = await Migration.deploy(UNI_V3_POS, WEWE_ADDRESS, WETH_ADDRESS);
+    const migration = await Migration.deploy(UNI_V3_POS, SwapRouterAddress, WEWE_ADDRESS, WETH_ADDRESS, USDC_ADDRESS);
 
     return { migration, owner, otherAccount };
   }
@@ -100,17 +101,18 @@ describe("Migration contract", function () {
       expect(position.liquidity).to.equal(0);
 
       // Assuming migration contract holds the tokens, check balance of tokens inside the contract
-      const token0 = await migration.WEWE();
-      const token1 = await migration.WETH();
+      const wewe = await migration.WEWE();
+      const weth = await migration.WETH();
       
-      const token0Contract = new ethers.Contract(token0, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
-      const token1Contract = new ethers.Contract(token1, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
+      const token0Contract = new ethers.Contract(wewe, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
+
+      const weweBalance = await token0Contract.balanceOf(migration.getAddress());
+
+      const usdcContract = new ethers.Contract(USDC_ADDRESS, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
+      const usdcBalance = await usdcContract.balanceOf(migration.getAddress());
       
-      const token0Balance = await token0Contract.balanceOf(migration.getAddress());
-      const token1Balance = await token1Contract.balanceOf(migration.getAddress());
-      
-      expect(token0Balance).to.be.greaterThan(0);
-      expect(token1Balance).to.be.greaterThan(0);
+      expect(weweBalance).to.be.greaterThan(0);
+      expect(usdcBalance).to.be.greaterThan(0);
     });
   });
 });
