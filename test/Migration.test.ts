@@ -47,11 +47,10 @@ describe("Migration contract", function () {
     it("Should revert if deployed with a zero address", async function () {
       const Migration = await ethers.getContractFactory("Migration");
       await expect(Migration.deploy(ethers.ZeroAddress, SWAP_ROUTER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith("Migration: Invalid NonfungiblePositionManager address");
-      await expect(Migration.deploy(UNI_V3_POS, ethers.ZeroAddress, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith("_swapRouter: Invalid SwapRouter address");
+      await expect(Migration.deploy(UNI_V3_POS, ethers.ZeroAddress, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith("Migration: Invalid SwapRouter address");
     });
     it("Should be in a deterministic state of the blockchain", async function () {
       const latest = await ethers.provider.getBlock("latest")
-      console.log(latest)
       expect(Number(latest?.number)).is.greaterThanOrEqual(Number(DETERMINISTIC_MIN_HEIGHT))
     })
   })
@@ -65,7 +64,7 @@ describe("Migration contract", function () {
       // Attempt to transfer the NFT to the migration contract and expect it to revert with the specified message
       await expect(
           positionsContract.safeTransferFrom(owner.address, await migration.getAddress(), tokenId)
-      ).to.be.revertedWith("Invalid NFT: Not a WEWE-WETH pool token");
+      ).to.be.revertedWith("Invalid NFT: Does not have the correct token");
     });  
     it("Should accept ERC721 for WEWE/WETH pair", async function () {
       const { migration, otherAccount } = await loadFixture(deployFixture)
