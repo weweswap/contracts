@@ -125,6 +125,17 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
         delete zapInParams;
     }
 
+    function collectFees() public {
+        // 1. Collect all fees from every band
+        (uint256 narrowAmount0, uint256 narrowAmount1) = _collectBandFees(BandType.Narrow);
+        (uint256 midAmount0, uint256 midAmount1) = _collectBandFees(BandType.Mid);
+        (uint256 wideAmount0, uint256 wideAmount1) = _collectBandFees(BandType.Wide);
+
+        // 2. Swap all fees to USDC
+        // Add all amounts
+        
+    }
+
     function withdraw(BandType bandType) external nonReentrant {
         // Withdraw liquidity from a band
         uint128 liquidity = liquidities[msg.sender][bandType];
@@ -216,5 +227,23 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
         }
 
         return minValue;
+    }
+
+    function _collectBandFees(BandType bandType) private returns (uint256 amount0, uint amount1) {
+        uint256 tokenId = bandTokenId[bandType];
+        if (tokenId == 0) {
+            revert InvalidNFT();
+        }
+
+        (amount0, amount1) = nfpm.collect(
+            INonfungiblePositionManager.CollectParams({
+                tokenId: tokenId,
+                recipient: address(this),
+                amount0Max: type(uint128).max,
+                amount1Max: type(uint128).max
+            })
+        );
+        // TODO: Define and emit event
+        // emit FeesCollected(bandType, amount0, amount1)
     }
 }
