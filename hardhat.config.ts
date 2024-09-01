@@ -1,5 +1,8 @@
-import { HardhatUserConfig, task } from "hardhat/config";
+import { HardhatUserConfig, task, vars } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import dotenv from "dotenv";
+
+dotenv.config()
 
 task("list-positions", "List the positions for a given owner")
   .addParam("owner", "The address of the owner")
@@ -24,7 +27,6 @@ task("mint-nft-position", "Mints a new NFT position on Uniswap")
     await main(taskArgs.owner, taskArgs.asset);
   });
 
-
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.19",
@@ -39,16 +41,17 @@ const config: HardhatUserConfig = {
   defaultNetwork: "localhost",
   networks: {
     hardhat: {
-      chains: { // Fix local hardfork from BASE mainnet
+      forking: {
+        url: process.env.FORKING_URL as string,
+        blockNumber: 19197423,
+        enabled: true,
+      },
+      chains: {
         8453: {
           hardforkHistory: {
             london: 0
           }
         }
-      },
-      forking: {
-        url: process.env.FORKING_URL as string,
-        blockNumber: 18720627,
       },
     }
   }
