@@ -23,7 +23,7 @@ contract Migration is IERC721Receiver {
 
     constructor(address _nfpm, address _swapRouter, address _WEWE, address _WETH, address _USDC) {
         require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
-        require(_nfpm != address(0), "_swapRouter: Invalid SwapRouter address");
+        require(_swapRouter != address(0), "_swapRouter: Invalid SwapRouter address");
         swapRouter = ISwapRouter02(_swapRouter);
         nfpm = INonfungiblePositionManager(_nfpm);
         WEWE = _WEWE;
@@ -31,11 +31,11 @@ contract Migration is IERC721Receiver {
         USDC = _USDC;
     }
 
-    function _decreaseAllLiquidity(uint256 tokenId) private returns (uint256 amount0, uint256 amount1) {
+    function _decreaseAllLiquidity(uint256 tokenId) private {
         (, , , , , , , uint128 liquidity, , , , ) = nfpm.positions(tokenId);
         require(liquidity > 0, "Migration: No liquidity in this LP");
         
-        (amount0, amount1) = nfpm.decreaseLiquidity(
+        nfpm.decreaseLiquidity(
                 INonfungiblePositionManager.DecreaseLiquidityParams({
                 tokenId: tokenId,
                 liquidity: liquidity,
@@ -57,12 +57,9 @@ contract Migration is IERC721Receiver {
         );
     }
 
-    function _decreaseAllLiquidityAndCollectFees(uint256 tokenId) private returns (uint256 amount0, uint256 amount1) {
+    function _decreaseAllLiquidityAndCollectFees(uint256 tokenId) private returns (uint256 collectedAmount0, uint256 collectedAmount1) {
         _decreaseAllLiquidity(tokenId);
-        (uint256 collectedAmount0, uint256 collectedAmount1) = _collectAllFees(tokenId);
-        
-        amount0 = collectedAmount0;
-        amount1 = collectedAmount1;
+        (collectedAmount0, collectedAmount1) = _collectAllFees(tokenId);
     }
 
     function _swap(address tokenIn, uint256 amountIn) private returns (uint256 amountOut) {
