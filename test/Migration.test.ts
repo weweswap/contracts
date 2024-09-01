@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { main as mintNewPosition } from "../scripts/mintNFTPosition";
 import { main as listPositions } from "../scripts/listPositions";
-import { DETERMINISTIC_MIN_HEIGHT, DETERMINISTIC_OWED_TOKEN0_AMOUNT, DETERMINISTIC_OWED_TOKEN1_AMOUNT, DETERMINISTIC_TOKEN0_AMOUNT, DETERMINISTIC_TOKEN1_AMOUNT, DETERMINISTIC_TOKENID, DETERMINISTIC_WEWE_WETH_WALLET } from "./constants";
+import { DETERMINISTIC_FEE0_AMOUNT, DETERMINISTIC_FEE1_AMOUNT, DETERMINISTIC_MIN_HEIGHT, DETERMINISTIC_OWED_TOKEN0_AMOUNT, DETERMINISTIC_OWED_TOKEN1_AMOUNT, DETERMINISTIC_TOKENID, DETERMINISTIC_WEWE_WETH_WALLET, DETERMINSITIC_LIQUIDITY } from "./constants";
 
 const INonfungiblePositionManager = require('@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json').abi;
 const UNI_V3_POS = '0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1' 
@@ -40,7 +40,8 @@ describe("Migration contract", function () {
     it("Should deploy the contract with correct addresses", async function () {
       const { migration } = await loadFixture(deployFixture);
       expect(await migration.nfpm()).to.equal(UNI_V3_POS);
-      expect(await migration.swapRouter()).to.equal(SWAP_ROUTER_ADDRESS);
+      expect(await migration.swapRouter()).to.equal(SWAP_ROUTER_ADDRESS)
+      expect(await migration.tokenToMigrate()).to.equal(WEWE_ADDRESS)
       expect(await migration.usdc()).to.equal(USDC_ADDRESS);
     });
     it("Should revert if deployed with a zero address", async function () {
@@ -113,14 +114,18 @@ describe("Migration contract", function () {
       // Ensure the tokenId is deterministic and exists
       const positions = await listPositions(accountWithFees.address)
       const position = positions.find(position => position.id === DETERMINISTIC_TOKENID)
+      if (!position) {
+        throw new Error("Position with the deterministic token ID not found.");
+      }
       const tokenId = position?.id
       expect(tokenId).to.not.be.undefined
 
       // Verify balances before the transfer
-      expect(position?.token0).to.equal(DETERMINISTIC_TOKEN0_AMOUNT)
-      expect(position?.token1).to.equal(DETERMINISTIC_TOKEN1_AMOUNT)
-      expect(position?.tokensOwed0).to.equal(DETERMINISTIC_OWED_TOKEN0_AMOUNT)
-      expect(position?.tokensOwed1).to.equal(DETERMINISTIC_OWED_TOKEN1_AMOUNT)
+      expect(position.liquidity).to.equal(DETERMINSITIC_LIQUIDITY)
+      expect(position.feeGrowthInside0LastX128).to.equal(DETERMINISTIC_FEE0_AMOUNT)
+      expect(position.feeGrowthInside1LastX128).to.equal(DETERMINISTIC_FEE1_AMOUNT)
+      expect(position.tokensOwed0).to.equal(DETERMINISTIC_OWED_TOKEN0_AMOUNT)
+      expect(position.tokensOwed1).to.equal(DETERMINISTIC_OWED_TOKEN1_AMOUNT)
 
       const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, accountWithFees)
 
@@ -140,14 +145,15 @@ describe("Migration contract", function () {
       expect(lpPosition.liquidity).to.equal(0);
 
       // Assuming migration contract holds the tokens, check balance of tokens inside the contract
-      // const wewe = await migration.tokenToMigrate();
+      const wewe = await migration.tokenToMigrate();
+      const token0Contract = new ethers.Contract(wewe, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
       
-      // const token0Contract = new ethers.Contract(wewe, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
+      const weweBalance = await token0Contract.balanceOf(migration.getAddress());
+      console.log(weweBalance)
 
-      // const weweBalance = await token0Contract.balanceOf(migration.getAddress());
-
-      // const usdcContract = new ethers.Contract(USDC_ADDRESS, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
-      // const usdcBalance = await usdcContract.balanceOf(migration.getAddress());
+      const usdcContract = new ethers.Contract(USDC_ADDRESS, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
+      const usdcBalance = await usdcContract.balanceOf(migration.getAddress());
+      console.log(usdcBalance)
       
       // expect(weweBalance).to.be.greaterThan(0);
       // expect(usdcBalance).to.be.greaterThan(0);
