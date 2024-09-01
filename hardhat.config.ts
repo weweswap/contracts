@@ -45,7 +45,11 @@ const config: HardhatUserConfig = {
             london: 0
           }
         }
-      }
+      },
+      forking: {
+        url: process.env.FORKING_URL as string,
+        blockNumber: 18720627,
+      },
     }
   }
 };
