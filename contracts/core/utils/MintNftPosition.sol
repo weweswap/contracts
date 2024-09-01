@@ -97,13 +97,8 @@ contract MintNftPosition {
                 deadline: block.timestamp + 365 days
             });
 
-        console.log('calling mint...');
-
         // Note that the pool defined by WEWE/WETH and fee tier 0.3% must already be created and initialized in order to mint
         (tokenId, liquidity, amount0, amount1) = nonfungiblePositionManager.mint(params);
-
-        console.log('position minted...');
-        console.log(tokenId);
 
         // Remove allowance and refund in both assets.
         if (amount0 < amount0ToMint) {
