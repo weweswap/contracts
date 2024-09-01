@@ -7,7 +7,6 @@ import { DETERMINISTIC_MIN_HEIGHT, DETERMINISTIC_OWED_TOKEN0_AMOUNT, DETERMINIST
 
 const INonfungiblePositionManager = require('@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json').abi;
 const UNI_V3_POS = '0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1' 
-const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 const WEWE_ADDRESS = "0x6b9bb36519538e0C073894E964E90172E1c0B41F";
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const SWAP_ROUTER_ADDRESS = "0x2626664c2603336E57B271c5C0b26F421741e481";
@@ -33,7 +32,7 @@ describe("Migration contract", function () {
     await transaction.wait()
     const Migration = await ethers.getContractFactory("Migration");
 
-    const migration = await Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, WEWE_ADDRESS, WETH_ADDRESS, USDC_ADDRESS);
+    const migration = await Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000);
 
     return { migration, owner, otherAccount, accountWithFees };
   }
@@ -42,14 +41,12 @@ describe("Migration contract", function () {
       const { migration } = await loadFixture(deployFixture);
       expect(await migration.nfpm()).to.equal(UNI_V3_POS);
       expect(await migration.swapRouter()).to.equal(SWAP_ROUTER_ADDRESS);
-      expect(await migration.WEWE()).to.equal(WEWE_ADDRESS);
-      expect(await migration.WETH()).to.equal(WETH_ADDRESS);
-      expect(await migration.USDC()).to.equal(USDC_ADDRESS);
+      expect(await migration.usdc()).to.equal(USDC_ADDRESS);
     });
     it("Should revert if deployed with a zero address", async function () {
       const Migration = await ethers.getContractFactory("Migration");
-      await expect(Migration.deploy(ethers.ZeroAddress, SWAP_ROUTER_ADDRESS, WEWE_ADDRESS, WETH_ADDRESS, USDC_ADDRESS)).to.be.revertedWith("Migration: Invalid NonfungiblePositionManager address");
-      await expect(Migration.deploy(UNI_V3_POS, ethers.ZeroAddress, WEWE_ADDRESS, WETH_ADDRESS, USDC_ADDRESS)).to.be.revertedWith("_swapRouter: Invalid SwapRouter address");
+      await expect(Migration.deploy(ethers.ZeroAddress, SWAP_ROUTER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith("Migration: Invalid NonfungiblePositionManager address");
+      await expect(Migration.deploy(UNI_V3_POS, ethers.ZeroAddress, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith("_swapRouter: Invalid SwapRouter address");
     });
     it("Should be in a deterministic state of the blockchain", async function () {
       const latest = await ethers.provider.getBlock("latest")
@@ -142,8 +139,8 @@ describe("Migration contract", function () {
       const lpPosition = await positionsContract.positions(tokenId);
       expect(lpPosition.liquidity).to.equal(0);
 
-      // // Assuming migration contract holds the tokens, check balance of tokens inside the contract
-      // const wewe = await migration.WEWE();
+      // Assuming migration contract holds the tokens, check balance of tokens inside the contract
+      // const wewe = await migration.tokenToMigrate();
       
       // const token0Contract = new ethers.Contract(wewe, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
 
