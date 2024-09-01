@@ -53,17 +53,12 @@ contract MintNftPosition {
         uint256 amount1ToMint = amountToDeposit1;
 
         // transfer tokens to contract
-        console.log('WETH Transfering..');
         TransferHelper.safeTransferFrom(WETH, msg.sender, address(this), amount0ToMint);
-        console.log('WETH Transfered');
         TransferHelper.safeTransferFrom(WEWE, msg.sender, address(this), amount1ToMint);
 
         // Approve the position manager
         TransferHelper.safeApprove(WETH, address(nonfungiblePositionManager), amount0ToMint);
         TransferHelper.safeApprove(WEWE, address(nonfungiblePositionManager), amount1ToMint);
-
-        console.log('Balance del contrato despues de transferir WETH:', IERC20(WETH).balanceOf(address(this)));
-        console.log('Balance del contrato despues de transferir WEWE:', IERC20(WEWE).balanceOf(address(this)));
 
         // Get the pool address
         address pool = POOL_ADDRESS;

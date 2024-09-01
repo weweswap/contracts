@@ -174,6 +174,10 @@ contract Migration is IERC721Receiver {
         
         _swap(tokenIn, amountIn);
 
+        // TODO: Add sent to LM contract
+        // TODO: Receive ERC20 from LM representing pool ownership
+        // TODO: Send the ERC20 token to user
+
         return IERC721Receiver.onERC721Received.selector;
     }
 }

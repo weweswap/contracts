@@ -18,7 +18,7 @@ export async function main(owner: string, asset?: string) {
     
     const poolAddress = await UniswapFactory.getPool(WETH_ADDRESS, asset || WEWE_ADDRESS, 10000);
     if (poolAddress === ethers.ZeroAddress) {
-        console.error("El pool no existe. Debes crear el pool primero.");
+        console.error("The pool does not exist. You must create the pool first");
         return;
     }
 
