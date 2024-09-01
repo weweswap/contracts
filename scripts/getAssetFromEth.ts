@@ -20,14 +20,14 @@ export async function main(owner: string, asset?: string) {
 
     /* Connect to WETH and wrap some eth  */
     const WETH = new ethers.Contract(WETH_ADDRESS, ercAbi, signers[0]);
-    const deposit = await WETH.deposit({ value: ethers.parseEther("1.5") });
+    const deposit = await WETH.deposit({ value: ethers.parseEther("2.5") });
     await deposit.wait();
 
     /* Approve the swapper contract to spend WETH for me */
-    await WETH.approve(await simpleSwap.getAddress(), ethers.parseEther("1"));
+    await WETH.approve(await simpleSwap.getAddress(), ethers.parseEther("2"));
 
     /* Execute the swap */
-    const amountIn = ethers.parseEther("1"); 
+    const amountIn = ethers.parseEther("2"); 
     const swap = await simpleSwap.swapWETHForWEWE(amountIn, owner, { gasLimit: 30000000 });
     await swap.wait(); 
 }

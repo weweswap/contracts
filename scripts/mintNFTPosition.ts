@@ -26,8 +26,8 @@ export async function main(owner: string, asset?: string) {
     const mintNftPosition = await MintNftPositionFactory.deploy(asset || WEWE_ADDRESS, poolAddress, NonFungiblePositionManager);
     await mintNftPosition.waitForDeployment();
 
-    const amountToDeposit0 = ethers.parseEther("0.5");
-    const amountToDeposit1 = ethers.parseEther("1000.0");
+    const amountToDeposit0 = ethers.parseEther("0.1");
+    const amountToDeposit1 = ethers.parseEther("35000");
 
     const wethContract = await ethers.getContractAt("IERC20", WETH_ADDRESS, deployer);
     const weweContract = await ethers.getContractAt("IERC20", asset || WEWE_ADDRESS, deployer);

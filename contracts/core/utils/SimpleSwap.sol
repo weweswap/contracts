@@ -6,7 +6,7 @@ import "hardhat/console.sol";
 
 import { IV3SwapRouter } from "../../univ3-0.8/IV3SwapRouter.sol";
 import { ISwapRouter02 } from "../../univ3-0.8/ISwapRouter02.sol";
-import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
+import { TransferHelper } from "../../univ3-0.8/TransferHelper.sol";
 
 contract SimpleSwap {
     ISwapRouter02 public immutable swapRouter;
