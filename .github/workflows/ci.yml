@@ -34,7 +34,7 @@ jobs:
         run: nohup npx hardhat node > hardhat-node.log 2>&1 &
 
       - name: Wait for Hardhat node to be ready
-        run: npx wait-on tcp:localhost:8545
+        run: npx wait-on tcp:127.0.0.1:8545
 
       - name: Run Hardhat tests
         env:
