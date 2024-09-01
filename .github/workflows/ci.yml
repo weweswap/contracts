@@ -28,6 +28,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Start Hardhat node
+        env:
+          FORKING_URL: ${{ secrets.FORKING_URL }}
+        run: npx hardhat node
+
       - name: Run Hardhat tests
         env:
           FORKING_URL: ${{ secrets.FORKING_URL }}
