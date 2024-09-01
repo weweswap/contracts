@@ -4,7 +4,6 @@ import { ethers } from "hardhat";
 import { main as mintNewPosition } from "../scripts/mintNFTPosition";
 import { main as listPositions } from "../scripts/listPositions";
 import { main as setPoolConfiguration } from "../scripts/setPoolConfiguration";
-import { main as getPoolConfiguration } from "../scripts/getPoolConfiguration";
 import { main as deployTokenLiquidityManager } from "../scripts/deployTokenLiquidityManager";
 import { DETERMINISTIC_FEE0_AMOUNT, DETERMINISTIC_FEE1_AMOUNT, DETERMINISTIC_MIN_HEIGHT, DETERMINISTIC_OWED_TOKEN0_AMOUNT, DETERMINISTIC_OWED_TOKEN1_AMOUNT, DETERMINISTIC_TOKENID, DETERMINISTIC_WEWE_WETH_WALLET, DETERMINSITIC_LIQUIDITY } from "./constants";
 
@@ -184,12 +183,5 @@ describe("Migration contract", function () {
       expect(weweBalance).to.equal(DETERMINISTIC_OWED_TOKEN1_AMOUNT);
       expect(usdcBalance).to.equal(DETERMINISTIC_OWED_TOKEN0_AMOUNT);
     });
-
-    it('Should set Pools configuration', async () => {
-      const { liquidityManagerFactory } = await loadFixture(deployFixture)
-      console.log(await getPoolConfiguration(await liquidityManagerFactory.getAddress(), 0))
-      console.log(await getPoolConfiguration(await liquidityManagerFactory.getAddress(), 1))
-      console.log(await getPoolConfiguration(await liquidityManagerFactory.getAddress(), 2))
-    })
   });
 });
