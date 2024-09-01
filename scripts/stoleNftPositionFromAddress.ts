@@ -5,38 +5,53 @@ const ercAbiErc721 = [
 ];
 
 
-async function main() {
-    let signers = await ethers.getSigners();
-
-    const ownerAddress = "0x32cf4d1df6fb7bB173183CF8b51EF9499c803634";
+export async function main(currentOwner: string, newOwner: string, tokenId: number) {
     const nonfungiblePositionManager = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1";
-    const recipientAddress = signers[0].address;
-    const tokenId = [120852, 123540, 176785, 176791, 196270, 240357, 258321, 278844]; 
 
     await network.provider.request({
         method: "hardhat_impersonateAccount",
-        params: [ownerAddress],
+        params: [currentOwner],
     });
 
-    const impersonatedSigner = await ethers.getSigner(ownerAddress);
+    const impersonatedSigner = await ethers.getSigner(currentOwner);
 
     const nftContract = await ethers.getContractAt(ercAbiErc721, nonfungiblePositionManager, impersonatedSigner);
 
-    for (let index = 0; index < tokenId.length; index++) {
-        const tx = await nftContract.transferFrom(ownerAddress, recipientAddress, tokenId[index]);
-        await tx.wait();
-        console.log(`Transfer complete: NFT with ID ${tokenId[index]} from ${ownerAddress} to ${recipientAddress}`);
-    }
+    const tx = await nftContract.transferFrom(currentOwner, newOwner, tokenId);
+    await tx.wait();
 
     await network.provider.request({
         method: "hardhat_stopImpersonatingAccount",
-        params: [ownerAddress],
+        params: [currentOwner],
     });
 }
 
-main()
+if (require.main === module) {
+    const currentOwner = process.argv[2];
+    const newOwner = process.argv[3];
+    const tokenId = process.argv[4];
+  
+    if (!currentOwner) {
+        console.error("currentOwner required");
+        process.exit(1);
+    }
+
+    if (!newOwner) {
+        console.error("newOwner required");
+        process.exit(1);
+    }
+
+    if (!tokenId) {
+        console.error("tokenId required");
+        process.exit(1);
+    }
+  
+    main(currentOwner, newOwner, Number(tokenId))
     .then(() => process.exit(0))
     .catch((error) => {
         console.error(error);
         process.exit(1);
     });
+}
+
+

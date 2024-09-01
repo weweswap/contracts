@@ -12,26 +12,31 @@ const ERC20_ABI = [
 ]
 
 type PositionNFT = {
-  nonce: number
+  nonce: BigInt
   operator: string
   token0: string
   token1: string
-  fee: number
-  tickLower: number
-  tickUpper: number
-  liquidity: number
-  feeGrowthInside0LastX128: number
-  feeGrowthInside1LastX128: number
-  tokensOwed0: number
-  tokensOwed1: number
+  fee: BigInt
+  tickLower: BigInt
+  tickUpper: BigInt
+  liquidity: BigInt
+  feeGrowthInside0LastX128: BigInt
+  feeGrowthInside1LastX128: BigInt
+  tokensOwed0: BigInt
+  tokensOwed1: BigInt
 }
 
 type PositionResume = {
-  id: number
+  id: BigInt
   pool: string
-  feeBps: number
-  minTick: number
-  maxTick: number
+  feeBps: BigInt
+  minTick: BigInt
+  maxTick: BigInt
+  liquidity: BigInt
+  feeGrowthInside0LastX128: BigInt,
+  feeGrowthInside1LastX128: BigInt,
+  tokensOwed0: BigInt,
+  tokensOwed1: BigInt
 }
 
 export async function main(owner: string ) {
@@ -45,7 +50,7 @@ export async function main(owner: string ) {
     tasks.push(positionsContract.tokenOfOwnerByIndex(owner, i))
   }
 
-  const positionsID: number[] = await Promise.all(tasks)
+  const positionsID: BigInt[] = await Promise.all(tasks)
 
   const positions: PositionResume[] = await Promise.all(
     positionsID.map(async (position, index) => {
@@ -69,11 +74,16 @@ export async function main(owner: string ) {
       const token1Contract = new ethers.Contract(nft.token1, ERC20_ABI, signers[0])
 
       return {
-        id: Number(positionsID[index]),
+        id: positionsID[index],
         pool: `${await token0Contract.symbol()}/${ await token1Contract.symbol()}`,
-        minTick: Number(nft.tickLower),
-        maxTick: Number(nft.tickUpper),
-        feeBps: Number(nft.fee),
+        minTick: nft.tickLower,
+        maxTick: nft.tickUpper,
+        feeBps: nft.fee,
+        liquidity: data[7],
+        feeGrowthInside0LastX128: data[8],
+        feeGrowthInside1LastX128: data[9],
+        tokensOwed0: nft.tokensOwed0,
+        tokensOwed1: nft.tokensOwed1,
       }
     })
   )
@@ -87,7 +97,7 @@ if (require.main === module) {
   const owner = process.argv[2];
 
   if (!owner) {
-    console.error("Se requiere la dirección del propietario como parámetro.");
+    console.error("The owner parameter is mandatory");
     process.exit(1);
   }
 
