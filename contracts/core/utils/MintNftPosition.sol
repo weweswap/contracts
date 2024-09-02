@@ -1,14 +1,11 @@
-
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.19;
 pragma abicoder v2;
 
-import "hardhat/console.sol";
-
-import '../../univ3-0.8/TickMath.sol';
-import '../../univ3-0.8/TransferHelper.sol';
-import '../../univ3-0.8/INonfungiblePositionManager.sol';
-import '../../univ3-0.8/IUniswapV3Pool.sol';
+import "../../univ3-0.8/TickMath.sol";
+import "../../univ3-0.8/TransferHelper.sol";
+import "../../univ3-0.8/INonfungiblePositionManager.sol";
+import "../../univ3-0.8/IUniswapV3Pool.sol";
 
 contract MintNftPosition {
     INonfungiblePositionManager public immutable nonfungiblePositionManager;
@@ -38,15 +35,11 @@ contract MintNftPosition {
     /// @return liquidity The amount of liquidity for the position
     /// @return amount0 The amount of token0
     /// @return amount1 The amount of token1
-    function mintNewPosition(uint256 amountToDeposit0, uint256 amountToDeposit1, address owner)
-        external
-        returns (
-            uint256 tokenId,
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        )
-    {
+    function mintNewPosition(
+        uint256 amountToDeposit0,
+        uint256 amountToDeposit1,
+        address owner
+    ) external returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1) {
         // For this example, we will provide equal amounts of liquidity in both assets.
         // Providing liquidity in both assets means liquidity will be earning fees and is considered in-range.
         uint256 amount0ToMint = amountToDeposit0;
@@ -77,20 +70,19 @@ contract MintNftPosition {
 
         // The values for tickLower and tickUpper may not work for all tick spacings.
         // Setting amount0Min and amount1Min to 0 is unsafe.
-        INonfungiblePositionManager.MintParams memory params =
-            INonfungiblePositionManager.MintParams({
-                token0: WETH,
-                token1: WEWE,
-                fee: poolFee,
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                amount0Desired: amount0ToMint,
-                amount1Desired: amount1ToMint,
-                amount0Min: 0,
-                amount1Min: 0,
-                recipient: owner,
-                deadline: block.timestamp + 365 days
-            });
+        INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
+            token0: WETH,
+            token1: WEWE,
+            fee: poolFee,
+            tickLower: tickLower,
+            tickUpper: tickUpper,
+            amount0Desired: amount0ToMint,
+            amount1Desired: amount1ToMint,
+            amount0Min: 0,
+            amount1Min: 0,
+            recipient: owner,
+            deadline: block.timestamp + 365 days
+        });
 
         // Note that the pool defined by WEWE/WETH and fee tier 0.3% must already be created and initialized in order to mint
         (tokenId, liquidity, amount0, amount1) = nonfungiblePositionManager.mint(params);

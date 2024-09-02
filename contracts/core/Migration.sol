@@ -3,27 +3,25 @@ pragma solidity ^0.8.19;
 
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {INonfungiblePositionManager} from "../univ3-0.8/INonfungiblePositionManager.sol";
-import { IV3SwapRouter } from "../univ3-0.8/IV3SwapRouter.sol";
-import { ISwapRouter02 } from "../univ3-0.8/ISwapRouter02.sol";
-import { TransferHelper } from "../univ3-0.8/TransferHelper.sol";
-
-import "hardhat/console.sol";
+import {IV3SwapRouter} from "../univ3-0.8/IV3SwapRouter.sol";
+import {ISwapRouter02} from "../univ3-0.8/ISwapRouter02.sol";
+import {TransferHelper} from "../univ3-0.8/TransferHelper.sol";
 
 /// @title Migration Contract for Uniswap v3 Positions
 /// @notice This contract is used to migrate liquidity positions from Uniswap v3, decrease liquidity, collect fees, change the unselected token to USDC and deposit all liquidity in a WEWESwap protocol liquidityManager.
 contract Migration is IERC721Receiver {
     /// @notice Address of the Uniswap NonfungiblePositionManager contract
     INonfungiblePositionManager public immutable nfpm;
-    
+
     /// @notice Address of the Uniswap SwapRouter02 contract
     ISwapRouter02 public immutable swapRouter;
-    
+
     /// @notice Address of the token to be migrated
     address public immutable tokenToMigrate;
-    
+
     /// @notice Address of the USDC token
     address public immutable usdc;
-    
+
     /// @notice Fee tier used in the Uniswap SwapRouter02 contract
     uint24 public immutable feeTier;
 
@@ -33,13 +31,7 @@ contract Migration is IERC721Receiver {
     /// @param _tokenToMigrate Address of the token to be migrated
     /// @param _usdc Address of the USDC token
     /// @param _feeTier Fee tier for the Uniswap swap
-    constructor(
-        address _nfpm,
-        address _swapRouter,
-        address _tokenToMigrate,
-        address _usdc,
-        uint24 _feeTier
-    ) {
+    constructor(address _nfpm, address _swapRouter, address _tokenToMigrate, address _usdc, uint24 _feeTier) {
         require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
         require(_swapRouter != address(0), "Migration: Invalid SwapRouter address");
         swapRouter = ISwapRouter02(_swapRouter);
@@ -55,7 +47,7 @@ contract Migration is IERC721Receiver {
     function _decreaseAllLiquidity(uint256 tokenId) private {
         (, , , , , , , uint128 liquidity, , , , ) = nfpm.positions(tokenId);
         require(liquidity > 0, "Migration: No liquidity in this LP");
-        
+
         nfpm.decreaseLiquidity(
             INonfungiblePositionManager.DecreaseLiquidityParams({
                 tokenId: tokenId,
@@ -88,7 +80,9 @@ contract Migration is IERC721Receiver {
     /// @param tokenId The ID of the token representing the liquidity position
     /// @return collectedAmount0 The amount of token0 collected
     /// @return collectedAmount1 The amount of token1 collected
-    function _decreaseAllLiquidityAndCollectFees(uint256 tokenId) private returns (uint256 collectedAmount0, uint256 collectedAmount1) {
+    function _decreaseAllLiquidityAndCollectFees(
+        uint256 tokenId
+    ) private returns (uint256 collectedAmount0, uint256 collectedAmount1) {
         _decreaseAllLiquidity(tokenId);
         (collectedAmount0, collectedAmount1) = _collectAllLiquidity(tokenId);
     }
@@ -101,18 +95,17 @@ contract Migration is IERC721Receiver {
     function _swap(address tokenIn, uint256 amountIn) private returns (uint256 amountOut) {
         TransferHelper.safeApprove(tokenIn, address(swapRouter), amountIn);
 
-        IV3SwapRouter.ExactInputSingleParams memory params =
-            IV3SwapRouter.ExactInputSingleParams({
-                tokenIn: tokenIn,
-                tokenOut: usdc,
-                fee: feeTier,
-                recipient: address(this),
-                amountIn: amountIn,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            });
+        IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter.ExactInputSingleParams({
+            tokenIn: tokenIn,
+            tokenOut: usdc,
+            fee: feeTier,
+            recipient: address(this),
+            amountIn: amountIn,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0
+        });
         amountOut = swapRouter.exactInputSingle(params);
-        return amountOut; 
+        return amountOut;
     }
 
     /// @notice Retrieves the tokens associated with a given liquidity position
@@ -168,10 +161,10 @@ contract Migration is IERC721Receiver {
     ) external override returns (bytes4) {
         (address token0, address token1) = _getPositionTokens(tokenId);
         require(_isValidNftPosition(token0, token1), "Invalid NFT: Does not have the correct token");
-        
+
         (uint256 amountToken0, uint256 amountToken1) = _decreaseAllLiquidityAndCollectFees(tokenId);
         (address tokenIn, uint256 amountIn) = _getTokenAndAmountToSwap(token0, token1, amountToken0, amountToken1);
-        
+
         _swap(tokenIn, amountIn);
 
         // TODO: Add sent to LM contract

@@ -16,6 +16,10 @@
     "dotenv": "^16.4.5"
   },
   "scripts": {
-    "listPositions": "npx hardhat --network localhost run ./scripts/listPositions.ts"
+    "listPositions": "npx hardhat --network localhost run ./scripts/listPositions.ts",
+    "format:write": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.ts'",
+    "format:check": "prettier --check 'contracts/**/*.sol' 'scripts/**/*.ts'",
+    "prettier": "npm run format:check --all",
+    "prettier:fix": "npm run format:write --all"
   }
 }
