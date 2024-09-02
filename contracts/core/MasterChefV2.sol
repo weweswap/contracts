@@ -3,14 +3,15 @@
 pragma solidity 0.6.12; // TODO: Update to 0.8.19
 pragma experimental ABIEncoderV2;
 
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+// import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
+// import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
+// import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 // import "./libraries/SignedSafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "./interfaces/IRewarder.sol";
-import "./interfaces/IMasterChef.sol";
+import "../interfaces/IRewarder.sol";
+import "../interfaces/IMigratorChef.sol";
 
 // interface IMigratorChef {
 //     // Take the current LP token address and return the new LP token address.
@@ -23,10 +24,10 @@ import "./interfaces/IMasterChef.sol";
 /// The idea for this MasterChef V2 (MCV2) contract is therefore to be the owner of a dummy token
 /// that is deposited into the MasterChef V1 (MCV1) contract.
 /// The allocation point for this pool on MCV1 is the total allocation point for all pools that receive double incentives.
-contract MasterChefV2 is BoringOwnable, BoringBatchable {
+contract MasterChefV2 {
     using SafeMath for uint256;  // using BoringMath for uint256;
     // using BoringMath128 for uint128;
-    // using BoringERC20 for IERC20;
+    using SafeERC20 for IERC20;
     using SignedSafeMath for int256;
 
     /// @notice Info of each MCV2 user.

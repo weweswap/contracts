@@ -1,5 +1,11 @@
 {
   "name": "hardhat-project",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "lint": "prettier --check . && hardhat prettier-check",
+    "lint:fix": "prettier --write . && hardhat prettier"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@openzeppelin/contracts": "^4.9.6",
