@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12; // TODO: Update to 0.8.19
+pragma solidity 0.8.19; // TODO: Update to 0.8.19
 pragma experimental ABIEncoderV2;
 
 // import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
@@ -10,8 +10,11 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IRewarder.sol";
 import "../interfaces/IMigratorChef.sol";
+import "../interfaces/IMasterChef.sol";
 
 // interface IMigratorChef {
 //     // Take the current LP token address and return the new LP token address.
@@ -24,9 +27,13 @@ import "../interfaces/IMigratorChef.sol";
 /// The idea for this MasterChef V2 (MCV2) contract is therefore to be the owner of a dummy token
 /// that is deposited into the MasterChef V1 (MCV1) contract.
 /// The allocation point for this pool on MCV1 is the total allocation point for all pools that receive double incentives.
-contract MasterChefV2 {
+contract MasterChefV2 is Ownable {
     using SafeMath for uint256;  // using BoringMath for uint256;
-    // using BoringMath128 for uint128;
+    using SafeCast for int64;
+    using SafeCast for uint64;
+    using SafeCast for uint128; // using BoringMath128 for uint128;
+    using SafeCast for int128; 
+    using SafeCast for uint256;
     using SafeERC20 for IERC20;
     using SignedSafeMath for int256;
 
@@ -74,7 +81,7 @@ contract MasterChefV2 {
     /// @param _MASTER_CHEF The SushiSwap MCV1 contract address.
     /// @param _sushi The SUSHI token contract address.
     /// @param _MASTER_PID The pool ID of the dummy token on the base MCV1 contract.
-    constructor(IMasterChef _MASTER_CHEF, IERC20 _sushi, uint256 _MASTER_PID) public {
+    constructor(IMasterChef _MASTER_CHEF, IERC20 _sushi, uint256 _MASTER_PID) {
         MASTER_CHEF = _MASTER_CHEF;
         SUSHI = _sushi;
         MASTER_PID = _MASTER_PID;
@@ -111,7 +118,7 @@ contract MasterChefV2 {
         rewarder.push(_rewarder);
 
         poolInfo.push(PoolInfo({
-            allocPoint: int64(allocPoint),  // allocPoint.to64(),
+            allocPoint: allocPoint.toUInt64(),  // allocPoint.to64(),
             lastRewardBlock: int64(lastRewardBlock),  // lastRewardBlock.to64(),
             accSushiPerShare: 0
         }));
