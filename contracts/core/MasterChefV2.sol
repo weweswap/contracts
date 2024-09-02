@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "../libraries/SafeCast64.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IRewarder.sol";
 import "../interfaces/IMigratorChef.sol";
@@ -33,7 +34,7 @@ contract MasterChefV2 is Ownable {
     using SafeCast for uint64;
     using SafeCast for uint128; // using BoringMath128 for uint128;
     using SafeCast for int128; 
-    using SafeCast for uint256;
+    using SafeCast64 for uint256;
     using SafeERC20 for IERC20;
     using SignedSafeMath for int256;
 
@@ -119,7 +120,7 @@ contract MasterChefV2 is Ownable {
 
         poolInfo.push(PoolInfo({
             allocPoint: allocPoint.toUInt64(),  // allocPoint.to64(),
-            lastRewardBlock: int64(lastRewardBlock),  // lastRewardBlock.to64(),
+            lastRewardBlock: lastRewardBlock.toUInt64(),  // lastRewardBlock.to64(),
             accSushiPerShare: 0
         }));
         //emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
@@ -133,7 +134,7 @@ contract MasterChefV2 is Ownable {
     /// @param overwrite True if _rewarder should be `set`. Otherwise `_rewarder` is ignored.
     function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool overwrite) public onlyOwner {
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
-        poolInfo[_pid].allocPoint = int64(_allocPoint); // poolInfo[_pid].allocPoint = _allocPoint.to64();
+        poolInfo[_pid].allocPoint = _allocPoint.toUInt64(); // poolInfo[_pid].allocPoint = _allocPoint.to64();
         if (overwrite) { rewarder[_pid] = _rewarder; }
         emit LogSetPool(_pid, _allocPoint, overwrite ? _rewarder : rewarder[_pid], overwrite);
     }
