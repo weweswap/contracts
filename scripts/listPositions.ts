@@ -98,8 +98,6 @@ export async function main(owner: string) {
     }),
   );
 
-  console.table(positions);
-
   return positions;
 }
 
