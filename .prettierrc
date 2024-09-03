@@ -2,6 +2,17 @@
   "plugins": ["prettier-plugin-solidity"],
   "printWidth": 120,
   "tabWidth": 2,
+  "arrowParens": "avoid",
+  "bracketSpacing": true,
+  "endOfLine": "lf",
+  "bracketSameLine": false,
+  "jsxSingleQuote": false,
+  "proseWrap": "preserve",
+  "quoteProps": "as-needed",
+  "semi": true,
+  "singleQuote": false,
+  "trailingComma": "none",
+  "useTabs": true,
   "overrides": [
     {
       "files": "*.sol",
@@ -11,6 +22,15 @@
         "useTabs": false,
         "singleQuote": false,
         "bracketSpacing": false
+      }
+    },
+    {
+      "files": "*.ts",
+      "options": {
+        "printWidth": 80,
+        "tabWidth": 2,
+        "singleQuote": true,
+        "trailingComma": "all"
       }
     }
   ]
