@@ -1,0 +1,50 @@
+name: CI Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Start Hardhat node
+        env:
+          FORKING_URL: ${{ secrets.FORKING_URL }}
+        run: nohup npx hardhat node > hardhat-node.log 2>&1 &
+
+      - name: Wait for Hardhat node to be ready
+        run: npx wait-on tcp:127.0.0.1:8545
+
+      - name: Run Hardhat tests
+        env:
+          FORKING_URL: ${{ secrets.FORKING_URL }}
+        run: npx hardhat test
+
+      - name: Cache node_modules
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
