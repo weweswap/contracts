@@ -165,7 +165,7 @@ contract Chaos is Ownable {
             accSushiPerShare = accSushiPerShare.add(sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply); // LC: todo .div(lpSupply)
         }
         // pending = int256(user.amount.mul(accSushiPerShare) / ACC_SUSHI_PRECISION).sub(user.rewardDebt).toUInt256();
-        pending = uint(int256(user.amount.mul(accSushiPerShare) / ACC_SUSHI_PRECISION).sub(user.rewardDebt));
+        pending = uint256(int256(user.amount.mul(accSushiPerShare) / ACC_SUSHI_PRECISION).sub(user.rewardDebt));
     }
 
     /// @notice Update reward variables for all pools. Be careful of gas spending!
@@ -191,12 +191,10 @@ contract Chaos is Ownable {
             uint256 lpSupply = lpToken[pid].balanceOf(address(this));
             if (lpSupply > 0) {
                 uint256 blocks = block.number.sub(pool.lastRewardBlock);
-                uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint; // LC: todo .div(totalAllocPoint)
-                pool.accSushiPerShare = pool.accSushiPerShare.add(
-                    int128(sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply)
-                ); // LC: todo .div(lpSupply)
+                uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint;
+                pool.accSushiPerShare += uint128(sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply);
             }
-            pool.lastRewardBlock = int64(block.number);
+            pool.lastRewardBlock = block.number.toUInt64();
             poolInfo[pid] = pool;
             emit LogUpdatePool(pid, pool.lastRewardBlock, lpSupply, pool.accSushiPerShare);
         }
