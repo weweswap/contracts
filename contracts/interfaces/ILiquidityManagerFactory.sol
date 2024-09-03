@@ -24,6 +24,7 @@ interface ILiquidityManagerFactory {
         address usdc;
         address pool; // Univ3 Token-USDC pool
         PoolType poolType;
+        address swapRouter;
     }
 
     /// @notice Get the parameters to be used in constructing the liquidity manager, set transiently during liquidity manager creation.
@@ -40,7 +41,8 @@ interface ILiquidityManagerFactory {
             address token,
             address usdc,
             address pool,
-            PoolType poolType
+            PoolType poolType,
+            address swapRouter
         );
 
     function getPoolConfiguration(

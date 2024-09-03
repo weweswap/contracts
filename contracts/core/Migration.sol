@@ -6,12 +6,16 @@ import {INonfungiblePositionManager} from "../univ3-0.8/INonfungiblePositionMana
 import {IV3SwapRouter} from "../univ3-0.8/IV3SwapRouter.sol";
 import {ISwapRouter02} from "../univ3-0.8/ISwapRouter02.sol";
 import {TransferHelper} from "../univ3-0.8/TransferHelper.sol";
+import {ILiquidityManagerFactory} from "../interfaces/ILiquidityManagerFactory.sol";
 
 /// @title Migration Contract for Uniswap v3 Positions
 /// @notice This contract is used to migrate liquidity positions from Uniswap v3, decrease liquidity, collect fees, change the unselected token to USDC and deposit all liquidity in a WEWESwap protocol liquidityManager.
 contract Migration is IERC721Receiver {
     /// @notice Address of the Uniswap NonfungiblePositionManager contract
     INonfungiblePositionManager public immutable nfpm;
+
+    /// @notice Address of the Liquidity manager factory contract
+    ILiquidityManagerFactory public immutable lmf;
 
     /// @notice Address of the Uniswap SwapRouter02 contract
     ISwapRouter02 public immutable swapRouter;
@@ -28,14 +32,24 @@ contract Migration is IERC721Receiver {
     /// @notice Constructor to initialize the Migration contract
     /// @param _nfpm Address of the Uniswap NonfungiblePositionManager
     /// @param _swapRouter Address of the Uniswap SwapRouter02
+    /// @param _lmf Address of the Liquidity Manager factory
     /// @param _tokenToMigrate Address of the token to be migrated
     /// @param _usdc Address of the USDC token
     /// @param _feeTier Fee tier for the Uniswap swap
-    constructor(address _nfpm, address _swapRouter, address _tokenToMigrate, address _usdc, uint24 _feeTier) {
+    constructor(
+        address _nfpm,
+        address _swapRouter,
+        address _lmf,
+        address _tokenToMigrate,
+        address _usdc,
+        uint24 _feeTier
+    ) {
         require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
         require(_swapRouter != address(0), "Migration: Invalid SwapRouter address");
+        require(_lmf != address(0), "Migration: Invalid Liquidity Manager Factory address");
         swapRouter = ISwapRouter02(_swapRouter);
         nfpm = INonfungiblePositionManager(_nfpm);
+        lmf = ILiquidityManagerFactory(_lmf);
         tokenToMigrate = _tokenToMigrate;
         usdc = _usdc;
         feeTier = _feeTier;
