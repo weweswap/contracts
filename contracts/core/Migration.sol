@@ -3,10 +3,10 @@ pragma solidity ^0.8.19;
 
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {INonfungiblePositionManager} from "../univ3-0.8/INonfungiblePositionManager.sol";
-import { IV3SwapRouter } from "../univ3-0.8/IV3SwapRouter.sol";
-import { ISwapRouter02 } from "../univ3-0.8/ISwapRouter02.sol";
-import { TransferHelper } from "../univ3-0.8/TransferHelper.sol";
-import { ILiquidityManagerFactory } from "../interfaces/ILiquidityManagerFactory.sol";
+import {IV3SwapRouter} from "../univ3-0.8/IV3SwapRouter.sol";
+import {ISwapRouter02} from "../univ3-0.8/ISwapRouter02.sol";
+import {TransferHelper} from "../univ3-0.8/TransferHelper.sol";
+import {ILiquidityManagerFactory} from "../interfaces/ILiquidityManagerFactory.sol";
 
 /// @title Migration Contract for Uniswap v3 Positions
 /// @notice This contract is used to migrate liquidity positions from Uniswap v3, decrease liquidity, collect fees, change the unselected token to USDC and deposit all liquidity in a WEWESwap protocol liquidityManager.
@@ -16,7 +16,7 @@ contract Migration is IERC721Receiver {
 
     /// @notice Address of the Liquidity manager factory contract
     ILiquidityManagerFactory public immutable lmf;
-    
+
     /// @notice Address of the Uniswap SwapRouter02 contract
     ISwapRouter02 public immutable swapRouter;
 

@@ -11,10 +11,9 @@ import {IUniswapV3Factory} from "../univ3-0.8/IUniswapV3Factory.sol";
 import {INonfungiblePositionManager} from "../univ3-0.8/INonfungiblePositionManager.sol";
 import {ILiquidityManager} from "../interfaces/ILiquidityManager.sol";
 import {ILiquidityManagerFactory} from "../interfaces/ILiquidityManagerFactory.sol";
-import { TransferHelper } from "../univ3-0.8/TransferHelper.sol";
-import { IV3SwapRouter } from "../univ3-0.8/IV3SwapRouter.sol";
-import { ISwapRouter02 } from "../univ3-0.8/ISwapRouter02.sol";
-
+import {TransferHelper} from "../univ3-0.8/TransferHelper.sol";
+import {IV3SwapRouter} from "../univ3-0.8/IV3SwapRouter.sol";
+import {ISwapRouter02} from "../univ3-0.8/ISwapRouter02.sol";
 
 contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManager, IERC721Receiver {
     using SafeERC20 for IERC20;
@@ -35,7 +34,7 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
     mapping(address => mapping(BandType => uint128)) public liquidities; // Deposited liquidity
 
     event FeesCollected(uint256 totalAmountUSDC);
-    
+
     error ZeroAmount();
     error NotAllowedRebalancer();
     error BandDepositFailed(bytes data);
@@ -49,16 +48,9 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
         address _usdc;
         address _nfpm;
         address _swapRouter;
-        (
-            _lmfactory,
-            ksZapRouter,
-            _nfpm,
-            _token,
-            _usdc,
-            pool,
-            poolType,
-            _swapRouter
-        ) = ILiquidityManagerFactory(msg.sender).lmParameters();
+        (_lmfactory, ksZapRouter, _nfpm, _token, _usdc, pool, poolType, _swapRouter) = ILiquidityManagerFactory(
+            msg.sender
+        ).lmParameters();
         (
             uint256 targetPriceRange,
             uint256 narrowBandDelta,
@@ -150,19 +142,18 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
             totalFeesUSDC = narrowAmount0 + midAmount0 + wideAmount0;
         }
 
-        if(totalFeesToken > 0) {
+        if (totalFeesToken > 0) {
             TransferHelper.safeApprove(address(token), address(swapRouter), totalFeesToken);
 
-            IV3SwapRouter.ExactInputSingleParams memory params =
-                IV3SwapRouter.ExactInputSingleParams({
-                    tokenIn: address(token),
-                    tokenOut: address(usdc),
-                    fee: poolConfiguration.fee, // TODO: Check if this is a good choice
-                    recipient: address(this),
-                    amountIn: totalFeesToken,
-                    amountOutMinimum: 0,
-                    sqrtPriceLimitX96: 0
-                });
+            IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter.ExactInputSingleParams({
+                tokenIn: address(token),
+                tokenOut: address(usdc),
+                fee: poolConfiguration.fee, // TODO: Check if this is a good choice
+                recipient: address(this),
+                amountIn: totalFeesToken,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
             uint256 amountOut = swapRouter.exactInputSingle(params);
 
             totalFeesUSDC += amountOut;

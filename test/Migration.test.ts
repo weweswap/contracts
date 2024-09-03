@@ -103,85 +103,85 @@ describe("Migration contract", function () {
       const positions = await listPositions(otherAccount.address)
       const tokenId = positions[0].id
 
-      const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, otherAccount)
+			const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, otherAccount);
 
-      // Get contract balance of NFTs before the transfer
-      const contractBalanceBefore = await positionsContract.balanceOf(await migration.getAddress())
+			// Get contract balance of NFTs before the transfer
+			const contractBalanceBefore = await positionsContract.balanceOf(await migration.getAddress());
 
-      // Transfer the NFT to the migration contract
-      const tx = await positionsContract.safeTransferFrom(otherAccount, await migration.getAddress(), tokenId)
-      await tx.wait()
+			// Transfer the NFT to the migration contract
+			const tx = await positionsContract.safeTransferFrom(otherAccount, await migration.getAddress(), tokenId);
+			await tx.wait();
 
-      // Verify the contract now holds the NFT
-      const contractBalanceAfter = await positionsContract.balanceOf(await migration.getAddress())
-      expect(contractBalanceAfter).is.greaterThan(contractBalanceBefore); 
-    });
-    it("Should handle multiple NFTs being sent to the contract", async function () {
-      const { migration, otherAccount } = await loadFixture(deployFixture);
-    
-      // Mint multiple positions
-      await mintNewPosition(otherAccount.address);
-      await mintNewPosition(otherAccount.address);
-      const positions = await listPositions(otherAccount.address);
-      
-      const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, otherAccount);
-    
-      // Transfer multiple NFTs to the migration contract
-      for (const position of positions) {
-        const tx = await positionsContract.safeTransferFrom(otherAccount.address, await migration.getAddress(), position.id);
-        await tx.wait();
-      }
-      
-      // Verify that all NFTs are now held by the contract
-      for (const position of positions) {
-        const positionData = await positionsContract.positions(position.id);
-        expect(positionData.liquidity).to.equal(0);
-      }
-    });
-    it("Should handle entire flow: receiving NFT, decreasing liquidity, collecting fees, and swapping", async function () {
-      const { migration, owner, accountWithFees } = await loadFixture(deployFixture)
+			// Verify the contract now holds the NFT
+			const contractBalanceAfter = await positionsContract.balanceOf(await migration.getAddress());
+			expect(contractBalanceAfter).is.greaterThan(contractBalanceBefore);
+		});
+		it("Should handle multiple NFTs being sent to the contract", async function () {
+			const { migration, otherAccount } = await loadFixture(deployFixture);
 
-      // Ensure the tokenId is deterministic and exists
-      const positions = await listPositions(accountWithFees.address)
-      const position = positions.find(position => position.id === DETERMINISTIC_TOKENID)
-      if (!position) {
-        throw new Error("Position with the deterministic token ID not found.");
-      }
-      const tokenId = position?.id
-      expect(tokenId).to.not.be.undefined
+			// Mint multiple positions
+			await mintNewPosition(otherAccount.address);
+			await mintNewPosition(otherAccount.address);
+			const positions = await listPositions(otherAccount.address);
 
-      // Verify balances before the transfer
-      expect(position.liquidity).to.equal(DETERMINSITIC_LIQUIDITY)
-      expect(position.feeGrowthInside0LastX128).to.equal(DETERMINISTIC_FEE0_AMOUNT)
-      expect(position.feeGrowthInside1LastX128).to.equal(DETERMINISTIC_FEE1_AMOUNT)
+			const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, otherAccount);
 
-      const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, accountWithFees)
+			// Transfer multiple NFTs to the migration contract
+			for (const position of positions) {
+				const tx = await positionsContract.safeTransferFrom(otherAccount.address, await migration.getAddress(), position.id);
+				await tx.wait();
+			}
 
-      // Get contract balance of NFTs before the transfer
-      const contractBalanceBefore = await positionsContract.balanceOf(await migration.getAddress())
+			// Verify that all NFTs are now held by the contract
+			for (const position of positions) {
+				const positionData = await positionsContract.positions(position.id);
+				expect(positionData.liquidity).to.equal(0);
+			}
+		});
+		it("Should handle entire flow: receiving NFT, decreasing liquidity, collecting fees, and swapping", async function () {
+			const { migration, owner, accountWithFees } = await loadFixture(deployFixture);
 
-      // Transfer the NFT to the migration contract
-      const tx = await positionsContract.safeTransferFrom(await accountWithFees.getAddress(), await migration.getAddress(), tokenId)
-      await tx.wait()
+			// Ensure the tokenId is deterministic and exists
+			const positions = await listPositions(accountWithFees.address);
+			const position = positions.find(position => position.id === DETERMINISTIC_TOKENID);
+			if (!position) {
+				throw new Error("Position with the deterministic token ID not found.");
+			}
+			const tokenId = position?.id;
+			expect(tokenId).to.not.be.undefined;
 
-      // Verify the contract now holds the NFT
-      const contractBalanceAfter = await positionsContract.balanceOf(await migration.getAddress())
-      expect(contractBalanceAfter).is.greaterThan(contractBalanceBefore);
+			// Verify balances before the transfer
+			expect(position.liquidity).to.equal(DETERMINSITIC_LIQUIDITY);
+			expect(position.feeGrowthInside0LastX128).to.equal(DETERMINISTIC_FEE0_AMOUNT);
+			expect(position.feeGrowthInside1LastX128).to.equal(DETERMINISTIC_FEE1_AMOUNT);
 
-      // Verify that the position's liquidity has been reduced to zero
-      const lpPosition = await positionsContract.positions(tokenId);
-      expect(lpPosition.liquidity).to.equal(0);
+			const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, accountWithFees);
 
-      // Assuming migration contract holds the tokens, check balance of tokens inside the contract
-      const wewe = await migration.tokenToMigrate();
-      const token0Contract = new ethers.Contract(wewe, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
-      const usdcContract = new ethers.Contract(USDC_ADDRESS, ['function balanceOf(address) view returns (uint256)'], ethers.provider);
-      
-      const weweBalance = await token0Contract.balanceOf(migration.getAddress());
-      const usdcBalance = await usdcContract.balanceOf(migration.getAddress());
-      
-      expect(weweBalance).to.equal(DETERMINISTIC_OWED_TOKEN1_AMOUNT);
-      expect(usdcBalance).to.equal(DETERMINISTIC_OWED_TOKEN0_AMOUNT);
-    });
-  });
+			// Get contract balance of NFTs before the transfer
+			const contractBalanceBefore = await positionsContract.balanceOf(await migration.getAddress());
+
+			// Transfer the NFT to the migration contract
+			const tx = await positionsContract.safeTransferFrom(await accountWithFees.getAddress(), await migration.getAddress(), tokenId);
+			await tx.wait();
+
+			// Verify the contract now holds the NFT
+			const contractBalanceAfter = await positionsContract.balanceOf(await migration.getAddress());
+			expect(contractBalanceAfter).is.greaterThan(contractBalanceBefore);
+
+			// Verify that the position's liquidity has been reduced to zero
+			const lpPosition = await positionsContract.positions(tokenId);
+			expect(lpPosition.liquidity).to.equal(0);
+
+			// Assuming migration contract holds the tokens, check balance of tokens inside the contract
+			const wewe = await migration.tokenToMigrate();
+			const token0Contract = new ethers.Contract(wewe, ["function balanceOf(address) view returns (uint256)"], ethers.provider);
+			const usdcContract = new ethers.Contract(USDC_ADDRESS, ["function balanceOf(address) view returns (uint256)"], ethers.provider);
+
+			const weweBalance = await token0Contract.balanceOf(migration.getAddress());
+			const usdcBalance = await usdcContract.balanceOf(migration.getAddress());
+
+			expect(weweBalance).to.equal(DETERMINISTIC_OWED_TOKEN1_AMOUNT);
+			expect(usdcBalance).to.equal(DETERMINISTIC_OWED_TOKEN0_AMOUNT);
+		});
+	});
 });
