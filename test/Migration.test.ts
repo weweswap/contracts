@@ -35,7 +35,8 @@ describe("Migration contract", function () {
       UNISWAP_V3_FACTORY_ADDRESS,
       KYBERSWAP_ZAP_ROUTER_ADDRESS,
       UNI_V3_POS,
-      USDC_ADDRESS
+      USDC_ADDRESS,
+      SWAP_ROUTER_ADDRESS
     )
     const lmfAddress = await liquidityManagerFactory.getAddress()
 
@@ -71,7 +72,8 @@ describe("Migration contract", function () {
         UNISWAP_V3_FACTORY_ADDRESS,
         KYBERSWAP_ZAP_ROUTER_ADDRESS,
         UNI_V3_POS,
-        USDC_ADDRESS
+        USDC_ADDRESS,
+        SWAP_ROUTER_ADDRESS
       )
       const lmfAddress = await liquidityManagerFactory.getAddress()
 
