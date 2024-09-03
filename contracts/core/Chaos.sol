@@ -15,25 +15,14 @@ import "../libraries/SafeCast64.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IRewarder.sol";
 import "../interfaces/IMigratorChef.sol";
-import "../interfaces/IMasterChef.sol";
+import "../interfaces/ICHAOS.sol";
 
-// interface IMigratorChef {
-//     // Take the current LP token address and return the new LP token address.
-//     // Migrator should have full access to the caller's LP token.
-//     function migrate(IERC20 token) external returns (IERC20);
-// }
-
-/// @notice The (older) MasterChef contract gives out a constant number of SUSHI tokens per block.
-/// It is the only address with minting rights for SUSHI.
-/// The idea for this MasterChef V2 (MCV2) contract is therefore to be the owner of a dummy token
-/// that is deposited into the MasterChef V1 (MCV1) contract.
-/// The allocation point for this pool on MCV1 is the total allocation point for all pools that receive double incentives.
-contract MasterChefV2 is Ownable {
-    using SafeMath for uint256;  // using BoringMath for uint256;
+contract Chaos is Ownable {
+    using SafeMath for uint256; // using BoringMath for uint256;
     using SafeCast for int64;
     using SafeCast for uint64;
     using SafeCast for uint128; // using BoringMath128 for uint128;
-    using SafeCast for int128; 
+    using SafeCast for int128;
     using SafeCast64 for uint256;
     using SafeERC20 for IERC20;
     using SignedSafeMath for int256;
@@ -56,7 +45,7 @@ contract MasterChefV2 is Ownable {
     }
 
     /// @notice Address of MCV1 contract.
-    IMasterChef public immutable MASTER_CHEF;
+    ICHAOS public immutable CHAOS;
     /// @notice Address of SUSHI contract.
     IERC20 public immutable SUSHI;
     /// @notice The index of MCV2 master pool in MCV1.
@@ -72,32 +61,32 @@ contract MasterChefV2 is Ownable {
     IRewarder[] public rewarder;
 
     /// @notice Info of each user that stakes LP tokens.
-    mapping (uint256 => mapping (address => UserInfo)) public userInfo;
+    mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     /// @dev Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint;
 
-    uint256 private constant MASTERCHEF_SUSHI_PER_BLOCK = 1e20;
+    uint256 private constant CHAOS_PER_BLOCK = 1e20;
     uint256 private constant ACC_SUSHI_PRECISION = 1e12;
 
-    /// @param _MASTER_CHEF The SushiSwap MCV1 contract address.
+    /// @param _CHAOS The SushiSwap MCV1 contract address.
     /// @param _sushi The SUSHI token contract address.
     /// @param _MASTER_PID The pool ID of the dummy token on the base MCV1 contract.
-    constructor(IMasterChef _MASTER_CHEF, IERC20 _sushi, uint256 _MASTER_PID) {
-        MASTER_CHEF = _MASTER_CHEF;
+    constructor(ICHAOS _CHAOS, IERC20 _sushi, uint256 _MASTER_PID) {
+        CHAOS = _CHAOS;
         SUSHI = _sushi;
         MASTER_PID = _MASTER_PID;
     }
 
-    /// @notice Deposits a dummy token to `MASTER_CHEF` MCV1. This is required because MCV1 holds the minting rights for SUSHI.
+    /// @notice Deposits a dummy token to `CHAOS` MCV1. This is required because MCV1 holds the minting rights for SUSHI.
     /// Any balance of transaction sender in `dummyToken` is transferred.
     /// The allocation point for the pool on MCV1 is the total allocation point for all pools that receive double incentives.
     /// @param dummyToken The address of the ERC-20 token to deposit into MCV1.
     function init(IERC20 dummyToken) external {
         uint256 balance = dummyToken.balanceOf(msg.sender);
-        require(balance != 0, "MasterChefV2: Balance must exceed 0");
+        require(balance != 0, "Chaos: Balance must exceed 0");
         dummyToken.safeTransferFrom(msg.sender, address(this), balance);
-        dummyToken.approve(address(MASTER_CHEF), balance);
-        MASTER_CHEF.deposit(MASTER_PID, balance);
+        dummyToken.approve(address(CHAOS), balance);
+        CHAOS.deposit(MASTER_PID, balance);
         emit LogInit();
     }
 
@@ -118,11 +107,13 @@ contract MasterChefV2 is Ownable {
         lpToken.push(_lpToken);
         rewarder.push(_rewarder);
 
-        poolInfo.push(PoolInfo({
-            allocPoint: allocPoint.toUInt64(),  // allocPoint.to64(),
-            lastRewardBlock: lastRewardBlock.toUInt64(),  // lastRewardBlock.to64(),
-            accSushiPerShare: 0
-        }));
+        poolInfo.push(
+            PoolInfo({
+                allocPoint: allocPoint.toUInt64(), // allocPoint.to64(),
+                lastRewardBlock: lastRewardBlock.toUInt64(), // lastRewardBlock.to64(),
+                accSushiPerShare: 0
+            })
+        );
         //emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
         emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
     }
@@ -135,7 +126,9 @@ contract MasterChefV2 is Ownable {
     function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool overwrite) public onlyOwner {
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         poolInfo[_pid].allocPoint = _allocPoint.toUInt64(); // poolInfo[_pid].allocPoint = _allocPoint.to64();
-        if (overwrite) { rewarder[_pid] = _rewarder; }
+        if (overwrite) {
+            rewarder[_pid] = _rewarder;
+        }
         emit LogSetPool(_pid, _allocPoint, overwrite ? _rewarder : rewarder[_pid], overwrite);
     }
 
@@ -148,12 +141,12 @@ contract MasterChefV2 is Ownable {
     /// @notice Migrate LP token to another LP contract through the `migrator` contract.
     /// @param _pid The index of the pool. See `poolInfo`.
     function migrate(uint256 _pid) public {
-        require(address(migrator) != address(0), "MasterChefV2: no migrator set");
+        require(address(migrator) != address(0), "Chaos: no migrator set");
         IERC20 _lpToken = lpToken[_pid];
         uint256 bal = _lpToken.balanceOf(address(this));
         _lpToken.approve(address(migrator), bal);
         IERC20 newLpToken = migrator.migrate(_lpToken);
-        require(bal == newLpToken.balanceOf(address(this)), "MasterChefV2: migrated balance must match");
+        require(bal == newLpToken.balanceOf(address(this)), "Chaos: migrated balance must match");
         lpToken[_pid] = newLpToken;
     }
 
@@ -186,8 +179,7 @@ contract MasterChefV2 is Ownable {
 
     /// @notice Calculates and returns the `amount` of SUSHI per block.
     function sushiPerBlock() public view returns (uint256 amount) {
-        amount = uint256(MASTERCHEF_SUSHI_PER_BLOCK)
-            .mul(MASTER_CHEF.poolInfo(MASTER_PID).allocPoint) / MASTER_CHEF.totalAllocPoint();
+        amount = uint256(CHAOS_PER_BLOCK).mul(CHAOS.poolInfo(MASTER_PID).allocPoint) / CHAOS.totalAllocPoint();
     }
 
     /// @notice Update reward variables of the given pool.
@@ -200,7 +192,9 @@ contract MasterChefV2 is Ownable {
             if (lpSupply > 0) {
                 uint256 blocks = block.number.sub(pool.lastRewardBlock);
                 uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint; // LC: todo .div(totalAllocPoint)
-                pool.accSushiPerShare = pool.accSushiPerShare.add(int128(sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply)); // LC: todo .div(lpSupply)
+                pool.accSushiPerShare = pool.accSushiPerShare.add(
+                    int128(sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply)
+                ); // LC: todo .div(lpSupply)
             }
             pool.lastRewardBlock = int64(block.number);
             poolInfo[pid] = pool;
@@ -248,7 +242,7 @@ contract MasterChefV2 is Ownable {
         if (address(_rewarder) != address(0)) {
             _rewarder.onSushiReward(pid, msg.sender, to, 0, user.amount);
         }
-        
+
         lpToken[pid].safeTransfer(to, amount);
 
         emit Withdraw(msg.sender, pid, amount, to);
@@ -270,15 +264,15 @@ contract MasterChefV2 is Ownable {
         if (_pendingSushi != 0) {
             SUSHI.safeTransfer(to, _pendingSushi);
         }
-        
+
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onSushiReward( pid, msg.sender, to, _pendingSushi, user.amount);
+            _rewarder.onSushiReward(pid, msg.sender, to, _pendingSushi, user.amount);
         }
 
         emit Harvest(msg.sender, pid, _pendingSushi);
     }
-    
+
     /// @notice Withdraw LP tokens from MCV2 and harvest proceeds for transaction sender to `to`.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to withdraw.
@@ -292,7 +286,7 @@ contract MasterChefV2 is Ownable {
         // Effects
         user.rewardDebt = accumulatedSushi.sub(int256(amount.mul(pool.accSushiPerShare) / ACC_SUSHI_PRECISION));
         user.amount = user.amount.sub(amount);
-        
+
         // Interactions
         SUSHI.safeTransfer(to, _pendingSushi);
 
@@ -307,9 +301,9 @@ contract MasterChefV2 is Ownable {
         emit Harvest(msg.sender, pid, _pendingSushi);
     }
 
-    /// @notice Harvests SUSHI from `MASTER_CHEF` MCV1 and pool `MASTER_PID` to this MCV2 contract.
-    function harvestFromMasterChef() public {
-        MASTER_CHEF.deposit(MASTER_PID, 0);
+    /// @notice Harvests SUSHI from `CHAOS` MCV1 and pool `MASTER_PID` to this MCV2 contract.
+    function harvestFromChaos() public {
+        CHAOS.deposit(MASTER_PID, 0);
     }
 
     /// @notice Withdraw without caring about rewards. EMERGENCY ONLY.
@@ -330,7 +324,6 @@ contract MasterChefV2 is Ownable {
         lpToken[pid].safeTransfer(to, amount);
         emit EmergencyWithdraw(msg.sender, pid, amount, to);
     }
-
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);

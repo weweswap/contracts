@@ -1,5 +1,8 @@
 {
-  "[solidity]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+	"[solidity]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.formatOnSave": false,
+	"editor.formatOnPaste": false
 }

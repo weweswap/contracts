@@ -21,6 +21,7 @@ npx hardhat list-positions --owner 0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199 --
 # Deterministic State of the Blockchain Base
 
 To perform the tests, the state of the blockchain needs to be deterministic. To achieve this:
+
 - Set `FORKING_URL` variable in the `.env` file.
 - In order to perform the tests correctly you may need to [impersonate the address](https://hardhat.org/hardhat-network/docs/guides/forking-other-networks#impersonating-accounts)
 

@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 library SafeCast64 {
-
     uint256 private constant UINT64_MAX = 18_446_744_073_709_551_615;
     uint256 private constant INT64_MAX = 9_223_372_036_854_775_807;
 
