@@ -11,7 +11,7 @@ const UNISWAP_V3_FACTORY_ADDRESS = '0x33128a8fC17869897dcE68Ed026d694621f6FDfD';
 const WEWE_ADDRESS = "0x6b9bb36519538e0C073894E964E90172E1c0B41F";
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const KYBERSWAP_ZAP_ROUTER_ADDRESS = '0x0e97C887b61cCd952a53578B04763E7134429e05';
-
+const SWAP_ROUTER_ADDRESS = "0x2626664c2603336E57B271c5C0b26F421741e481";
 
 describe("Liquidity Manager Factory contract", function () {
   async function deployFixture() {
@@ -32,7 +32,8 @@ describe("Liquidity Manager Factory contract", function () {
       UNISWAP_V3_FACTORY_ADDRESS,
       KYBERSWAP_ZAP_ROUTER_ADDRESS,
       UNI_V3_POS,
-      USDC_ADDRESS
+      USDC_ADDRESS,
+      SWAP_ROUTER_ADDRESS
     )
 
     return { owner, otherAccount, liquidityManagerFactory };
