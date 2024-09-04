@@ -13,6 +13,7 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
     address public immutable ksZapRouter; // KS zap router address
     address public immutable nfpm; // Univ3 NonFungiblePositionManager
     address public immutable usdc; // USDC
+    address public immutable swapRouter; // Uni Swap router
 
     /// @inheritdoc ILiquidityManagerFactory
     LiquidityManagerParameters public override lmParameters;
@@ -67,11 +68,12 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
         _;
     }
 
-    constructor(address _univ3Factory, address _ksZapRouter, address _nfpm, address _usdc) {
+    constructor(address _univ3Factory, address _ksZapRouter, address _nfpm, address _usdc, address _swapRouter) {
         univ3Factory = IUniswapV3Factory(_univ3Factory);
         ksZapRouter = _ksZapRouter;
         nfpm = _nfpm;
         usdc = _usdc;
+        swapRouter = _swapRouter;
     }
 
     function deployLiquidityManager(address token, PoolType poolType) external onlyAllowedDeployer {
@@ -92,7 +94,8 @@ contract LiquidityManagerFactory is Ownable, ILiquidityManagerFactory {
             token: token,
             usdc: usdc,
             pool: pool,
-            poolType: poolType
+            poolType: poolType,
+            swapRouter: swapRouter
         });
         address liquidityManager = address(new LiquidityManager{salt: keccak256(abi.encode(token, poolType))}());
         delete lmParameters;

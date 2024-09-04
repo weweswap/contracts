@@ -11,6 +11,9 @@ import {IUniswapV3Factory} from "../univ3-0.8/IUniswapV3Factory.sol";
 import {INonfungiblePositionManager} from "../univ3-0.8/INonfungiblePositionManager.sol";
 import {ILiquidityManager} from "../interfaces/ILiquidityManager.sol";
 import {ILiquidityManagerFactory} from "../interfaces/ILiquidityManagerFactory.sol";
+import {TransferHelper} from "../univ3-0.8/TransferHelper.sol";
+import {IV3SwapRouter} from "../univ3-0.8/IV3SwapRouter.sol";
+import {ISwapRouter02} from "../univ3-0.8/ISwapRouter02.sol";
 
 contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManager, IERC721Receiver {
     using SafeERC20 for IERC20;
@@ -22,12 +25,15 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
     IERC20 public immutable usdc; // Token address
     address public immutable pool; // Token-USDC pool
     ILiquidityManagerFactory.PoolType public immutable poolType;
+    ISwapRouter02 public immutable swapRouter;
 
     ILiquidityManagerFactory.PoolConfiguration public poolConfiguration;
     ZapInParams public zapInParams; // Temporary bandType and tokenId to validate if it's mint or addLiquidity
     mapping(BandType => uint256) public bandTokenId; // Band tokenIds
     mapping(BandType => uint128) public totalLiquidityForBand; // Total liquidity deposited
     mapping(address => mapping(BandType => uint128)) public liquidities; // Deposited liquidity
+
+    event FeesCollected(uint256 totalAmountUSDC);
 
     error ZeroAmount();
     error NotAllowedRebalancer();
@@ -37,20 +43,14 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
     error InvalidZapInBandType(BandType inputType, BandType correctType);
 
     constructor() {
-        address factoryAddress;
-        address tokenAddress;
-        address usdcAddress;
-        address nfpmAddress;
-
-        (
-            factoryAddress,
-            ksZapRouter,
-            nfpmAddress,
-            tokenAddress,
-            usdcAddress,
-            pool,
-            poolType
-        ) = ILiquidityManagerFactory(msg.sender).lmParameters();
+        address _lmfactory;
+        address _token;
+        address _usdc;
+        address _nfpm;
+        address _swapRouter;
+        (_lmfactory, ksZapRouter, _nfpm, _token, _usdc, pool, poolType, _swapRouter) = ILiquidityManagerFactory(
+            msg.sender
+        ).lmParameters();
         (
             uint256 targetPriceRange,
             uint256 narrowBandDelta,
@@ -59,10 +59,11 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
             uint24 fee
         ) = ILiquidityManagerFactory(msg.sender).getPoolConfiguration(poolType);
 
-        factory = ILiquidityManagerFactory(factoryAddress);
-        token = IERC20(tokenAddress);
-        usdc = IERC20(usdcAddress);
-        nfpm = INonfungiblePositionManager(nfpmAddress);
+        factory = ILiquidityManagerFactory(_lmfactory);
+        token = IERC20(_token);
+        usdc = IERC20(_usdc);
+        nfpm = INonfungiblePositionManager(_nfpm);
+        swapRouter = ISwapRouter02(_swapRouter);
 
         poolConfiguration = ILiquidityManagerFactory.PoolConfiguration(
             targetPriceRange,
@@ -123,6 +124,41 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
         liquidities[msg.sender][bandType] += zapResult.liquidity;
 
         delete zapInParams;
+    }
+
+    function collectFees() public {
+        (uint256 narrowAmount0, uint256 narrowAmount1) = _collectBandFees(BandType.Narrow);
+        (uint256 midAmount0, uint256 midAmount1) = _collectBandFees(BandType.Mid);
+        (uint256 wideAmount0, uint256 wideAmount1) = _collectBandFees(BandType.Wide);
+
+        uint256 totalFeesToken;
+        uint256 totalFeesUSDC;
+
+        if (address(token) < address(usdc)) {
+            totalFeesToken = narrowAmount0 + midAmount0 + wideAmount0;
+            totalFeesUSDC = narrowAmount1 + midAmount1 + wideAmount1;
+        } else {
+            totalFeesToken = narrowAmount1 + midAmount1 + wideAmount1;
+            totalFeesUSDC = narrowAmount0 + midAmount0 + wideAmount0;
+        }
+
+        if (totalFeesToken > 0) {
+            TransferHelper.safeApprove(address(token), address(swapRouter), totalFeesToken);
+
+            IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter.ExactInputSingleParams({
+                tokenIn: address(token),
+                tokenOut: address(usdc),
+                fee: poolConfiguration.fee, // TODO: Check if this is a good choice
+                recipient: address(this),
+                amountIn: totalFeesToken,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+            uint256 amountOut = swapRouter.exactInputSingle(params);
+
+            totalFeesUSDC += amountOut;
+        }
+        emit FeesCollected(totalFeesUSDC);
     }
 
     function withdraw(BandType bandType) external nonReentrant {
@@ -216,5 +252,21 @@ contract LiquidityManager is Ownable, Pausable, ReentrancyGuard, ILiquidityManag
         }
 
         return minValue;
+    }
+
+    function _collectBandFees(BandType bandType) private returns (uint256 amount0, uint amount1) {
+        uint256 tokenId = bandTokenId[bandType];
+        if (tokenId == 0) {
+            revert InvalidNFT();
+        }
+
+        (amount0, amount1) = nfpm.collect(
+            INonfungiblePositionManager.CollectParams({
+                tokenId: tokenId,
+                recipient: address(this),
+                amount0Max: type(uint128).max,
+                amount1Max: type(uint128).max
+            })
+        );
     }
 }
