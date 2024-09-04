@@ -47,7 +47,7 @@ contract Chaos is Ownable {
     /// @notice Address of MCV1 contract.
     ICHAOS public immutable CHAOS;
     /// @notice Address of SUSHI contract.
-    IERC20 public immutable SUSHI;
+    IERC20 public immutable SUSHI_TOKEN;
     /// @notice The index of MCV2 master pool in MCV1.
     uint256 public immutable MASTER_PID;
     // @notice The migrator contract. It has a lot of power. Can only be set through governance (owner).
@@ -73,7 +73,7 @@ contract Chaos is Ownable {
     /// @param _MASTER_PID The pool ID of the dummy token on the base MCV1 contract.
     constructor(ICHAOS _CHAOS, IERC20 _sushi, uint256 _MASTER_PID) {
         CHAOS = _CHAOS;
-        SUSHI = _sushi;
+        SUSHI_TOKEN = _sushi;
         MASTER_PID = _MASTER_PID;
     }
 
@@ -260,7 +260,7 @@ contract Chaos is Ownable {
 
         // Interactions
         if (_pendingSushi != 0) {
-            SUSHI.safeTransfer(to, _pendingSushi);
+            SUSHI_TOKEN.safeTransfer(to, _pendingSushi);
         }
 
         IRewarder _rewarder = rewarder[pid];
@@ -286,7 +286,7 @@ contract Chaos is Ownable {
         user.amount = user.amount.sub(amount);
 
         // Interactions
-        SUSHI.safeTransfer(to, _pendingSushi);
+        SUSHI_TOKEN.safeTransfer(to, _pendingSushi);
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
