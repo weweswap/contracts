@@ -3,10 +3,6 @@
 pragma solidity 0.8.19; // TODO: Update to 0.8.19
 pragma experimental ABIEncoderV2;
 
-// import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
-// import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
-// import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
-// import "./libraries/SignedSafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -69,11 +65,11 @@ contract Chaos is Ownable {
     uint256 private constant ACC_CHAOS_PRECISION = 1e12;
 
     /// @param _CHAOS The SushiSwap MCV1 contract address.
-    /// @param _sushi The CHAOS token contract address.
+    /// @param _chaos The CHAOS token contract address.
     /// @param _MASTER_PID The pool ID of the dummy token on the base MCV1 contract.
-    constructor(ICHAOS _CHAOS, IERC20 _sushi, uint256 _MASTER_PID) {
+    constructor(ICHAOS _CHAOS, IERC20 _chaos, uint256 _MASTER_PID) {
         CHAOS = _CHAOS;
-        CHAOS_TOKEN = _sushi;
+        CHAOS_TOKEN = _chaos;
         MASTER_PID = _MASTER_PID;
     }
 
@@ -102,19 +98,17 @@ contract Chaos is Ownable {
     /// @param _rewarder Address of the rewarder delegate.
     function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) public onlyOwner {
         uint256 lastRewardBlock = block.number;
-        // totalAllocPoint = totalAllocPoint.add(allocPoint);
         totalAllocPoint += allocPoint;
         lpToken.push(_lpToken);
         rewarder.push(_rewarder);
 
         poolInfo.push(
             PoolInfo({
-                allocPoint: allocPoint.toUInt64(), // allocPoint.to64(),
-                lastRewardBlock: lastRewardBlock.toUInt64(), // lastRewardBlock.to64(),
+                allocPoint: allocPoint.toUInt64(),
+                lastRewardBlock: lastRewardBlock.toUInt64(),
                 accSushiPerShare: 0
             })
         );
-        //emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
         emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
     }
 
@@ -164,7 +158,7 @@ contract Chaos is Ownable {
             uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint; // LC: todo .div(totalAllocPoint)
             accSushiPerShare = accSushiPerShare.add(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply); // LC: todo .div(lpSupply)
         }
-        // pending = int256(user.amount.mul(accSushiPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt).toUInt256();
+
         pending = uint256(int256(user.amount.mul(accSushiPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt));
     }
 
@@ -215,7 +209,7 @@ contract Chaos is Ownable {
         // Interactions
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onSushiReward(pid, to, to, 0, user.amount);
+            _rewarder.onChaosReward(pid, to, to, 0, user.amount);
         }
 
         lpToken[pid].safeTransferFrom(msg.sender, address(this), amount);
@@ -238,7 +232,7 @@ contract Chaos is Ownable {
         // Interactions
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onSushiReward(pid, msg.sender, to, 0, user.amount);
+            _rewarder.onChaosReward(pid, msg.sender, to, 0, user.amount);
         }
 
         lpToken[pid].safeTransfer(to, amount);
@@ -265,7 +259,7 @@ contract Chaos is Ownable {
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onSushiReward(pid, msg.sender, to, _pendingSushi, user.amount);
+            _rewarder.onChaosReward(pid, msg.sender, to, _pendingSushi, user.amount);
         }
 
         emit Harvest(msg.sender, pid, _pendingSushi);
@@ -290,7 +284,7 @@ contract Chaos is Ownable {
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onSushiReward(pid, msg.sender, to, _pendingSushi, user.amount);
+            _rewarder.onChaosReward(pid, msg.sender, to, _pendingSushi, user.amount);
         }
 
         lpToken[pid].safeTransfer(to, amount);
@@ -315,7 +309,7 @@ contract Chaos is Ownable {
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onSushiReward(pid, msg.sender, to, 0, 0);
+            _rewarder.onChaosReward(pid, msg.sender, to, 0, 0);
         }
 
         // Note: transfer can fail or succeed if `amount` is zero.
