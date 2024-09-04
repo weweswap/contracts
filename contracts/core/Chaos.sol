@@ -29,7 +29,7 @@ contract Chaos is Ownable {
 
     /// @notice Info of each MCV2 user.
     /// `amount` LP token amount the user has provided.
-    /// `rewardDebt` The amount of SUSHI entitled to the user.
+    /// `rewardDebt` The amount of CHAOS entitled to the user.
     struct UserInfo {
         uint256 amount;
         int256 rewardDebt;
@@ -37,7 +37,7 @@ contract Chaos is Ownable {
 
     /// @notice Info of each MCV2 pool.
     /// `allocPoint` The amount of allocation points assigned to the pool.
-    /// Also known as the amount of SUSHI to distribute per block.
+    /// Also known as the amount of CHAOS to distribute per block.
     struct PoolInfo {
         uint128 accSushiPerShare;
         uint64 lastRewardBlock;
@@ -46,8 +46,8 @@ contract Chaos is Ownable {
 
     /// @notice Address of MCV1 contract.
     ICHAOS public immutable CHAOS;
-    /// @notice Address of SUSHI contract.
-    IERC20 public immutable SUSHI_TOKEN;
+    /// @notice Address of CHAOS contract.
+    IERC20 public immutable CHAOS_TOKEN;
     /// @notice The index of MCV2 master pool in MCV1.
     uint256 public immutable MASTER_PID;
     // @notice The migrator contract. It has a lot of power. Can only be set through governance (owner).
@@ -69,15 +69,15 @@ contract Chaos is Ownable {
     uint256 private constant ACC_CHAOS_PRECISION = 1e12;
 
     /// @param _CHAOS The SushiSwap MCV1 contract address.
-    /// @param _sushi The SUSHI token contract address.
+    /// @param _sushi The CHAOS token contract address.
     /// @param _MASTER_PID The pool ID of the dummy token on the base MCV1 contract.
     constructor(ICHAOS _CHAOS, IERC20 _sushi, uint256 _MASTER_PID) {
         CHAOS = _CHAOS;
-        SUSHI_TOKEN = _sushi;
+        CHAOS_TOKEN = _sushi;
         MASTER_PID = _MASTER_PID;
     }
 
-    /// @notice Deposits a dummy token to `CHAOS` MCV1. This is required because MCV1 holds the minting rights for SUSHI.
+    /// @notice Deposits a dummy token to `CHAOS` MCV1. This is required because MCV1 holds the minting rights for CHAOS.
     /// Any balance of transaction sender in `dummyToken` is transferred.
     /// The allocation point for the pool on MCV1 is the total allocation point for all pools that receive double incentives.
     /// @param dummyToken The address of the ERC-20 token to deposit into MCV1.
@@ -118,7 +118,7 @@ contract Chaos is Ownable {
         emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
     }
 
-    /// @notice Update the given pool's SUSHI allocation point and `IRewarder` contract. Can only be called by the owner.
+    /// @notice Update the given pool's CHAOS allocation point and `IRewarder` contract. Can only be called by the owner.
     /// @param _pid The index of the pool. See `poolInfo`.
     /// @param _allocPoint New AP of the pool.
     /// @param _rewarder Address of the rewarder delegate.
@@ -150,10 +150,10 @@ contract Chaos is Ownable {
         lpToken[_pid] = newLpToken;
     }
 
-    /// @notice View function to see pending SUSHI on frontend.
+    /// @notice View function to see pending CHAOS on frontend.
     /// @param _pid The index of the pool. See `poolInfo`.
     /// @param _user Address of user.
-    /// @return pending SUSHI reward for a given user.
+    /// @return pending CHAOS reward for a given user.
     function pendingSushi(uint256 _pid, address _user) external view returns (uint256 pending) {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
@@ -177,7 +177,7 @@ contract Chaos is Ownable {
         }
     }
 
-    /// @notice Calculates and returns the `amount` of SUSHI per block.
+    /// @notice Calculates and returns the `amount` of CHAOS per block.
     function sushiPerBlock() public view returns (uint256 amount) {
         amount = uint256(CHAOS_PER_BLOCK).mul(CHAOS.poolInfo(MASTER_PID).allocPoint) / CHAOS.totalAllocPoint();
     }
@@ -200,7 +200,7 @@ contract Chaos is Ownable {
         }
     }
 
-    /// @notice Deposit LP tokens to MCV2 for SUSHI allocation.
+    /// @notice Deposit LP tokens to MCV2 for CHAOS allocation.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to deposit.
     /// @param to The receiver of `amount` deposit benefit.
@@ -248,7 +248,7 @@ contract Chaos is Ownable {
 
     /// @notice Harvest proceeds for transaction sender to `to`.
     /// @param pid The index of the pool. See `poolInfo`.
-    /// @param to Receiver of SUSHI rewards.
+    /// @param to Receiver of CHAOS rewards.
     function harvest(uint256 pid, address to) public {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
@@ -260,7 +260,7 @@ contract Chaos is Ownable {
 
         // Interactions
         if (_pendingSushi != 0) {
-            SUSHI_TOKEN.safeTransfer(to, _pendingSushi);
+            CHAOS_TOKEN.safeTransfer(to, _pendingSushi);
         }
 
         IRewarder _rewarder = rewarder[pid];
@@ -274,7 +274,7 @@ contract Chaos is Ownable {
     /// @notice Withdraw LP tokens from MCV2 and harvest proceeds for transaction sender to `to`.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to withdraw.
-    /// @param to Receiver of the LP tokens and SUSHI rewards.
+    /// @param to Receiver of the LP tokens and CHAOS rewards.
     function withdrawAndHarvest(uint256 pid, uint256 amount, address to) public {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
@@ -286,7 +286,7 @@ contract Chaos is Ownable {
         user.amount = user.amount.sub(amount);
 
         // Interactions
-        SUSHI_TOKEN.safeTransfer(to, _pendingSushi);
+        CHAOS_TOKEN.safeTransfer(to, _pendingSushi);
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
@@ -299,7 +299,7 @@ contract Chaos is Ownable {
         emit Harvest(msg.sender, pid, _pendingSushi);
     }
 
-    /// @notice Harvests SUSHI from `CHAOS` MCV1 and pool `MASTER_PID` to this MCV2 contract.
+    /// @notice Harvests CHAOS from `CHAOS` MCV1 and pool `MASTER_PID` to this MCV2 contract.
     function harvestFromChaos() public {
         CHAOS.deposit(MASTER_PID, 0);
     }
