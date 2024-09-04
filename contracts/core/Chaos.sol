@@ -66,7 +66,7 @@ contract Chaos is Ownable {
     uint256 public totalAllocPoint;
 
     uint256 private constant CHAOS_PER_BLOCK = 1e20;
-    uint256 private constant ACC_SUSHI_PRECISION = 1e12;
+    uint256 private constant ACC_CHAOS_PRECISION = 1e12;
 
     /// @param _CHAOS The SushiSwap MCV1 contract address.
     /// @param _sushi The SUSHI token contract address.
@@ -162,10 +162,10 @@ contract Chaos is Ownable {
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 blocks = block.number.sub(pool.lastRewardBlock);
             uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint; // LC: todo .div(totalAllocPoint)
-            accSushiPerShare = accSushiPerShare.add(sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply); // LC: todo .div(lpSupply)
+            accSushiPerShare = accSushiPerShare.add(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply); // LC: todo .div(lpSupply)
         }
-        // pending = int256(user.amount.mul(accSushiPerShare) / ACC_SUSHI_PRECISION).sub(user.rewardDebt).toUInt256();
-        pending = uint256(int256(user.amount.mul(accSushiPerShare) / ACC_SUSHI_PRECISION).sub(user.rewardDebt));
+        // pending = int256(user.amount.mul(accSushiPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt).toUInt256();
+        pending = uint256(int256(user.amount.mul(accSushiPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt));
     }
 
     /// @notice Update reward variables for all pools. Be careful of gas spending!
@@ -192,7 +192,7 @@ contract Chaos is Ownable {
             if (lpSupply > 0) {
                 uint256 blocks = block.number.sub(pool.lastRewardBlock);
                 uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint;
-                pool.accSushiPerShare += uint128(sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply);
+                pool.accSushiPerShare += uint128(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply);
             }
             pool.lastRewardBlock = block.number.toUInt64();
             poolInfo[pid] = pool;
@@ -210,7 +210,7 @@ contract Chaos is Ownable {
 
         // Effects
         user.amount = user.amount.add(amount);
-        user.rewardDebt = user.rewardDebt.add(int256(amount.mul(pool.accSushiPerShare) / ACC_SUSHI_PRECISION));
+        user.rewardDebt = user.rewardDebt.add(int256(amount.mul(pool.accSushiPerShare) / ACC_CHAOS_PRECISION));
 
         // Interactions
         IRewarder _rewarder = rewarder[pid];
@@ -232,7 +232,7 @@ contract Chaos is Ownable {
         UserInfo storage user = userInfo[pid][msg.sender];
 
         // Effects
-        user.rewardDebt = user.rewardDebt.sub(int256(amount.mul(pool.accSushiPerShare) / ACC_SUSHI_PRECISION));
+        user.rewardDebt = user.rewardDebt.sub(int256(amount.mul(pool.accSushiPerShare) / ACC_CHAOS_PRECISION));
         user.amount = user.amount.sub(amount);
 
         // Interactions
@@ -252,7 +252,7 @@ contract Chaos is Ownable {
     function harvest(uint256 pid, address to) public {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
-        int256 accumulatedSushi = int256(user.amount.mul(pool.accSushiPerShare) / ACC_SUSHI_PRECISION);
+        int256 accumulatedSushi = int256(user.amount.mul(pool.accSushiPerShare) / ACC_CHAOS_PRECISION);
         uint256 _pendingSushi = uint256(accumulatedSushi.sub(user.rewardDebt)); // uint256 _pendingSushi = accumulatedSushi.sub(user.rewardDebt).toUInt256();
 
         // Effects
@@ -278,11 +278,11 @@ contract Chaos is Ownable {
     function withdrawAndHarvest(uint256 pid, uint256 amount, address to) public {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
-        int256 accumulatedSushi = int256(user.amount.mul(pool.accSushiPerShare) / ACC_SUSHI_PRECISION);
+        int256 accumulatedSushi = int256(user.amount.mul(pool.accSushiPerShare) / ACC_CHAOS_PRECISION);
         uint256 _pendingSushi = uint256(accumulatedSushi.sub(user.rewardDebt)); // uint256 _pendingSushi = accumulatedSushi.sub(user.rewardDebt).toUInt256();
 
         // Effects
-        user.rewardDebt = accumulatedSushi.sub(int256(amount.mul(pool.accSushiPerShare) / ACC_SUSHI_PRECISION));
+        user.rewardDebt = accumulatedSushi.sub(int256(amount.mul(pool.accSushiPerShare) / ACC_CHAOS_PRECISION));
         user.amount = user.amount.sub(amount);
 
         // Interactions
