@@ -11,7 +11,7 @@ import {
 	DETERMINISTIC_OWED_TOKEN1_AMOUNT,
 	DETERMINISTIC_TOKENID,
 	DETERMINISTIC_WEWE_WETH_WALLET,
-	DETERMINSITIC_LIQUIDITY,
+	DETERMINISTIC_LIQUIDITY,
 } from "./constants";
 
 const INonfungiblePositionManager = require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json").abi;
@@ -133,7 +133,7 @@ describe("Migration contract", function () {
 			expect(tokenId).to.not.be.undefined;
 
 			// Verify balances before the transfer
-			expect(position.liquidity).to.equal(DETERMINSITIC_LIQUIDITY);
+			expect(position.liquidity).to.equal(DETERMINISTIC_LIQUIDITY);
 			expect(position.feeGrowthInside0LastX128).to.equal(DETERMINISTIC_FEE0_AMOUNT);
 			expect(position.feeGrowthInside1LastX128).to.equal(DETERMINISTIC_FEE1_AMOUNT);
 

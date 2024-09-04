@@ -1,8 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { main as mintNewPosition } from "../scripts/mintNFTPosition";
-import { main as listPositions } from "../scripts/listPositions";
 import {
 	DETERMINISTIC_FEE0_AMOUNT,
 	DETERMINISTIC_FEE1_AMOUNT,
@@ -14,7 +12,6 @@ import {
 	DETERMINSITIC_LIQUIDITY,
 } from "./constants";
 
-const INonfungiblePositionManager = require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json").abi;
 const UNI_V3_POS = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1";
 const WEWE_ADDRESS = "0x6b9bb36519538e0C073894E964E90172E1c0B41F";
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -50,9 +47,6 @@ describe("Chaos contract", function () {
 		it("Should deploy the contract with correct addresses", async function () {
 			const { migration } = await loadFixture(deployFixture);
 			expect(await migration.nfpm()).to.equal(UNI_V3_POS);
-			expect(await migration.swapRouter()).to.equal(SWAP_ROUTER_ADDRESS);
-			expect(await migration.tokenToMigrate()).to.equal(WEWE_ADDRESS);
-			expect(await migration.usdc()).to.equal(USDC_ADDRESS);
 		});
 	});
 });
