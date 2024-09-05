@@ -106,27 +106,39 @@ describe.only("Chaos contract", function () {
 			const { chaos } = await loadFixture(deployFixture);
 			const poolId = 0;
 			const account = ethers.Wallet.createRandom().address;
-			expect(await chaos.pendingSushi(poolId, account)).to.equal(0);
+			expect(await chaos.pendingRewards(poolId, account)).to.equal(0);
 		});
 
-		it("Should deposit", async () => {
-			const { chaos } = await loadFixture(deployFixture);
+		describe("Deposit and withdraw", () => {
+			let _chaos: any;
 
-			const poolId = 0;
-			const account = ethers.Wallet.createRandom().address;
+			this.beforeEach(async () => {
+				const { chaos } = await loadFixture(deployFixture);
+				_chaos = chaos;
+				const poolId = 0;
+				const allocPoint = 0;
+				await _chaos.add(allocPoint, USDC_ADDRESS, REWARDER_ADDRESS);
+				await _chaos.set(poolId, allocPoint, REWARDER_ADDRESS, true);
+			});
 
-			const tx = await chaos.deposit(poolId, 1000000n, account);
-			await tx.wait();
-		});
+			it("Should deposit", async () => {
+				const poolId = 0;
+				const account = ethers.Wallet.createRandom().address;
 
-		it("Should withdraw", async () => {
-			const { chaos } = await loadFixture(deployFixture);
+				expect(await _chaos.deposit(poolId, 1000000n, account))
+					.to.emit(_chaos, "Deposit")
+					.withArgs(account, poolId, 1000000n);
+			});
 
-			const poolId = 0;
-			const account = ethers.Wallet.createRandom().address;
+			it("Should withdraw", async () => {
+				const { chaos } = await loadFixture(deployFixture);
 
-			const tx = await chaos.withdraw(poolId, 1000000n, account);
-			await tx.wait();
+				const poolId = 0;
+				const account = ethers.Wallet.createRandom().address;
+
+				const tx = await chaos.withdraw(poolId, 1000000n, account);
+				await tx.wait();
+			});
 		});
 
 		it("Should harvest", async () => {
