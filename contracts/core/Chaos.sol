@@ -35,7 +35,7 @@ contract Chaos is Ownable {
     /// `allocPoint` The amount of allocation points assigned to the pool.
     /// Also known as the amount of CHAOS to distribute per block.
     struct PoolInfo {
-        uint128 accSushiPerShare;
+        uint128 accChaosPerShare;
         uint64 lastRewardBlock;
         uint64 allocPoint;
     }
@@ -65,11 +65,11 @@ contract Chaos is Ownable {
     uint256 private constant ACC_CHAOS_PRECISION = 1e12;
 
     /// @param _CHAOS The SushiSwap MCV1 contract address.
-    /// @param _chaos The CHAOS token contract address.
+    /// @param _rewards The rewards token contract address.
     /// @param _MASTER_PID The pool ID of the dummy token on the base MCV1 contract.
-    constructor(ICHAOS _CHAOS, IERC20 _chaos, uint256 _MASTER_PID) {
+    constructor(ICHAOS _CHAOS, IERC20 _rewards, uint256 _MASTER_PID) {
         CHAOS = _CHAOS;
-        CHAOS_TOKEN = _chaos;
+        CHAOS_TOKEN = _rewards;
         MASTER_PID = _MASTER_PID;
     }
 
@@ -106,7 +106,7 @@ contract Chaos is Ownable {
             PoolInfo({
                 allocPoint: allocPoint.toUInt64(),
                 lastRewardBlock: lastRewardBlock.toUInt64(),
-                accSushiPerShare: 0
+                accChaosPerShare: 0
             })
         );
         emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
@@ -151,15 +151,15 @@ contract Chaos is Ownable {
     function pendingSushi(uint256 _pid, address _user) external view returns (uint256 pending) {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accSushiPerShare = pool.accSushiPerShare;
+        uint256 accChaosPerShare = pool.accChaosPerShare;
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 blocks = block.number.sub(pool.lastRewardBlock);
             uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint; // LC: todo .div(totalAllocPoint)
-            accSushiPerShare = accSushiPerShare.add(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply); // LC: todo .div(lpSupply)
+            accChaosPerShare = accChaosPerShare.add(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply); // LC: todo .div(lpSupply)
         }
 
-        pending = uint256(int256(user.amount.mul(accSushiPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt));
+        pending = uint256(int256(user.amount.mul(accChaosPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt));
     }
 
     /// @notice Update reward variables for all pools. Be careful of gas spending!
@@ -186,11 +186,11 @@ contract Chaos is Ownable {
             if (lpSupply > 0) {
                 uint256 blocks = block.number.sub(pool.lastRewardBlock);
                 uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint;
-                pool.accSushiPerShare += uint128(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply);
+                pool.accChaosPerShare += uint128(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply);
             }
             pool.lastRewardBlock = block.number.toUInt64();
             poolInfo[pid] = pool;
-            emit LogUpdatePool(pid, pool.lastRewardBlock, lpSupply, pool.accSushiPerShare);
+            emit LogUpdatePool(pid, pool.lastRewardBlock, lpSupply, pool.accChaosPerShare);
         }
     }
 
@@ -204,7 +204,7 @@ contract Chaos is Ownable {
 
         // Effects
         user.amount = user.amount.add(amount);
-        user.rewardDebt = user.rewardDebt.add(int256(amount.mul(pool.accSushiPerShare) / ACC_CHAOS_PRECISION));
+        user.rewardDebt = user.rewardDebt.add(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
 
         // Interactions
         IRewarder _rewarder = rewarder[pid];
@@ -226,7 +226,7 @@ contract Chaos is Ownable {
         UserInfo storage user = userInfo[pid][msg.sender];
 
         // Effects
-        user.rewardDebt = user.rewardDebt.sub(int256(amount.mul(pool.accSushiPerShare) / ACC_CHAOS_PRECISION));
+        user.rewardDebt = user.rewardDebt.sub(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
         user.amount = user.amount.sub(amount);
 
         // Interactions
@@ -246,7 +246,7 @@ contract Chaos is Ownable {
     function harvest(uint256 pid, address to) public {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
-        int256 accumulatedSushi = int256(user.amount.mul(pool.accSushiPerShare) / ACC_CHAOS_PRECISION);
+        int256 accumulatedSushi = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
         uint256 _pendingSushi = uint256(accumulatedSushi.sub(user.rewardDebt)); // uint256 _pendingSushi = accumulatedSushi.sub(user.rewardDebt).toUInt256();
 
         // Effects
@@ -272,11 +272,11 @@ contract Chaos is Ownable {
     function withdrawAndHarvest(uint256 pid, uint256 amount, address to) public {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
-        int256 accumulatedSushi = int256(user.amount.mul(pool.accSushiPerShare) / ACC_CHAOS_PRECISION);
+        int256 accumulatedSushi = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
         uint256 _pendingSushi = uint256(accumulatedSushi.sub(user.rewardDebt)); // uint256 _pendingSushi = accumulatedSushi.sub(user.rewardDebt).toUInt256();
 
         // Effects
-        user.rewardDebt = accumulatedSushi.sub(int256(amount.mul(pool.accSushiPerShare) / ACC_CHAOS_PRECISION));
+        user.rewardDebt = accumulatedSushi.sub(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
         user.amount = user.amount.sub(amount);
 
         // Interactions
@@ -323,6 +323,6 @@ contract Chaos is Ownable {
     event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
     event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
-    event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accSushiPerShare);
+    event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accChaosPerShare);
     event LogInit();
 }
