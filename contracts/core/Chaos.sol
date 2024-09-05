@@ -148,14 +148,14 @@ contract Chaos is Ownable {
     /// @param _pid The index of the pool. See `poolInfo`.
     /// @param _user Address of user.
     /// @return pending CHAOS reward for a given user.
-    function pendingSushi(uint256 _pid, address _user) external view returns (uint256 pending) {
+    function pendingRewards(uint256 _pid, address _user) external view returns (uint256 pending) {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accChaosPerShare = pool.accChaosPerShare;
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 blocks = block.number.sub(pool.lastRewardBlock);
-            uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint; // LC: todo .div(totalAllocPoint)
+            uint256 sushiReward = blocks.mul(rewardsPerBlock()).mul(pool.allocPoint) / totalAllocPoint; // LC: todo .div(totalAllocPoint)
             accChaosPerShare = accChaosPerShare.add(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply); // LC: todo .div(lpSupply)
         }
 
@@ -172,7 +172,7 @@ contract Chaos is Ownable {
     }
 
     /// @notice Calculates and returns the `amount` of CHAOS per block.
-    function sushiPerBlock() public view returns (uint256 amount) {
+    function rewardsPerBlock() public view returns (uint256 amount) {
         amount = uint256(CHAOS_PER_BLOCK).mul(CHAOS.poolInfo(MASTER_PID).allocPoint) / CHAOS.totalAllocPoint();
     }
 
@@ -185,7 +185,7 @@ contract Chaos is Ownable {
             uint256 lpSupply = lpToken[pid].balanceOf(address(this));
             if (lpSupply > 0) {
                 uint256 blocks = block.number.sub(pool.lastRewardBlock);
-                uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint;
+                uint256 sushiReward = blocks.mul(rewardsPerBlock()).mul(pool.allocPoint) / totalAllocPoint;
                 pool.accChaosPerShare += uint128(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply);
             }
             pool.lastRewardBlock = block.number.toUInt64();

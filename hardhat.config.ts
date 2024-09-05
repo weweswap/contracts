@@ -58,7 +58,7 @@ const config: HardhatUserConfig = {
 			forking: {
 				url: process.env.FORKING_URL as string,
 				blockNumber: 19197423,
-				enabled: true,
+				enabled: true
 			},
 			chains: {
 				8453: {

@@ -7,7 +7,5 @@ const CHAOS_ADDRESS = ethers.ZeroAddress;
 export default buildModule("Chaos", m => {
 	const chaos = m.contract("Chaos", [CHAOS_ADDRESS, USDC_ADDRESS]);
 
-	m.call(chaos, "launch", []);
-
 	return { chaos };
 });
