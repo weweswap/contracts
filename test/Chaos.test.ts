@@ -52,16 +52,16 @@ describe.only("Chaos contract", function () {
 			expect(await chaos.rewardsPerBlock()).to.equal(0);
 		});
 
-		it("Should init dummy (USDC) token", async () => {
-			const { chaos } = await loadFixture(deployFixture);
-			const tx = await chaos.init("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913");
-			await tx.wait();
-		});
+		// it("Should init dummy (USDC) token", async () => {
+		// 	const { chaos } = await loadFixture(deployFixture);
+		// 	const tx = await chaos.init("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913");
+		// 	await tx.wait();
+		// });
 
 		it("Should add pool", async () => {
 			const { chaos } = await loadFixture(deployFixture);
 
-			// tood: get alloc point
+			// todo: get alloc point
 			const allocPoint = 0;
 			expect(await chaos.add(allocPoint, USDC_ADDRESS, REWARDER_ADDRESS)).to.emit(chaos, "LogPoolAddition");
 		});

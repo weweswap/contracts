@@ -14,16 +14,20 @@ import "../interfaces/IMigratorChef.sol";
 import "../interfaces/ICHAOS.sol";
 
 contract Farm is Ownable {
-    using SafeMath for uint256; // using BoringMath for uint256;
+    using SafeMath for uint256;
     using SafeCast for int64;
     using SafeCast for uint64;
-    using SafeCast for uint128; // using BoringMath128 for uint128;
+    using SafeCast for uint128;
     using SafeCast for int128;
     using SafeCast64 for uint256;
     using SafeERC20 for IERC20;
     using SignedSafeMath for int256;
 
+    // Total CHAOS allocated to the pools
     uint256 private _totalSupplyAllocated;
+
+    // Sum of the weights of all vaults
+    uint8 private _totalWeight;
 
     /// @notice Info of each MCV2 user.
     /// `amount` LP token amount the user has provided.
@@ -40,7 +44,8 @@ contract Farm is Ownable {
         uint128 accChaosPerShare;
         uint64 lastRewardBlock;
         uint64 allocPoint;
-        uint256 totalSupply;
+        uint256 totalSupply; // CHAOS allocated to the pool
+        uint8 weight; // Arbitrary weight for the pool
     }
 
     /// @notice Address of MCV1 contract.
@@ -76,30 +81,58 @@ contract Farm is Ownable {
         MASTER_PID = _MASTER_PID;
     }
 
-    // /// @notice Deposits a dummy token to `CHAOS` MCV1. This is required because MCV1 holds the minting rights for CHAOS.
-    // /// Any balance of transaction sender in `dummyToken` is transferred.
-    // /// The allocation point for the pool on MCV1 is the total allocation point for all pools that receive double incentives.
-    // /// @param dummyToken The address of the ERC-20 token to deposit into MCV1.
-    // function init(IERC20 dummyToken) external {
-    //     uint256 balance = dummyToken.balanceOf(msg.sender);
-    //     require(balance != 0, "Chaos: Balance must exceed 0");
-    //     dummyToken.safeTransferFrom(msg.sender, address(this), balance);
-    //     dummyToken.approve(address(CHAOS), balance);
-    //     CHAOS.deposit(MASTER_PID, balance);
-    //     emit LogInit();
-    // }
-
-    function allocate(uint256 amount, uint256 poolId) external {
+    /// Allocate CHAOS to the farming contract.
+    /// @param pid The pool ID to allocate the CHAOS to.
+    /// @param amount Amount of CHAOS to allocate.
+    function allocate(uint256 pid, uint256 amount) external {
         require(
             _totalSupplyAllocated.add(amount) <= CHAOS_TOKEN.balanceOf(address(this)),
             "Chaos: Insufficient CHAOS balance"
         );
 
         _totalSupplyAllocated += amount;
-        poolInfo[poolId].totalSupply += amount;
+        poolInfo[pid].totalSupply += amount;
     }
 
-    /// @notice Returns the number of MCV2 pools.
+    function setVaultWeight(uint256 pid, uint8 weight) external onlyOwner {
+        // if (_totalWeight == 0) {
+        //     _totalWeight = weight; // 100%
+        // } else {
+        //     // Current pool weight
+        //     uint8 currentWeight = poolInfo[pid].weight;
+
+        //     // Calculate the new total weight delta
+        //     uint256 delta = weight > currentWeight ? weight - currentWeight : currentWeight - weight;
+
+        //     // Get delta in percentage
+        //     uint256 delta_percent = delta * 100 / _totalWeight;
+
+        //     // If the array is [1,1,1] then all weights are equal to 33.33% or 33.33
+        //     // If we change the first weight to 2 then the array will be [2,1,1] and the weights will be 50%, 25%, 25%
+
+        //     _totalWeight = _totalWeight.sub(poolInfo[pid].weight).add(weight);
+        // }
+
+        if (weight == 0) {
+            // Remove the pool
+            _totalWeight -= poolInfo[pid].weight;
+            poolInfo[pid].weight = 0;
+        } else {
+            // Calculate the new total weight delta
+            uint8 delta = weight > poolInfo[pid].weight ? weight - poolInfo[pid].weight : poolInfo[pid].weight - weight;
+            _totalWeight += delta;
+
+            poolInfo[pid].weight = weight;
+        }
+
+        // Emit event
+    }
+
+    function getPoolWeightAsPercentage(uint256 pid) public view returns (uint8) {
+        return (poolInfo[pid].weight * 100) / _totalWeight;
+    }
+
+    /// @notice Returns the number of pools.
     function poolLength() public view returns (uint256 pools) {
         pools = poolInfo.length;
     }
