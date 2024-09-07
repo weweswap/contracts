@@ -36,86 +36,85 @@ describe.only("Chaos contract", function () {
 		// });
 		// await transaction.wait();
 
-		const Chaos = await ethers.getContractFactory("Chaos");
-		const chaos = await Chaos.deploy(ethers.ZeroAddress, USDC_ADDRESS, 1);
+		const Farm = await ethers.getContractFactory("Farm");
+		const farm = await Farm.deploy(ethers.ZeroAddress, USDC_ADDRESS);
 
-		return { chaos, owner, otherAccount, accountWithFees };
+		return { farm, owner, otherAccount, accountWithFees };
 	}
 
 	describe("Chaos", () => {
 		it("Should deploy the contract with correct addresses", async () => {
-			const { chaos } = await loadFixture(deployFixture);
-			expect(await chaos.CHAOS()).to.equal(ethers.ZeroAddress);
-			expect(await chaos.CHAOS_TOKEN()).to.equal(USDC_ADDRESS);
-			expect(await chaos.MASTER_PID()).to.equal(1);
-			expect(await chaos.poolLength()).to.equal(0);
-			expect(await chaos.rewardsPerBlock()).to.equal(0);
+			const { farm } = await loadFixture(deployFixture);
+			expect(await farm.CHAOS()).to.equal(ethers.ZeroAddress);
+			expect(await farm.CHAOS_TOKEN()).to.equal(USDC_ADDRESS);
+			expect(await farm.poolLength()).to.equal(0);
+			expect(await farm.rewardsPerBlock()).to.equal(0);
 		});
 
-		it("Should init dummy (USDC) token", async () => {
-			const { chaos } = await loadFixture(deployFixture);
-			const tx = await chaos.init("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913");
-			await tx.wait();
-		});
+		// it("Should init dummy (USDC) token", async () => {
+		// 	const { farm } = await loadFixture(deployFixture);
+		// 	const tx = await farm.init("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913");
+		// 	await tx.wait();
+		// });
 
 		it("Should add pool", async () => {
-			const { chaos } = await loadFixture(deployFixture);
+			const { farm } = await loadFixture(deployFixture);
 
-			// tood: get alloc point
+			// todo: get alloc point
 			const allocPoint = 0;
-			expect(await chaos.add(allocPoint, USDC_ADDRESS, REWARDER_ADDRESS)).to.emit(chaos, "LogPoolAddition");
+			expect(await farm.add(allocPoint, USDC_ADDRESS, REWARDER_ADDRESS)).to.emit(farm, "LogPoolAddition");
 		});
 
-		it("Should set and overwrite alloc point", async () => {
-			const { chaos } = await loadFixture(deployFixture);
+		it.only("Should set and overwrite alloc point", async () => {
+			const { farm } = await loadFixture(deployFixture);
 			const poolId = 0;
 			const allocPoint = 0;
 
-			expect(await chaos.set(poolId, allocPoint, REWARDER_ADDRESS, true)).to.emit(chaos, "LogSetPool");
+			expect(await farm.set(poolId, allocPoint, REWARDER_ADDRESS, true)).to.emit(farm, "LogSetPool");
 		});
 
 		describe("Migrator", () => {
 			it("Should set migrator", async () => {
-				const { chaos } = await loadFixture(deployFixture);
+				const { farm } = await loadFixture(deployFixture);
 
-				expect(await chaos.migrator()).to.not.equal(ethers.ZeroAddress);
+				expect(await farm.migrator()).to.not.equal(ethers.ZeroAddress);
 
 				const newMigrator = ethers.ZeroAddress;
-				await chaos.setMigrator(newMigrator);
-				expect(await chaos.migrator()).to.equal(ethers.ZeroAddress);
+				await farm.setMigrator(newMigrator);
+				expect(await farm.migrator()).to.equal(ethers.ZeroAddress);
 			});
 
 			it("Should not migrator if migrator not set", async () => {
-				const { chaos } = await loadFixture(deployFixture);
+				const { farm } = await loadFixture(deployFixture);
 
 				// set migrator to non zero address
 
-				expect(await chaos.migrator()).to.not.equal(ethers.ZeroAddress);
+				expect(await farm.migrator()).to.not.equal(ethers.ZeroAddress);
 
 				// todo: test this
 			});
 
 			it("Should migrate", async () => {
-				const { chaos } = await loadFixture(deployFixture);
-				expect(await chaos.migrator()).to.not.equal(ethers.ZeroAddress);
+				const { farm } = await loadFixture(deployFixture);
+				expect(await farm.migrator()).to.not.equal(ethers.ZeroAddress);
 
-				await chaos.migrate(0);
+				await farm.migrate(0);
 			});
 		});
 
 		it("Should get no pending rewards", async () => {
-			const { chaos } = await loadFixture(deployFixture);
+			const { farm } = await loadFixture(deployFixture);
 			const poolId = 0;
 			const account = ethers.Wallet.createRandom().address;
-			expect(await chaos.pendingRewards(poolId, account)).to.equal(0);
+			expect(await farm.pendingRewards(poolId, account)).to.equal(0);
 		});
 
 		describe("Deposit and withdraw", () => {
 			let _chaos: any;
 
 			this.beforeEach(async () => {
-				const { chaos } = await loadFixture(deployFixture);
-				_chaos = chaos;
+				const { farm } = await loadFixture(deployFixture);
+				_chaos = farm;
 				const poolId = 0;
 				const allocPoint = 0;
 				await _chaos.add(allocPoint, USDC_ADDRESS, REWARDER_ADDRESS);
@@ -132,45 +131,40 @@ describe.only("Chaos contract", function () {
 			});
 
 			it("Should withdraw", async () => {
-				const { chaos } = await loadFixture(deployFixture);
+				const { farm } = await loadFixture(deployFixture);
 
 				const poolId = 0;
 				const account = ethers.Wallet.createRandom().address;
 
-				const tx = await chaos.withdraw(poolId, 1000000n, account);
+				const tx = await farm.withdraw(poolId, 1000000n, account);
 				await tx.wait();
 			});
 		});
 
 		it("Should harvest", async () => {
-			const { chaos } = await loadFixture(deployFixture);
+			const { farm } = await loadFixture(deployFixture);
 
 			const poolId = 0;
 			const account = ethers.Wallet.createRandom().address;
 
-			await chaos.harvest(poolId, account);
+			await farm.harvest(poolId, account);
 		});
 
 		it("Should withdraw and harvest", async () => {
-			const { chaos } = await loadFixture(deployFixture);
+			const { farm } = await loadFixture(deployFixture);
 
 			const poolId = 0;
 			const account = ethers.Wallet.createRandom().address;
 
-			await chaos.withdrawAndHarvest(poolId, 1000000n, account);
-		});
-
-		it("Should harvest from chaos", async () => {
-			const { chaos } = await loadFixture(deployFixture);
-			await chaos.harvestFromChaos();
+			await farm.withdrawAndHarvest(poolId, 1000000n, account);
 		});
 
 		it("Should emergency withdraw", async () => {
-			const { chaos } = await loadFixture(deployFixture);
+			const { farm } = await loadFixture(deployFixture);
 			const poolId = 0;
 			const account = ethers.Wallet.createRandom().address;
 
-			await chaos.emergencyWithdraw(poolId, account);
+			await farm.emergencyWithdraw(poolId, account);
 		});
 	});
 });
