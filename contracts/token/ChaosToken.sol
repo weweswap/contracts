@@ -10,6 +10,6 @@ contract ChaosToken is ERC777, Ownable {
     }
 
     function mint(uint256 amount) public onlyOwner {
-        _mint(address(this), amount);
+        _mint(address(this), amount, "", "");
     }
 }
