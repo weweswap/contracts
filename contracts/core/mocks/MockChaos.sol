@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../interfaces/ICHAOS.sol";
-
 import "hardhat/console.sol";
 
 contract MockChaos is ICHAOS {
