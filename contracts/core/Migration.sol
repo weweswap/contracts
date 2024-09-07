@@ -12,6 +12,8 @@ import {ILiquidityManagerFactory} from "../interfaces/ILiquidityManagerFactory.s
 import {IArrakisV2Resolver} from "../arrakis/interfaces/IArrakisV2Resolver.sol";
 import {IArrakisV2} from "../arrakis/interfaces/IArrakisV2.sol";
 
+// import "hardhat/console.sol";
+
 /// @title Migration Contract for Uniswap v3 Positions
 /// @notice This contract is used to migrate liquidity positions from Uniswap v3, decrease liquidity, collect fees, change the unselected token to USDC and deposit all liquidity in a WEWESwap protocol liquidityManager.
 contract Migration is IERC721Receiver {
@@ -224,17 +226,27 @@ contract Migration is IERC721Receiver {
         IERC20 token0Contract = IERC20(token0);
         IERC20 token1Contract = IERC20(token1);
 
+        // console.log('Aproving...');
+
         token0Contract.safeApprove(address(arrakisV2), amount0);
         token1Contract.safeApprove(address(arrakisV2), amount1);
 
+        // console.log('Aproved');
+
         (uint256 depositedAmount0, uint256 depositedAmount1) = arrakisV2.mint(mintAmount, receiver);
 
+        // console.log('Minted');
+
         if (depositedAmount0 < amount0Max) {
-            token0Contract.safeTransferFrom(address(this), receiver, amount0Max - depositedAmount0);
+            // console.log('depositedAmount0', depositedAmount0);
+            // console.log('amount0Max', amount0Max);
+            token0Contract.safeTransfer(receiver, amount0Max - depositedAmount0);
         }
 
         if (depositedAmount1 < amount1Max) {
-            token1Contract.safeTransferFrom(address(this), receiver, amount1Max - depositedAmount1);
+            // console.log('depositedAmount1', depositedAmount1);
+            // console.log('amount1Max', amount1Max);
+            token1Contract.safeTransfer(receiver, amount1Max - depositedAmount1);
         }
 
         return mintAmount;

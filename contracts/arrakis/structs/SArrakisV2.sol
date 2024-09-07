@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0;
 
 import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
-import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+import {IUniswapV3Factory} from "../../univ3-0.8/IUniswapV3Factory.sol";
 
 struct PositionLiquidity {
     uint128 liquidity;

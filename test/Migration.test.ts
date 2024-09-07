@@ -13,7 +13,7 @@ import {
 	DETERMINISTIC_WEWE_WETH_WALLET,
 	ARRAKIS_V2_ADDRESS,
 	ARRAKIS_V2_RESOLVER_ADDRESS,
-	DETERMINSITIC_LIQUIDITY
+	DETERMINISTIC_LIQUIDITY
 } from "./constants";
 
 const INonfungiblePositionManager = require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json").abi;
@@ -34,7 +34,7 @@ describe("Migration contract", function () {
 			{
 				forking: {
 					jsonRpcUrl: process.env.FORKING_URL,
-					blockNumber: DETERMINISTIC_MIN_HEIGHT,
+					// blockNumber: DETERMINISTIC_MIN_HEIGHT,
 				},
 			},
 		]);
@@ -102,6 +102,8 @@ describe("Migration contract", function () {
 			// Get contract balance of NFTs before the transfer
 			const contractBalanceBefore = await positionsContract.balanceOf(await migration.getAddress());
 
+			// await migration.read(BigInt("34999999999999999998335"), BigInt("2889688"), "0x33443b4942581d0aa6f0e1076eaa18ed72c07a2d");
+			
 			// Transfer the NFT to the migration contract
 			const tx = await positionsContract.safeTransferFrom(otherAccount, await migration.getAddress(), tokenId);
 			await tx.wait();
