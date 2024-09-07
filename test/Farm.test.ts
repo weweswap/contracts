@@ -112,7 +112,7 @@ describe.only("Farm contract", () => {
 		describe("Deposit and withdraw", () => {
 			let _chaos: any;
 
-			this.beforeEach(async () => {
+			beforeEach(async () => {
 				const { farm } = await loadFixture(deployFixture);
 				_chaos = farm;
 				const poolId = 0;
