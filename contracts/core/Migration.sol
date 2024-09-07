@@ -46,7 +46,7 @@ contract Migration is IERC721Receiver {
     ) {
         require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
         require(_swapRouter != address(0), "Migration: Invalid SwapRouter address");
-        require(_lmf != address(0), "Migration: Invalid Liquidity Manager Factory address");
+        // require(_lmf != address(0), "Migration: Invalid Liquidity Manager Factory address");
         swapRouter = ISwapRouter02(_swapRouter);
         nfpm = INonfungiblePositionManager(_nfpm);
         lmf = ILiquidityManagerFactory(_lmf);
