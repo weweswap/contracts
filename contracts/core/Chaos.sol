@@ -1,12 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.19; // TODO: Update to 0.8.19
+pragma solidity 0.8.19;
 pragma experimental ABIEncoderV2;
 
-// import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
-// import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
-// import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
-// import "./libraries/SignedSafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -29,7 +25,7 @@ contract Chaos is Ownable {
 
     /// @notice Info of each MCV2 user.
     /// `amount` LP token amount the user has provided.
-    /// `rewardDebt` The amount of SUSHI entitled to the user.
+    /// `rewardDebt` The amount of CHAOS entitled to the user.
     struct UserInfo {
         uint256 amount;
         int256 rewardDebt;
@@ -37,17 +33,17 @@ contract Chaos is Ownable {
 
     /// @notice Info of each MCV2 pool.
     /// `allocPoint` The amount of allocation points assigned to the pool.
-    /// Also known as the amount of SUSHI to distribute per block.
+    /// Also known as the amount of CHAOS to distribute per block.
     struct PoolInfo {
-        uint128 accSushiPerShare;
+        uint128 accChaosPerShare;
         uint64 lastRewardBlock;
         uint64 allocPoint;
     }
 
     /// @notice Address of MCV1 contract.
     ICHAOS public immutable CHAOS;
-    /// @notice Address of SUSHI contract.
-    IERC20 public immutable SUSHI;
+    /// @notice Address of CHAOS contract.
+    IERC20 public immutable CHAOS_TOKEN;
     /// @notice The index of MCV2 master pool in MCV1.
     uint256 public immutable MASTER_PID;
     // @notice The migrator contract. It has a lot of power. Can only be set through governance (owner).
@@ -66,18 +62,18 @@ contract Chaos is Ownable {
     uint256 public totalAllocPoint;
 
     uint256 private constant CHAOS_PER_BLOCK = 1e20;
-    uint256 private constant ACC_SUSHI_PRECISION = 1e12;
+    uint256 private constant ACC_CHAOS_PRECISION = 1e12;
 
     /// @param _CHAOS The SushiSwap MCV1 contract address.
-    /// @param _sushi The SUSHI token contract address.
+    /// @param _rewards The rewards token contract address.
     /// @param _MASTER_PID The pool ID of the dummy token on the base MCV1 contract.
-    constructor(ICHAOS _CHAOS, IERC20 _sushi, uint256 _MASTER_PID) {
+    constructor(ICHAOS _CHAOS, IERC20 _rewards, uint256 _MASTER_PID) {
         CHAOS = _CHAOS;
-        SUSHI = _sushi;
+        CHAOS_TOKEN = _rewards;
         MASTER_PID = _MASTER_PID;
     }
 
-    /// @notice Deposits a dummy token to `CHAOS` MCV1. This is required because MCV1 holds the minting rights for SUSHI.
+    /// @notice Deposits a dummy token to `CHAOS` MCV1. This is required because MCV1 holds the minting rights for CHAOS.
     /// Any balance of transaction sender in `dummyToken` is transferred.
     /// The allocation point for the pool on MCV1 is the total allocation point for all pools that receive double incentives.
     /// @param dummyToken The address of the ERC-20 token to deposit into MCV1.
@@ -102,23 +98,21 @@ contract Chaos is Ownable {
     /// @param _rewarder Address of the rewarder delegate.
     function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) public onlyOwner {
         uint256 lastRewardBlock = block.number;
-        // totalAllocPoint = totalAllocPoint.add(allocPoint);
         totalAllocPoint += allocPoint;
         lpToken.push(_lpToken);
         rewarder.push(_rewarder);
 
         poolInfo.push(
             PoolInfo({
-                allocPoint: allocPoint.toUInt64(), // allocPoint.to64(),
-                lastRewardBlock: lastRewardBlock.toUInt64(), // lastRewardBlock.to64(),
-                accSushiPerShare: 0
+                allocPoint: allocPoint.toUInt64(),
+                lastRewardBlock: lastRewardBlock.toUInt64(),
+                accChaosPerShare: 0
             })
         );
-        //emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
         emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
     }
 
-    /// @notice Update the given pool's SUSHI allocation point and `IRewarder` contract. Can only be called by the owner.
+    /// @notice Update the given pool's CHAOS allocation point and `IRewarder` contract. Can only be called by the owner.
     /// @param _pid The index of the pool. See `poolInfo`.
     /// @param _allocPoint New AP of the pool.
     /// @param _rewarder Address of the rewarder delegate.
@@ -150,22 +144,22 @@ contract Chaos is Ownable {
         lpToken[_pid] = newLpToken;
     }
 
-    /// @notice View function to see pending SUSHI on frontend.
+    /// @notice View function to see pending CHAOS on frontend.
     /// @param _pid The index of the pool. See `poolInfo`.
     /// @param _user Address of user.
-    /// @return pending SUSHI reward for a given user.
-    function pendingSushi(uint256 _pid, address _user) external view returns (uint256 pending) {
+    /// @return pending CHAOS reward for a given user.
+    function pendingRewards(uint256 _pid, address _user) external view returns (uint256 pending) {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accSushiPerShare = pool.accSushiPerShare;
+        uint256 accChaosPerShare = pool.accChaosPerShare;
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 blocks = block.number.sub(pool.lastRewardBlock);
-            uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint; // LC: todo .div(totalAllocPoint)
-            accSushiPerShare = accSushiPerShare.add(sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply); // LC: todo .div(lpSupply)
+            uint256 sushiReward = blocks.mul(rewardsPerBlock()).mul(pool.allocPoint) / totalAllocPoint; // LC: todo .div(totalAllocPoint)
+            accChaosPerShare = accChaosPerShare.add(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply); // LC: todo .div(lpSupply)
         }
-        // pending = int256(user.amount.mul(accSushiPerShare) / ACC_SUSHI_PRECISION).sub(user.rewardDebt).toUInt256();
-        pending = uint256(int256(user.amount.mul(accSushiPerShare) / ACC_SUSHI_PRECISION).sub(user.rewardDebt));
+
+        pending = uint256(int256(user.amount.mul(accChaosPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt));
     }
 
     /// @notice Update reward variables for all pools. Be careful of gas spending!
@@ -177,8 +171,8 @@ contract Chaos is Ownable {
         }
     }
 
-    /// @notice Calculates and returns the `amount` of SUSHI per block.
-    function sushiPerBlock() public view returns (uint256 amount) {
+    /// @notice Calculates and returns the `amount` of CHAOS per block.
+    function rewardsPerBlock() public view returns (uint256 amount) {
         amount = uint256(CHAOS_PER_BLOCK).mul(CHAOS.poolInfo(MASTER_PID).allocPoint) / CHAOS.totalAllocPoint();
     }
 
@@ -191,16 +185,16 @@ contract Chaos is Ownable {
             uint256 lpSupply = lpToken[pid].balanceOf(address(this));
             if (lpSupply > 0) {
                 uint256 blocks = block.number.sub(pool.lastRewardBlock);
-                uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint;
-                pool.accSushiPerShare += uint128(sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply);
+                uint256 sushiReward = blocks.mul(rewardsPerBlock()).mul(pool.allocPoint) / totalAllocPoint;
+                pool.accChaosPerShare += uint128(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply);
             }
             pool.lastRewardBlock = block.number.toUInt64();
             poolInfo[pid] = pool;
-            emit LogUpdatePool(pid, pool.lastRewardBlock, lpSupply, pool.accSushiPerShare);
+            emit LogUpdatePool(pid, pool.lastRewardBlock, lpSupply, pool.accChaosPerShare);
         }
     }
 
-    /// @notice Deposit LP tokens to MCV2 for SUSHI allocation.
+    /// @notice Deposit LP tokens to MCV2 for CHAOS allocation.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to deposit.
     /// @param to The receiver of `amount` deposit benefit.
@@ -210,12 +204,12 @@ contract Chaos is Ownable {
 
         // Effects
         user.amount = user.amount.add(amount);
-        user.rewardDebt = user.rewardDebt.add(int256(amount.mul(pool.accSushiPerShare) / ACC_SUSHI_PRECISION));
+        user.rewardDebt = user.rewardDebt.add(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
 
         // Interactions
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onSushiReward(pid, to, to, 0, user.amount);
+            _rewarder.onChaosReward(pid, to, to, 0, user.amount);
         }
 
         lpToken[pid].safeTransferFrom(msg.sender, address(this), amount);
@@ -232,13 +226,13 @@ contract Chaos is Ownable {
         UserInfo storage user = userInfo[pid][msg.sender];
 
         // Effects
-        user.rewardDebt = user.rewardDebt.sub(int256(amount.mul(pool.accSushiPerShare) / ACC_SUSHI_PRECISION));
+        user.rewardDebt = user.rewardDebt.sub(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
         user.amount = user.amount.sub(amount);
 
         // Interactions
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onSushiReward(pid, msg.sender, to, 0, user.amount);
+            _rewarder.onChaosReward(pid, msg.sender, to, 0, user.amount);
         }
 
         lpToken[pid].safeTransfer(to, amount);
@@ -248,11 +242,11 @@ contract Chaos is Ownable {
 
     /// @notice Harvest proceeds for transaction sender to `to`.
     /// @param pid The index of the pool. See `poolInfo`.
-    /// @param to Receiver of SUSHI rewards.
+    /// @param to Receiver of CHAOS rewards.
     function harvest(uint256 pid, address to) public {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
-        int256 accumulatedSushi = int256(user.amount.mul(pool.accSushiPerShare) / ACC_SUSHI_PRECISION);
+        int256 accumulatedSushi = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
         uint256 _pendingSushi = uint256(accumulatedSushi.sub(user.rewardDebt)); // uint256 _pendingSushi = accumulatedSushi.sub(user.rewardDebt).toUInt256();
 
         // Effects
@@ -260,12 +254,12 @@ contract Chaos is Ownable {
 
         // Interactions
         if (_pendingSushi != 0) {
-            SUSHI.safeTransfer(to, _pendingSushi);
+            CHAOS_TOKEN.safeTransfer(to, _pendingSushi);
         }
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onSushiReward(pid, msg.sender, to, _pendingSushi, user.amount);
+            _rewarder.onChaosReward(pid, msg.sender, to, _pendingSushi, user.amount);
         }
 
         emit Harvest(msg.sender, pid, _pendingSushi);
@@ -274,23 +268,23 @@ contract Chaos is Ownable {
     /// @notice Withdraw LP tokens from MCV2 and harvest proceeds for transaction sender to `to`.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to withdraw.
-    /// @param to Receiver of the LP tokens and SUSHI rewards.
+    /// @param to Receiver of the LP tokens and CHAOS rewards.
     function withdrawAndHarvest(uint256 pid, uint256 amount, address to) public {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
-        int256 accumulatedSushi = int256(user.amount.mul(pool.accSushiPerShare) / ACC_SUSHI_PRECISION);
+        int256 accumulatedSushi = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
         uint256 _pendingSushi = uint256(accumulatedSushi.sub(user.rewardDebt)); // uint256 _pendingSushi = accumulatedSushi.sub(user.rewardDebt).toUInt256();
 
         // Effects
-        user.rewardDebt = accumulatedSushi.sub(int256(amount.mul(pool.accSushiPerShare) / ACC_SUSHI_PRECISION));
+        user.rewardDebt = accumulatedSushi.sub(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
         user.amount = user.amount.sub(amount);
 
         // Interactions
-        SUSHI.safeTransfer(to, _pendingSushi);
+        CHAOS_TOKEN.safeTransfer(to, _pendingSushi);
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onSushiReward(pid, msg.sender, to, _pendingSushi, user.amount);
+            _rewarder.onChaosReward(pid, msg.sender, to, _pendingSushi, user.amount);
         }
 
         lpToken[pid].safeTransfer(to, amount);
@@ -299,7 +293,7 @@ contract Chaos is Ownable {
         emit Harvest(msg.sender, pid, _pendingSushi);
     }
 
-    /// @notice Harvests SUSHI from `CHAOS` MCV1 and pool `MASTER_PID` to this MCV2 contract.
+    /// @notice Harvests CHAOS from `CHAOS` MCV1 and pool `MASTER_PID` to this MCV2 contract.
     function harvestFromChaos() public {
         CHAOS.deposit(MASTER_PID, 0);
     }
@@ -315,7 +309,7 @@ contract Chaos is Ownable {
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onSushiReward(pid, msg.sender, to, 0, 0);
+            _rewarder.onChaosReward(pid, msg.sender, to, 0, 0);
         }
 
         // Note: transfer can fail or succeed if `amount` is zero.
@@ -329,6 +323,6 @@ contract Chaos is Ownable {
     event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
     event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
-    event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accSushiPerShare);
+    event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accChaosPerShare);
     event LogInit();
 }

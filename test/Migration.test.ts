@@ -16,28 +16,28 @@ import {
 	DETERMINSITIC_LIQUIDITY
 } from "./constants";
 
-const INonfungiblePositionManager = require('@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json').abi;
+const INonfungiblePositionManager = require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json").abi;
 
-const UNI_V3_POS = '0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1';
-const UNISWAP_V3_FACTORY_ADDRESS = '0x33128a8fC17869897dcE68Ed026d694621f6FDfD';
+const UNI_V3_POS = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1";
+const UNISWAP_V3_FACTORY_ADDRESS = "0x33128a8fC17869897dcE68Ed026d694621f6FDfD";
 const WEWE_ADDRESS = "0x6b9bb36519538e0C073894E964E90172E1c0B41F";
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const KYBERSWAP_ZAP_ROUTER_ADDRESS = '0x0e97C887b61cCd952a53578B04763E7134429e05';
+const KYBERSWAP_ZAP_ROUTER_ADDRESS = "0x0e97C887b61cCd952a53578B04763E7134429e05";
 const SWAP_ROUTER_ADDRESS = "0x2626664c2603336E57B271c5C0b26F421741e481";
 
 describe("Migration contract", function () {
-  async function deployFixture() {
-    const [owner, otherAccount] = await ethers.getSigners();
+	async function deployFixture() {
+		const [owner, otherAccount] = await ethers.getSigners();
 
-    // Reset the blockchain to a deterministic state
-    await ethers.provider.send("hardhat_reset", [
-      {
-        forking: {
-          jsonRpcUrl: process.env.FORKING_URL, 
-          blockNumber: DETERMINISTIC_MIN_HEIGHT, 
-        },
-      },
-    ]);
+		// Reset the blockchain to a deterministic state
+		await ethers.provider.send("hardhat_reset", [
+			{
+				forking: {
+					jsonRpcUrl: process.env.FORKING_URL,
+					blockNumber: DETERMINISTIC_MIN_HEIGHT,
+				},
+			},
+		]);
 
 		const accountWithFees = await ethers.getImpersonatedSigner(DETERMINISTIC_WEWE_WETH_WALLET);
 		const transaction = await owner.sendTransaction({
@@ -145,7 +145,7 @@ describe("Migration contract", function () {
 			expect(tokenId).to.not.be.undefined;
 
 			// Verify balances before the transfer
-			expect(position.liquidity).to.equal(DETERMINSITIC_LIQUIDITY);
+			expect(position.liquidity).to.equal(DETERMINISTIC_LIQUIDITY);
 			expect(position.feeGrowthInside0LastX128).to.equal(DETERMINISTIC_FEE0_AMOUNT);
 			expect(position.feeGrowthInside1LastX128).to.equal(DETERMINISTIC_FEE1_AMOUNT);
 
