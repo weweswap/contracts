@@ -3,8 +3,6 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { main as mintNewPosition } from "../scripts/mintNFTPosition";
 import { main as listPositions } from "../scripts/listPositions";
-import { main as setPoolConfiguration } from "../scripts/setPoolConfiguration";
-import { main as deployTokenLiquidityManager } from "../scripts/deployTokenLiquidityManager";
 import {
 	DETERMINISTIC_FEE0_AMOUNT,
 	DETERMINISTIC_FEE1_AMOUNT,
@@ -13,6 +11,9 @@ import {
 	DETERMINISTIC_OWED_TOKEN1_AMOUNT,
 	DETERMINISTIC_TOKENID,
 	DETERMINISTIC_WEWE_WETH_WALLET,
+	ARRAKIS_V2_ADDRESS,
+	ARRAKIS_V2_RESOLVER_ADDRESS,
+	DETERMINSITIC_LIQUIDITY
 } from "./constants";
 
 const INonfungiblePositionManager = require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json").abi;
@@ -38,22 +39,6 @@ describe("Migration contract", function () {
 			},
 		]);
 
-		const LiquidityManagerFactory = await ethers.getContractFactory("LiquidityManagerFactory");
-		const liquidityManagerFactory = await LiquidityManagerFactory.deploy(
-			UNISWAP_V3_FACTORY_ADDRESS,
-			KYBERSWAP_ZAP_ROUTER_ADDRESS,
-			UNI_V3_POS,
-			USDC_ADDRESS,
-			SWAP_ROUTER_ADDRESS,
-		);
-		const lmfAddress = await liquidityManagerFactory.getAddress();
-
-		await setPoolConfiguration(lmfAddress, 0, { targetPriceDelta: 100, narrowRange: 4000, midRange: 10000, wideRange: 17000, fee: 500 });
-		await setPoolConfiguration(lmfAddress, 1, { targetPriceDelta: 1000, narrowRange: 4000, midRange: 10000, wideRange: 17000, fee: 3000 });
-		await setPoolConfiguration(lmfAddress, 2, { targetPriceDelta: 5000, narrowRange: 4000, midRange: 10000, wideRange: 17000, fee: 10000 });
-
-		await deployTokenLiquidityManager(lmfAddress, WEWE_ADDRESS, 2);
-
 		const accountWithFees = await ethers.getImpersonatedSigner(DETERMINISTIC_WEWE_WETH_WALLET);
 		const transaction = await owner.sendTransaction({
 			to: accountWithFees.address,
@@ -62,9 +47,9 @@ describe("Migration contract", function () {
 		await transaction.wait();
 
 		const Migration = await ethers.getContractFactory("Migration");
-		const migration = await Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, lmfAddress, WEWE_ADDRESS, USDC_ADDRESS, 3000);
+		const migration = await Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000);
 
-		return { migration, owner, otherAccount, accountWithFees, liquidityManagerFactory };
+		return { migration, owner, otherAccount, accountWithFees };
 	}
 	describe("Configuration", function () {
 		it("Should deploy the contract with correct addresses", async function () {
@@ -75,25 +60,18 @@ describe("Migration contract", function () {
 			expect(await migration.usdc()).to.equal(USDC_ADDRESS);
 		});
 		it("Should revert if deployed with a zero address", async function () {
-			const LiquidityManagerFactory = await ethers.getContractFactory("LiquidityManagerFactory");
-			const liquidityManagerFactory = await LiquidityManagerFactory.deploy(
-				UNISWAP_V3_FACTORY_ADDRESS,
-				KYBERSWAP_ZAP_ROUTER_ADDRESS,
-				UNI_V3_POS,
-				USDC_ADDRESS,
-				SWAP_ROUTER_ADDRESS,
-			);
-			const lmfAddress = await liquidityManagerFactory.getAddress();
-
 			const Migration = await ethers.getContractFactory("Migration");
-			await expect(Migration.deploy(ethers.ZeroAddress, SWAP_ROUTER_ADDRESS, lmfAddress, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
+			await expect(Migration.deploy(ethers.ZeroAddress, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
 				"Migration: Invalid NonfungiblePositionManager address",
 			);
-			await expect(Migration.deploy(UNI_V3_POS, ethers.ZeroAddress, lmfAddress, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
+			await expect(Migration.deploy(UNI_V3_POS, ethers.ZeroAddress, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
 				"Migration: Invalid SwapRouter address",
 			);
-			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ethers.ZeroAddress, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
-				"Migration: Invalid Liquidity Manager Factory address",
+			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ethers.ZeroAddress, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
+				"Migration: Arrakis V2 address",
+			);
+			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ethers.ZeroAddress, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
+				"Migration: Arrakis V2 Resolver address",
 			);
 		});
 		it("Should be in a deterministic state of the blockchain", async function () {
