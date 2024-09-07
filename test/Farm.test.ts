@@ -16,7 +16,7 @@ import {
 const WEWE_ADDRESS = "0x6b9bb36519538e0C073894E964E90172E1c0B41F";
 const REWARDER_ADDRESS = ethers.ZeroAddress;
 
-describe.only("Chaos contract", function () {
+describe.only("Farm contract", () => {
 	async function deployFixture() {
 		const [owner, otherAccount] = await ethers.getSigners();
 		// Reset the blockchain to a deterministic state
@@ -42,7 +42,7 @@ describe.only("Chaos contract", function () {
 		return { farm, owner, otherAccount, accountWithFees };
 	}
 
-	describe("Chaos", () => {
+	describe("Farm", () => {
 		it("Should deploy the contract with correct addresses", async () => {
 			const { farm } = await loadFixture(deployFixture);
 			expect(await farm.CHAOS()).to.equal(ethers.ZeroAddress);
