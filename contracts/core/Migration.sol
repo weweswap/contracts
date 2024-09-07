@@ -21,7 +21,7 @@ contract Migration is IERC721Receiver {
     INonfungiblePositionManager public immutable nfpm;
 
     /// @notice Address of the Arrakis resolver contract
-    IArrakisV2Resolver public immutable resolver;
+    IArrakisV2Resolver public immutable resolverV2;
 
     /// @notice Address of the Arrakis V2 contract
     IArrakisV2 public immutable arrakisV2;
@@ -62,7 +62,7 @@ contract Migration is IERC721Receiver {
         swapRouter = ISwapRouter02(_swapRouter);
         nfpm = INonfungiblePositionManager(_nfpm);
         arrakisV2 = IArrakisV2(_arrakisV2);
-        resolver = IArrakisV2Resolver(_resolverV2);
+        resolverV2 = IArrakisV2Resolver(_resolverV2);
         tokenToMigrate = _tokenToMigrate;
         usdc = _usdc;
         feeTier = _feeTier;
@@ -215,7 +215,7 @@ contract Migration is IERC721Receiver {
         uint256 amount1Max,
         address receiver
     ) private returns (uint256 amountMinted) {
-        (uint256 amount0, uint256 amount1, uint256 mintAmount) = resolver.getMintAmounts(
+        (uint256 amount0, uint256 amount1, uint256 mintAmount) = resolverV2.getMintAmounts(
             arrakisV2,
             amount0Max,
             amount1Max
