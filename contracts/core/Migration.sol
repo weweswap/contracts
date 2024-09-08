@@ -174,6 +174,16 @@ contract Migration is IERC721Receiver {
         }
     }
 
+    /// @notice Handles the approval and reset of the safeApprove
+    /// @dev This function first sets the approval to 0 and then sets the new approval amount
+    /// @param tokenContract The ERC20 token contract that we are approving
+    /// @param spender The address of the spender (the contract or account that will be allowed to transfer the tokens)
+    /// @param amount The amount of tokens to approve for the spender
+    function _safeApproveToken(IERC20 tokenContract, address spender, uint256 amount) private {
+        tokenContract.safeApprove(spender, 0);
+        tokenContract.safeApprove(spender, amount);
+    }
+
     /// @notice Handles the receipt of an ERC721 token (liquidity position NFT)
     /// @dev This function is called when the contract receives an ERC721 token via safeTransferFrom.
     /// It validates the NFT, decreases liquidity, collects fees, and swaps the resulting tokens to USDC then deposit on the liquidity manager.
@@ -225,8 +235,8 @@ contract Migration is IERC721Receiver {
         IERC20 token0Contract = IERC20(token0);
         IERC20 token1Contract = IERC20(token1);
 
-        token0Contract.safeApprove(address(arrakisV2), amount0);
-        token1Contract.safeApprove(address(arrakisV2), amount1);
+        _safeApproveToken(token0Contract, address(arrakisV2), amount0);
+        _safeApproveToken(token1Contract, address(arrakisV2), amount1);
 
         (uint256 depositedAmount0, uint256 depositedAmount1) = arrakisV2.mint(mintAmount, receiver);
 
