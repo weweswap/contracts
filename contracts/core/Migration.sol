@@ -57,10 +57,12 @@ contract Migration is IERC721Receiver {
         address _usdc,
         uint24 _feeTier
     ) {
-        require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
-        require(_swapRouter != address(0), "Migration: Invalid SwapRouter address");
-        require(_arrakisV2 != address(0), "Migration: Arrakis V2 address");
-        require(_resolverV2 != address(0), "Migration: Arrakis V2 Resolver address");
+        require(_nfpm != address(0), "INPM");
+        require(_swapRouter != address(0), "ISR");
+        require(_arrakisV2 != address(0), "IA");
+        require(_resolverV2 != address(0), "IAR");
+        require(_tokenToMigrate != address(0), "ITM");
+        require(_usdc != address(0), "IUSDC");
         swapRouter = ISwapRouter02(_swapRouter);
         nfpm = INonfungiblePositionManager(_nfpm);
         arrakisV2 = IArrakisV2(_arrakisV2);
@@ -75,7 +77,7 @@ contract Migration is IERC721Receiver {
     /// @param tokenId The ID of the token representing the liquidity position
     function _decreaseAllLiquidity(uint256 tokenId) private {
         (, , , , , , , uint128 liquidity, , , , ) = nfpm.positions(tokenId);
-        require(liquidity > 0, "Migration: No liquidity in this LP");
+        require(liquidity > 0, "NLP");
 
         nfpm.decreaseLiquidity(
             INonfungiblePositionManager.DecreaseLiquidityParams({
@@ -189,12 +191,11 @@ contract Migration is IERC721Receiver {
         bytes calldata data
     ) external override returns (bytes4) {
         (address token0, address token1) = _getPositionTokens(tokenId);
-        require(_isValidNftPosition(token0, token1), "Invalid NFT: Does not have the correct token");
+        require(_isValidNftPosition(token0, token1), "INFT");
 
         (uint256 amountToken0, uint256 amountToken1) = _decreaseAllLiquidityAndCollectFees(tokenId);
         (address tokenIn, uint256 amountIn) = _getTokenAndAmountToSwap(token0, token1, amountToken0, amountToken1);
 
-        // TODO: Add sent to LM contract
         uint256 usdcAmount = _swap(tokenIn, amountIn);
 
         uint256 tokenToMigrateAmount = 0;
@@ -226,26 +227,16 @@ contract Migration is IERC721Receiver {
         IERC20 token0Contract = IERC20(token0);
         IERC20 token1Contract = IERC20(token1);
 
-        // console.log('Aproving...');
-
         token0Contract.safeApprove(address(arrakisV2), amount0);
         token1Contract.safeApprove(address(arrakisV2), amount1);
 
-        // console.log('Aproved');
-
         (uint256 depositedAmount0, uint256 depositedAmount1) = arrakisV2.mint(mintAmount, receiver);
 
-        // console.log('Minted');
-
         if (depositedAmount0 < amount0Max) {
-            // console.log('depositedAmount0', depositedAmount0);
-            // console.log('amount0Max', amount0Max);
             token0Contract.safeTransfer(receiver, amount0Max - depositedAmount0);
         }
 
         if (depositedAmount1 < amount1Max) {
-            // console.log('depositedAmount1', depositedAmount1);
-            // console.log('amount1Max', amount1Max);
             token1Contract.safeTransfer(receiver, amount1Max - depositedAmount1);
         }
 

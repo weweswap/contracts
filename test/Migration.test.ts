@@ -63,16 +63,22 @@ describe("Migration contract", function () {
 		it("Should revert if deployed with a zero address", async function () {
 			const Migration = await ethers.getContractFactory("Migration");
 			await expect(Migration.deploy(ethers.ZeroAddress, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
-				"Migration: Invalid NonfungiblePositionManager address",
+				"INPM",
 			);
 			await expect(Migration.deploy(UNI_V3_POS, ethers.ZeroAddress, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
-				"Migration: Invalid SwapRouter address",
+				"ISR",
 			);
 			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ethers.ZeroAddress, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
-				"Migration: Arrakis V2 address",
+				"IA",
 			);
 			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ethers.ZeroAddress, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
-				"Migration: Arrakis V2 Resolver address",
+				"IAR",
+			);
+			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, ethers.ZeroAddress, USDC_ADDRESS, 3000)).to.be.revertedWith(
+				"ITM",
+			);
+			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, ethers.ZeroAddress, 3000)).to.be.revertedWith(
+				"IUSDC",
 			);
 		});
 		it("Should be in a deterministic state of the blockchain", async function () {
@@ -89,7 +95,7 @@ describe("Migration contract", function () {
 			const tokenId = positions[0].id; // Assume this is an invalid liquidity position for the WEWE-WETH pair
 			// Attempt to transfer the NFT to the migration contract and expect it to revert with the specified message
 			await expect(positionsContract.safeTransferFrom(owner.address, await migration.getAddress(), tokenId)).to.be.revertedWith(
-				"Invalid NFT: Does not have the correct token",
+				"INFT",
 			);
 		});
 		it("Should accept ERC721 for WEWE/WETH pair", async function () {
