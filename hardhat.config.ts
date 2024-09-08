@@ -1,5 +1,7 @@
 import { HardhatUserConfig, task, vars } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-ignition-ethers";
+
 import dotenv from "dotenv";
 
 dotenv.config();

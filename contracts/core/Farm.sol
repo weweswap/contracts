@@ -13,15 +13,21 @@ import "../interfaces/IRewarder.sol";
 import "../interfaces/IMigratorChef.sol";
 import "../interfaces/ICHAOS.sol";
 
-contract Chaos is Ownable {
-    using SafeMath for uint256; // using BoringMath for uint256;
+contract Farm is Ownable {
+    using SafeMath for uint256;
     using SafeCast for int64;
     using SafeCast for uint64;
-    using SafeCast for uint128; // using BoringMath128 for uint128;
+    using SafeCast for uint128;
     using SafeCast for int128;
     using SafeCast64 for uint256;
     using SafeERC20 for IERC20;
     using SignedSafeMath for int256;
+
+    // Total CHAOS allocated to the pools
+    uint256 private _totalSupplyAllocated;
+
+    // Sum of the weights of all vaults
+    uint8 private _totalWeight;
 
     /// @notice Info of each MCV2 user.
     /// `amount` LP token amount the user has provided.
@@ -38,14 +44,18 @@ contract Chaos is Ownable {
         uint128 accChaosPerShare;
         uint64 lastRewardBlock;
         uint64 allocPoint;
+        uint256 totalSupply; // CHAOS allocated to the pool
+        uint8 weight; // Arbitrary weight for the pool
     }
 
     /// @notice Address of MCV1 contract.
-    ICHAOS public immutable CHAOS;
+    // ICHAOS public immutable CHAOS;
     /// @notice Address of CHAOS contract.
     IERC20 public immutable CHAOS_TOKEN;
-    /// @notice The index of MCV2 master pool in MCV1.
-    uint256 public immutable MASTER_PID;
+
+    // /// @notice The index of MCV2 master pool in MCV1.
+    // uint256 public immutable MASTER_PID;
+
     // @notice The migrator contract. It has a lot of power. Can only be set through governance (owner).
     IMigratorChef public migrator;
 
@@ -61,32 +71,54 @@ contract Chaos is Ownable {
     /// @dev Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint;
 
-    uint256 private constant CHAOS_PER_BLOCK = 1e20;
+    // NEEDS TO BE PER POOL, PER BLOCK
+    // uint256 private constant CHAOS_PER_BLOCK = 1e20;
     uint256 private constant ACC_CHAOS_PRECISION = 1e12;
 
-    /// @param _CHAOS The SushiSwap MCV1 contract address.
-    /// @param _rewards The rewards token contract address.
-    /// @param _MASTER_PID The pool ID of the dummy token on the base MCV1 contract.
-    constructor(ICHAOS _CHAOS, IERC20 _rewards, uint256 _MASTER_PID) {
-        CHAOS = _CHAOS;
-        CHAOS_TOKEN = _rewards;
-        MASTER_PID = _MASTER_PID;
+    /// @param _reward The reward token contract address.
+    constructor(IERC20 _reward) {
+        CHAOS_TOKEN = _reward;
     }
 
-    /// @notice Deposits a dummy token to `CHAOS` MCV1. This is required because MCV1 holds the minting rights for CHAOS.
-    /// Any balance of transaction sender in `dummyToken` is transferred.
-    /// The allocation point for the pool on MCV1 is the total allocation point for all pools that receive double incentives.
-    /// @param dummyToken The address of the ERC-20 token to deposit into MCV1.
-    function init(IERC20 dummyToken) external {
-        uint256 balance = dummyToken.balanceOf(msg.sender);
-        require(balance != 0, "Chaos: Balance must exceed 0");
-        dummyToken.safeTransferFrom(msg.sender, address(this), balance);
-        dummyToken.approve(address(CHAOS), balance);
-        CHAOS.deposit(MASTER_PID, balance);
-        emit LogInit();
+    /// Allocate CHAOS to the farming contract.
+    /// @param pid The pool ID to allocate the CHAOS to.
+    /// @param amount Amount of CHAOS to allocate.
+    function allocate(uint256 pid, uint256 amount) external {
+        require(
+            _totalSupplyAllocated.add(amount) <= CHAOS_TOKEN.balanceOf(address(this)),
+            "Chaos: Insufficient CHAOS balance"
+        );
+
+        _totalSupplyAllocated += amount;
+        poolInfo[pid].totalSupply += amount;
     }
 
-    /// @notice Returns the number of MCV2 pools.
+    function setVaultWeight(uint256 pid, uint8 weight) external onlyOwner {
+        if (weight == 0) {
+            // Remove the pool
+            _totalWeight -= poolInfo[pid].weight;
+            poolInfo[pid].weight = 0;
+        } else {
+            // Calculate the new total weight delta
+            uint8 delta = weight > poolInfo[pid].weight ? weight - poolInfo[pid].weight : poolInfo[pid].weight - weight;
+            _totalWeight += delta;
+
+            poolInfo[pid].weight = weight;
+        }
+
+        emit LogSetPoolWeight(pid, weight);
+    }
+
+    function getPoolWeightAsPercentage(uint256 pid) public view returns (uint8) {
+        return (poolInfo[pid].weight * 100) / _totalWeight;
+    }
+
+    function setEmmisionsPerBlock(uint256 pid, uint128 amount) external onlyOwner {
+        // Set the new emmisions per block
+        poolInfo[pid].accChaosPerShare = amount;
+    }
+
+    /// @notice Returns the number of pools.
     function poolLength() public view returns (uint256 pools) {
         pools = poolInfo.length;
     }
@@ -106,9 +138,12 @@ contract Chaos is Ownable {
             PoolInfo({
                 allocPoint: allocPoint.toUInt64(),
                 lastRewardBlock: lastRewardBlock.toUInt64(),
-                accChaosPerShare: 0
+                accChaosPerShare: 0,
+                totalSupply: 0,
+                weight: 0
             })
         );
+
         emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
     }
 
@@ -119,7 +154,7 @@ contract Chaos is Ownable {
     /// @param overwrite True if _rewarder should be `set`. Otherwise `_rewarder` is ignored.
     function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool overwrite) public onlyOwner {
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
-        poolInfo[_pid].allocPoint = _allocPoint.toUInt64(); // poolInfo[_pid].allocPoint = _allocPoint.to64();
+        poolInfo[_pid].allocPoint = _allocPoint.toUInt64();
         if (overwrite) {
             rewarder[_pid] = _rewarder;
         }
@@ -151,12 +186,17 @@ contract Chaos is Ownable {
     function pendingRewards(uint256 _pid, address _user) external view returns (uint256 pending) {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
+
+        // TODO: NEED TO SET EMMISIONS PER BLOCK
         uint256 accChaosPerShare = pool.accChaosPerShare;
+
+        // TODO: CHECK LOGIC ON THIS...
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
+
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 blocks = block.number.sub(pool.lastRewardBlock);
-            uint256 sushiReward = blocks.mul(rewardsPerBlock()).mul(pool.allocPoint) / totalAllocPoint; // LC: todo .div(totalAllocPoint)
-            accChaosPerShare = accChaosPerShare.add(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply); // LC: todo .div(lpSupply)
+            uint256 sushiReward = blocks.mul(rewardsPerBlock(_pid)).mul(pool.allocPoint) / totalAllocPoint;
+            accChaosPerShare = accChaosPerShare.add(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply);
         }
 
         pending = uint256(int256(user.amount.mul(accChaosPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt));
@@ -172,8 +212,10 @@ contract Chaos is Ownable {
     }
 
     /// @notice Calculates and returns the `amount` of CHAOS per block.
-    function rewardsPerBlock() public view returns (uint256 amount) {
-        amount = uint256(CHAOS_PER_BLOCK).mul(CHAOS.poolInfo(MASTER_PID).allocPoint) / CHAOS.totalAllocPoint();
+    function rewardsPerBlock(uint256 pid) public view returns (uint256 amount) {
+        // amount = uint256(CHAOS_PER_BLOCK).mul(CHAOS.poolInfo(MASTER_PID).allocPoint) / CHAOS.totalAllocPoint();
+
+        amount = poolInfo[pid].accChaosPerShare;
     }
 
     /// @notice Update reward variables of the given pool.
@@ -181,15 +223,19 @@ contract Chaos is Ownable {
     /// @return pool Returns the pool that was updated.
     function updatePool(uint256 pid) public returns (PoolInfo memory pool) {
         pool = poolInfo[pid];
+
         if (block.number > pool.lastRewardBlock) {
             uint256 lpSupply = lpToken[pid].balanceOf(address(this));
+
             if (lpSupply > 0) {
                 uint256 blocks = block.number.sub(pool.lastRewardBlock);
-                uint256 sushiReward = blocks.mul(rewardsPerBlock()).mul(pool.allocPoint) / totalAllocPoint;
+                uint256 sushiReward = blocks.mul(rewardsPerBlock(pid)).mul(pool.allocPoint) / totalAllocPoint;
                 pool.accChaosPerShare += uint128(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply);
             }
+
             pool.lastRewardBlock = block.number.toUInt64();
             poolInfo[pid] = pool;
+
             emit LogUpdatePool(pid, pool.lastRewardBlock, lpSupply, pool.accChaosPerShare);
         }
     }
@@ -247,7 +293,7 @@ contract Chaos is Ownable {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         int256 accumulatedSushi = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
-        uint256 _pendingSushi = uint256(accumulatedSushi.sub(user.rewardDebt)); // uint256 _pendingSushi = accumulatedSushi.sub(user.rewardDebt).toUInt256();
+        uint256 _pendingSushi = uint256(accumulatedSushi.sub(user.rewardDebt));
 
         // Effects
         user.rewardDebt = accumulatedSushi;
@@ -293,11 +339,6 @@ contract Chaos is Ownable {
         emit Harvest(msg.sender, pid, _pendingSushi);
     }
 
-    /// @notice Harvests CHAOS from `CHAOS` MCV1 and pool `MASTER_PID` to this MCV2 contract.
-    function harvestFromChaos() public {
-        CHAOS.deposit(MASTER_PID, 0);
-    }
-
     /// @notice Withdraw without caring about rewards. EMERGENCY ONLY.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param to Receiver of the LP tokens.
@@ -324,5 +365,5 @@ contract Chaos is Ownable {
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
     event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
     event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accChaosPerShare);
-    event LogInit();
+    event LogSetPoolWeight(uint256 indexed pid, uint8 weight);
 }
