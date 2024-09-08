@@ -364,11 +364,6 @@ contract Farm is Ownable {
         emit Harvest(msg.sender, pid, _pendingSushi);
     }
 
-    // /// @notice Harvests CHAOS from `CHAOS` MCV1 and pool `MASTER_PID` to this MCV2 contract.
-    // function harvestFromChaos() public {
-    //     CHAOS.deposit(MASTER_PID, 0);
-    // }
-
     /// @notice Withdraw without caring about rewards. EMERGENCY ONLY.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param to Receiver of the LP tokens.

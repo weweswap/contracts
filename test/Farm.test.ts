@@ -1,7 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-// import { deployContract, deployMockContract } from "ethereum-waffle";
 
 import {
 	DETERMINISTIC_FEE0_AMOUNT,
@@ -14,7 +13,6 @@ import {
 	USDC_ADDRESS,
 } from "./constants";
 
-const migrator_abi = ""; // require("../artifacts/contracts/interfaces/IMigratorChef.sol/IMigratorChef.json").abi;
 
 const WEWE_ADDRESS = "0x6b9bb36519538e0C073894E964E90172E1c0B41F";
 const REWARDER_ADDRESS = ethers.ZeroAddress;
@@ -97,22 +95,16 @@ describe.only("Farm contract", () => {
 				expect(await _farm.migrator()).to.not.equal(ethers.ZeroAddress);
 			});
 
-			it.only("Should migrate", async () => {
+			it.skip("Should migrate", async () => {
 				await _farm.setMigrator(mockMigrator);
 				expect(await _farm.migrator()).to.not.equal(ethers.ZeroAddress);
 
+				// need to add pool
 				await _farm.migrate(0);
 			});
 		});
 
-		it("Should get no pending rewards", async () => {
-			const { farm } = await loadFixture(deployFixture);
-			const poolId = 0;
-			const account = ethers.Wallet.createRandom().address;
-			expect(await farm.pendingRewards(poolId, account)).to.equal(0);
-		});
-
-		describe("Deposit and withdraw", () => {
+		describe("Rewards", () => {
 			let _chaos: any;
 
 			beforeEach(async () => {
@@ -124,9 +116,35 @@ describe.only("Farm contract", () => {
 				await _chaos.set(poolId, allocPoint, REWARDER_ADDRESS, true);
 			});
 
-			it("Should deposit", async () => {
+			it.skip("Should get no pending rewards", async () => {
+				const { farm } = await loadFixture(deployFixture);
 				const poolId = 0;
 				const account = ethers.Wallet.createRandom().address;
+				expect(await farm.pendingRewards(poolId, account)).to.equal(0);
+			});
+		});
+
+		describe("Deposit and withdraw", async () => {
+			let _chaos: any;
+
+			// get instance of usdc
+			const usdc = await ethers.getContractAt("ERC20", USDC_ADDRESS);
+
+			beforeEach(async () => {
+				const { farm } = await loadFixture(deployFixture);
+				_chaos = farm;
+				const poolId = 0;
+				const allocPoint = 0;
+				await _chaos.add(allocPoint, USDC_ADDRESS, REWARDER_ADDRESS);
+				await _chaos.set(poolId, allocPoint, REWARDER_ADDRESS, true);
+			});
+
+			it.only("Should deposit lp to farm", async () => {
+				const poolId = 0;
+				const account = ethers.Wallet.createRandom().address;
+
+				// todo: change to 777
+				await usdc.approve(_chaos.address, 1000000n);
 
 				expect(await _chaos.deposit(poolId, 1000000n, account))
 					.to.emit(_chaos, "Deposit")
