@@ -84,27 +84,24 @@ describe.only("Farm contract", () => {
 				mockMigrator = await MockMigrator.deploy();
 			});
 
+			it.only("Should not migrator if migrator not set", async () => {
+				const { farm } = await loadFixture(deployFixture);
+
+				expect(await farm.migrator()).to.equal(ethers.ZeroAddress);
+				await expect(farm.migrate(0)).to.be.revertedWith("Chaos: no migrator set");
+			});
+
 			it.only("Should set migrator", async () => {
 				expect(await _farm.migrator()).to.equal(ethers.ZeroAddress);
 				await _farm.setMigrator(mockMigrator);
 				expect(await _farm.migrator()).to.not.equal(ethers.ZeroAddress);
 			});
 
-			it("Should not migrator if migrator not set", async () => {
-				const { farm } = await loadFixture(deployFixture);
+			it.only("Should migrate", async () => {
+				await _farm.setMigrator(mockMigrator);
+				expect(await _farm.migrator()).to.not.equal(ethers.ZeroAddress);
 
-				// set migrator to non zero address
-
-				expect(await farm.migrator()).to.not.equal(ethers.ZeroAddress);
-
-				// todo: test this
-			});
-
-			it("Should migrate", async () => {
-				const { farm } = await loadFixture(deployFixture);
-				expect(await farm.migrator()).to.not.equal(ethers.ZeroAddress);
-
-				await farm.migrate(0);
+				await _farm.migrate(0);
 			});
 		});
 
