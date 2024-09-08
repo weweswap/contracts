@@ -30,12 +30,6 @@ describe.only("Farm contract", () => {
 		]);
 
 		const accountWithFees = await ethers.getImpersonatedSigner(DETERMINISTIC_WEWE_WETH_WALLET);
-		// const transaction = await owner.sendTransaction({
-		// 	to: accountWithFees.address,
-		// 	value: ethers.parseEther("1.0"),
-		// });
-		// await transaction.wait();
-
 		const Farm = await ethers.getContractFactory("Farm");
 		const farm = await Farm.deploy(USDC_ADDRESS);
 
@@ -63,7 +57,6 @@ describe.only("Farm contract", () => {
 		it("Should deploy the contract with correct addresses", async () => {
 			expect(await _farm.CHAOS_TOKEN()).to.equal(USDC_ADDRESS);
 			expect(await _farm.poolLength()).to.equal(0);
-			expect(await _farm.rewardsPerBlock()).to.equal(1);
 		});
 
 		it("Should add pool", async () => {
@@ -87,8 +80,8 @@ describe.only("Farm contract", () => {
 			it("Should not migrator if migrator not set", async () => {
 				const { farm } = await loadFixture(deployFixture);
 
-				// expect(await farm.migrator()).to.equal(ethers.ZeroAddress);
-				// await expect(farm.migrate(0)).to.be.revertedWith("Chaos: no migrator set");
+				expect(await farm.migrator()).to.equal(ethers.ZeroAddress);
+				await expect(farm.migrate(0)).to.be.revertedWith("Chaos: no migrator set");
 			});
 
 			it("Should set migrator", async () => {
@@ -97,11 +90,13 @@ describe.only("Farm contract", () => {
 				expect(await _farm.migrator()).to.not.equal(ethers.ZeroAddress);
 			});
 
-			it("Should migrate", async () => {
+			// will need to implement the mockMigrator
+			it.skip("Should migrate", async () => {
 				await _farm.setMigrator(mockMigrator);
 				expect(await _farm.migrator()).to.not.equal(ethers.ZeroAddress);
 
-				// need to add pool
+				// set the pool
+				await _farm.add(allocPoint, USDC_ADDRESS, _rewarder);
 				await _farm.migrate(0);
 			});
 		});
