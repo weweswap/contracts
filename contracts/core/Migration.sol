@@ -12,8 +12,6 @@ import {ILiquidityManagerFactory} from "../interfaces/ILiquidityManagerFactory.s
 import {IArrakisV2Resolver} from "../arrakis/interfaces/IArrakisV2Resolver.sol";
 import {IArrakisV2} from "../arrakis/interfaces/IArrakisV2.sol";
 
-// import "hardhat/console.sol";
-
 /// @title Migration Contract for Uniswap v3 Positions
 /// @notice This contract is used to migrate liquidity positions from Uniswap v3, decrease liquidity, collect fees, change the unselected token to USDC and deposit all liquidity in a WEWESwap protocol liquidityManager.
 contract Migration is IERC721Receiver {
@@ -57,10 +55,12 @@ contract Migration is IERC721Receiver {
         address _usdc,
         uint24 _feeTier
     ) {
-        require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
-        require(_swapRouter != address(0), "Migration: Invalid SwapRouter address");
-        require(_arrakisV2 != address(0), "Migration: Arrakis V2 address");
-        require(_resolverV2 != address(0), "Migration: Arrakis V2 Resolver address");
+        require(_nfpm != address(0), "INPM");
+        require(_swapRouter != address(0), "ISR");
+        require(_arrakisV2 != address(0), "IA");
+        require(_resolverV2 != address(0), "IAR");
+        require(_tokenToMigrate != address(0), "ITM");
+        require(_usdc != address(0), "IUSDC");
         swapRouter = ISwapRouter02(_swapRouter);
         nfpm = INonfungiblePositionManager(_nfpm);
         arrakisV2 = IArrakisV2(_arrakisV2);
@@ -75,7 +75,7 @@ contract Migration is IERC721Receiver {
     /// @param tokenId The ID of the token representing the liquidity position
     function _decreaseAllLiquidity(uint256 tokenId) private {
         (, , , , , , , uint128 liquidity, , , , ) = nfpm.positions(tokenId);
-        require(liquidity > 0, "Migration: No liquidity in this LP");
+        require(liquidity > 0, "NLP");
 
         nfpm.decreaseLiquidity(
             INonfungiblePositionManager.DecreaseLiquidityParams({
@@ -174,6 +174,16 @@ contract Migration is IERC721Receiver {
         }
     }
 
+    /// @notice Handles the approval and reset of the safeApprove
+    /// @dev This function first sets the approval to 0 and then sets the new approval amount
+    /// @param tokenContract The ERC20 token contract that we are approving
+    /// @param spender The address of the spender (the contract or account that will be allowed to transfer the tokens)
+    /// @param amount The amount of tokens to approve for the spender
+    function _safeApproveToken(IERC20 tokenContract, address spender, uint256 amount) private {
+        tokenContract.safeApprove(spender, 0);
+        tokenContract.safeApprove(spender, amount);
+    }
+
     /// @notice Handles the receipt of an ERC721 token (liquidity position NFT)
     /// @dev This function is called when the contract receives an ERC721 token via safeTransferFrom.
     /// It validates the NFT, decreases liquidity, collects fees, and swaps the resulting tokens to USDC then deposit on the liquidity manager.
@@ -189,12 +199,11 @@ contract Migration is IERC721Receiver {
         bytes calldata data
     ) external override returns (bytes4) {
         (address token0, address token1) = _getPositionTokens(tokenId);
-        require(_isValidNftPosition(token0, token1), "Invalid NFT: Does not have the correct token");
+        require(_isValidNftPosition(token0, token1), "INFT");
 
         (uint256 amountToken0, uint256 amountToken1) = _decreaseAllLiquidityAndCollectFees(tokenId);
         (address tokenIn, uint256 amountIn) = _getTokenAndAmountToSwap(token0, token1, amountToken0, amountToken1);
 
-        // TODO: Add sent to LM contract
         uint256 usdcAmount = _swap(tokenIn, amountIn);
 
         uint256 tokenToMigrateAmount = 0;
@@ -226,26 +235,16 @@ contract Migration is IERC721Receiver {
         IERC20 token0Contract = IERC20(token0);
         IERC20 token1Contract = IERC20(token1);
 
-        // console.log('Aproving...');
-
-        token0Contract.safeApprove(address(arrakisV2), amount0);
-        token1Contract.safeApprove(address(arrakisV2), amount1);
-
-        // console.log('Aproved');
+        _safeApproveToken(token0Contract, address(arrakisV2), amount0);
+        _safeApproveToken(token1Contract, address(arrakisV2), amount1);
 
         (uint256 depositedAmount0, uint256 depositedAmount1) = arrakisV2.mint(mintAmount, receiver);
 
-        // console.log('Minted');
-
         if (depositedAmount0 < amount0Max) {
-            // console.log('depositedAmount0', depositedAmount0);
-            // console.log('amount0Max', amount0Max);
             token0Contract.safeTransfer(receiver, amount0Max - depositedAmount0);
         }
 
         if (depositedAmount1 < amount1Max) {
-            // console.log('depositedAmount1', depositedAmount1);
-            // console.log('amount1Max', amount1Max);
             token1Contract.safeTransfer(receiver, amount1Max - depositedAmount1);
         }
 
