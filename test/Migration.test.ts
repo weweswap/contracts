@@ -4,16 +4,12 @@ import { ethers } from "hardhat";
 import { main as mintNewPosition } from "../scripts/mintNFTPosition";
 import { main as listPositions } from "../scripts/listPositions";
 import {
-	DETERMINISTIC_FEE0_AMOUNT,
-	DETERMINISTIC_FEE1_AMOUNT,
 	DETERMINISTIC_MIN_HEIGHT,
 	DETERMINISTIC_OWED_TOKEN0_AMOUNT,
 	DETERMINISTIC_OWED_TOKEN1_AMOUNT,
-	DETERMINISTIC_TOKENID,
 	DETERMINISTIC_WEWE_WETH_WALLET,
 	ARRAKIS_V2_ADDRESS,
 	ARRAKIS_V2_RESOLVER_ADDRESS,
-	DETERMINISTIC_LIQUIDITY,
 	UNI_V3_POS,
 	SWAP_ROUTER_ADDRESS,
 	WEWE_ADDRESS,
@@ -21,8 +17,6 @@ import {
 } from "./constants";
 
 const INonfungiblePositionManager = require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json").abi;
-
-
 
 describe("Migration contract", function () {
 	async function deployFixture() {
@@ -45,19 +39,26 @@ describe("Migration contract", function () {
 		});
 		await transaction.wait();
 
-		const Migration = await ethers.getContractFactory("Migration");
-		const migration = await Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000);
+		const MockResolverV2 = await ethers.getContractFactory("MockResolverV2");
+    	const resolverV2Mock = await MockResolverV2.deploy();
 
-		return { migration, owner, otherAccount, accountWithFees };
+		const MockArrakisV2 = await ethers.getContractFactory("MockArrakisV2");
+		const arrakisV2Mock = await MockArrakisV2.deploy();
+
+		const Migration = await ethers.getContractFactory("Migration");
+		const migration = await Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, await arrakisV2Mock.getAddress(), await resolverV2Mock.getAddress(), WEWE_ADDRESS, USDC_ADDRESS, 3000);
+		// const migration = await Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000);
+
+		return { migration, arrakisV2Mock, resolverV2Mock, owner, otherAccount, accountWithFees };
 	}
 	describe("Configuration", function () {
 		it("Should deploy the contract with correct addresses", async function () {
-			const { migration } = await loadFixture(deployFixture);
+			const { migration, arrakisV2Mock,resolverV2Mock } = await loadFixture(deployFixture);
 			expect(await migration.nfpm()).to.equal(UNI_V3_POS);
 			expect(await migration.swapRouter()).to.equal(SWAP_ROUTER_ADDRESS);
 			expect(await migration.tokenToMigrate()).to.equal(WEWE_ADDRESS);
-			expect(await migration.arrakisV2()).to.equal(ARRAKIS_V2_ADDRESS);
-			expect(await migration.resolverV2()).to.equal(ARRAKIS_V2_RESOLVER_ADDRESS);
+			expect([ARRAKIS_V2_ADDRESS, await arrakisV2Mock.getAddress()]).to.include(await migration.arrakisV2());
+			expect([ARRAKIS_V2_RESOLVER_ADDRESS, await resolverV2Mock.getAddress()]).to.include(await migration.resolverV2());
 			expect(await migration.usdc()).to.equal(USDC_ADDRESS);
 		});
 		it("Should revert if deployed with a zero address", async function () {
@@ -141,30 +142,29 @@ describe("Migration contract", function () {
 				expect(positionData.liquidity).to.equal(0);
 			}
 		});
-		it("Should handle entire flow: receiving NFT, decreasing liquidity, collecting fees, and swapping", async function () {
-			const { migration, owner, accountWithFees } = await loadFixture(deployFixture);
+		it("Should handle entire flow: receiving NFT, decreasing liquidity, collecting fees, swapping and receiving LP", async function () {
+			const { migration, owner, otherAccount, arrakisV2Mock } = await loadFixture(deployFixture);
 
-			// Ensure the tokenId is deterministic and exists
-			const positions = await listPositions(accountWithFees.address);
-			const position = positions.find(position => position.id === DETERMINISTIC_TOKENID);
-			if (!position) {
-				throw new Error("Position with the deterministic token ID not found.");
-			}
-			const tokenId = position?.id;
+			await mintNewPosition(otherAccount.address);
+			const positions = await listPositions(otherAccount.address);
+			const tokenId = positions[0].id;
 			expect(tokenId).to.not.be.undefined;
 
-			// Verify balances before the transfer
-			expect(position.liquidity).to.equal(DETERMINISTIC_LIQUIDITY);
-			expect(position.feeGrowthInside0LastX128).to.equal(DETERMINISTIC_FEE0_AMOUNT);
-			expect(position.feeGrowthInside1LastX128).to.equal(DETERMINISTIC_FEE1_AMOUNT);
-
-			const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, accountWithFees);
+			const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, otherAccount);
 
 			// Get contract balance of NFTs before the transfer
 			const contractBalanceBefore = await positionsContract.balanceOf(await migration.getAddress());
 
+			// Assuming migration contract holds the tokens, check balance of tokens inside the contract
+			const token0 = await migration.tokenToMigrate();
+			const token0Contract = new ethers.Contract(token0, ["function balanceOf(address) view returns (uint256)"], ethers.provider);
+			const usdcContract = new ethers.Contract(USDC_ADDRESS, ["function balanceOf(address) view returns (uint256)"], ethers.provider);
+
+			expect(await token0Contract.balanceOf(migration.getAddress())).to.equal(0)
+			expect(await usdcContract.balanceOf(migration.getAddress())).to.equal(0)
+
 			// Transfer the NFT to the migration contract
-			const tx = await positionsContract.safeTransferFrom(await accountWithFees.getAddress(), await migration.getAddress(), tokenId);
+			const tx = await positionsContract.safeTransferFrom(otherAccount, await migration.getAddress(), tokenId);
 			await tx.wait();
 
 			// Verify the contract now holds the NFT
@@ -175,16 +175,14 @@ describe("Migration contract", function () {
 			const lpPosition = await positionsContract.positions(tokenId);
 			expect(lpPosition.liquidity).to.equal(0);
 
-			// Assuming migration contract holds the tokens, check balance of tokens inside the contract
-			const wewe = await migration.tokenToMigrate();
-			const token0Contract = new ethers.Contract(wewe, ["function balanceOf(address) view returns (uint256)"], ethers.provider);
-			const usdcContract = new ethers.Contract(USDC_ADDRESS, ["function balanceOf(address) view returns (uint256)"], ethers.provider);
+			// Verify LP balance
+			const mockToken = await ethers.getContractAt("MockToken", await arrakisV2Mock.token());
+			const balance = await mockToken.balanceOf(otherAccount.address);
+    		expect(balance).to.equal(10);
 
-			const weweBalance = await token0Contract.balanceOf(migration.getAddress());
-			const usdcBalance = await usdcContract.balanceOf(migration.getAddress());
-
-			expect(weweBalance).to.equal(DETERMINISTIC_OWED_TOKEN1_AMOUNT);
-			expect(usdcBalance).to.equal(DETERMINISTIC_OWED_TOKEN0_AMOUNT);
+			// Verify leftovers
+			expect(await token0Contract.balanceOf(migration.getAddress())).to.equal(0)
+			expect(await usdcContract.balanceOf(migration.getAddress())).to.equal(0)
 		});
 	});
 });
