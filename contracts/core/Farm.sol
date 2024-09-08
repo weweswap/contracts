@@ -49,7 +49,7 @@ contract Farm is Ownable {
     }
 
     /// @notice Address of MCV1 contract.
-    ICHAOS public immutable CHAOS;
+    // ICHAOS public immutable CHAOS;
     /// @notice Address of CHAOS contract.
     IERC20 public immutable CHAOS_TOKEN;
 
@@ -75,10 +75,9 @@ contract Farm is Ownable {
     // uint256 private constant CHAOS_PER_BLOCK = 1e20;
     uint256 private constant ACC_CHAOS_PRECISION = 1e12;
 
-    /// @param _CHAOS The SushiSwap MCV1 contract address.
     /// @param _rewards The rewards token contract address.
-    constructor(ICHAOS _CHAOS, IERC20 _rewards) {
-        CHAOS = _CHAOS;
+    constructor(IERC20 _rewards) {
+        // CHAOS = _CHAOS;
         CHAOS_TOKEN = _rewards;
 
         // NOTE REQUIRED FOR CHAOS
@@ -240,7 +239,7 @@ contract Farm is Ownable {
         // TODO: NEED TO SET EMMISIONS PER BLOCK, PER ALLOC POINT
         // amount = uint256(CHAOS_PER_BLOCK).mul(CHAOS.poolInfo(MASTER_PID).allocPoint) / CHAOS.totalAllocPoint();
 
-        amount = 0;
+        amount = 1;
     }
 
     /// @notice Update reward variables of the given pool.
@@ -318,7 +317,7 @@ contract Farm is Ownable {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         int256 accumulatedSushi = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
-        uint256 _pendingSushi = uint256(accumulatedSushi.sub(user.rewardDebt)); // uint256 _pendingSushi = accumulatedSushi.sub(user.rewardDebt).toUInt256();
+        uint256 _pendingSushi = uint256(accumulatedSushi.sub(user.rewardDebt));
 
         // Effects
         user.rewardDebt = accumulatedSushi;

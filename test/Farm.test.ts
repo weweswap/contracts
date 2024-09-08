@@ -12,7 +12,9 @@ import {
 	DETERMINISTIC_WEWE_WETH_WALLET,
 	USDC_ADDRESS,
 } from "./constants";
+import { Contract } from "ethers";
 
+const IERC20_ABI = require("../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json").abi;
 
 describe.only("Farm contract", () => {
 	async function deployFixture() {
@@ -35,17 +37,17 @@ describe.only("Farm contract", () => {
 		// await transaction.wait();
 
 		const Farm = await ethers.getContractFactory("Farm");
-		const farm = await Farm.deploy(ethers.ZeroAddress, USDC_ADDRESS);
+		const farm = await Farm.deploy(USDC_ADDRESS);
 
 		return { farm, owner, otherAccount, accountWithFees };
 	}
 
-	describe.only("Farm", () => {
+	describe("Farm", () => {
 		let _farm: any;
 		const poolId = 0;
 		const allocPoint = 0;
 		let _owner: any;
-		let _rewarder: any;
+		let _rewarder: string;
 
 		beforeEach(async () => {
 			const { farm, owner } = await loadFixture(deployFixture);
@@ -59,21 +61,17 @@ describe.only("Farm contract", () => {
 		});
 
 		it("Should deploy the contract with correct addresses", async () => {
-			expect(await _farm.CHAOS()).to.equal(ethers.ZeroAddress);
 			expect(await _farm.CHAOS_TOKEN()).to.equal(USDC_ADDRESS);
 			expect(await _farm.poolLength()).to.equal(0);
-			expect(await _farm.rewardsPerBlock()).to.equal(0);
+			expect(await _farm.rewardsPerBlock()).to.equal(1);
 		});
 
-		it.skip("Should add pool", async () => {
-			// todo: get alloc point
-			// const allocPoint = 0;
-			console.log("rewarder", _rewarder);
+		it("Should add pool", async () => {
 			expect(await _farm.add(allocPoint, USDC_ADDRESS, _rewarder)).to.emit(_farm, "LogPoolAddition");
+			expect(await _farm.poolLength()).to.equal(1);
 		});
 
-		it.skip("Should set and overwrite alloc point", async () => {
-			// TODO: move this to a before hook
+		it("Should set and overwrite alloc point", async () => {
 			expect(await _farm.add(allocPoint, USDC_ADDRESS, _rewarder)).to.emit(_farm, "LogPoolAddition");
 			expect(await _farm.set(poolId, allocPoint, _rewarder, true)).to.emit(_farm, "LogSetPool");
 		});
@@ -99,7 +97,7 @@ describe.only("Farm contract", () => {
 				expect(await _farm.migrator()).to.not.equal(ethers.ZeroAddress);
 			});
 
-			it.skip("Should migrate", async () => {
+			it("Should migrate", async () => {
 				await _farm.setMigrator(mockMigrator);
 				expect(await _farm.migrator()).to.not.equal(ethers.ZeroAddress);
 
@@ -133,86 +131,80 @@ describe.only("Farm contract", () => {
 		});
 
 		describe("Deposit and withdraw", async () => {
-			let _chaos: any;
-
-			// get instance of usdc
-			const usdc = await ethers.getContractAt("ERC20", USDC_ADDRESS);
+			let _farm: any;
+			let _owner: any;
+			const poolId = 0;
 
 			beforeEach(async () => {
-				const { farm } = await loadFixture(deployFixture);
-				_chaos = farm;
-				const poolId = 0;
+				const { farm, owner } = await loadFixture(deployFixture);
+				_farm = farm;
+				_owner = owner;
+
 				const allocPoint = 0;
 
 				const Rewarder = await ethers.getContractFactory("MockRewarder");
 				const rewarder = await Rewarder.deploy();
 
-				await _chaos.add(allocPoint, USDC_ADDRESS, rewarder.getAddress());
-				await _chaos.set(poolId, allocPoint, rewarder.getAddress(), true);
+				const mockLPToken = await ethers.getContractFactory("MockLPToken");
+				const lpToken = await mockLPToken.deploy();
+
+				await _farm.add(allocPoint, await lpToken.getAddress(), await rewarder.getAddress());
+				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
+
+				await lpToken.approve(_farm, 1000000n);
 			});
 
-			it.only("Should deposit lp to farm", async () => {
-				const poolId = 0;
+			it("Should deposit lp to farm", async () => {
 				const account = ethers.Wallet.createRandom().address;
 
-				// todo: 777
-				await usdc.approve(_chaos.address, 1000000n);
-
-				expect(await _chaos.deposit(poolId, 1000000n, account))
-					.to.emit(_chaos, "Deposit")
+				expect(await _farm.deposit(poolId, 1000000n, account))
+					.to.emit(_farm, "Deposit")
 					.withArgs(account, poolId, 1000000n);
 			});
 
 			it("Should withdraw", async () => {
-				const { farm } = await loadFixture(deployFixture);
-
-				const poolId = 0;
 				const account = ethers.Wallet.createRandom().address;
 
-				expect(await farm.withdraw(poolId, 1000000n, account))
-					.to.emit(farm, "Withdraw")
+				expect(await _farm.withdraw(poolId, 1000000n, account))
+					.to.emit(_farm, "Withdraw")
 					.withArgs(account, poolId, 1000000n);
 			});
 		});
 
 		describe("Harvest", async () => {
-			let _chaos: any;
-			// get instance of usdc
-			const usdc = await ethers.getContractAt("ERC20", USDC_ADDRESS);
+			let _farm: any;
+			const poolId = 0;
 
 			beforeEach(async () => {
-				const { farm } = await loadFixture(deployFixture);
-				_chaos = farm;
-				const poolId = 0;
-				const allocPoint = 0;
+				const { farm, owner } = await loadFixture(deployFixture);
+				_farm = farm;
 
+				const allocPoint = 0;
 				const Rewarder = await ethers.getContractFactory("MockRewarder");
 				const rewarder = await Rewarder.deploy();
 
-				await _chaos.add(allocPoint, USDC_ADDRESS, rewarder.getAddress());
-				await _chaos.set(poolId, allocPoint, rewarder.getAddress(), true);
+				const mockLPToken = await ethers.getContractFactory("MockLPToken");
+				const lpToken = await mockLPToken.deploy();
+
+				await _farm.add(allocPoint, await lpToken.getAddress(), await rewarder.getAddress());
+				await _farm.set(poolId, allocPoint, rewarder.getAddress(), true);
+
+				const usdcContract = new ethers.Contract(USDC_ADDRESS, IERC20_ABI, owner);
 
 				// approve and deposit usdc
-				await usdc.approve(_chaos.address, 1000000n);
-				// await _chaos.deposit(poolId, 1000000n, _owner.address);
+				await usdcContract.approve(_farm, 1000000n);
+				await lpToken.approve(_farm, 1000000n);
+				await _farm.deposit(poolId, 1000000n, _owner.address);
 			});
 
-			it.only("Should harvest", async () => {
-				const { farm } = await loadFixture(deployFixture);
-
-				const poolId = 0;
+			it("Should harvest", async () => {
 				const account = ethers.Wallet.createRandom().address;
-
-				await farm.harvest(poolId, account);
+				await _farm.harvest(poolId, account);
 			});
 
 			it.skip("Should withdraw and harvest", async () => {
-				const { farm } = await loadFixture(deployFixture);
-
-				const poolId = 0;
 				const account = ethers.Wallet.createRandom().address;
-
-				await farm.withdrawAndHarvest(poolId, 1000000n, account);
+				await _farm.withdrawAndHarvest(poolId, 1000000n, account);
 			});
 		});
 
