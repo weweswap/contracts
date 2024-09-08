@@ -13,17 +13,16 @@ import {
 	DETERMINISTIC_WEWE_WETH_WALLET,
 	ARRAKIS_V2_ADDRESS,
 	ARRAKIS_V2_RESOLVER_ADDRESS,
-	DETERMINISTIC_LIQUIDITY
+	DETERMINISTIC_LIQUIDITY,
+	UNI_V3_POS,
+	SWAP_ROUTER_ADDRESS,
+	WEWE_ADDRESS,
+	USDC_ADDRESS,
 } from "./constants";
 
 const INonfungiblePositionManager = require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json").abi;
 
-const UNI_V3_POS = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1";
-const UNISWAP_V3_FACTORY_ADDRESS = "0x33128a8fC17869897dcE68Ed026d694621f6FDfD";
-const WEWE_ADDRESS = "0x6b9bb36519538e0C073894E964E90172E1c0B41F";
-const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const KYBERSWAP_ZAP_ROUTER_ADDRESS = "0x0e97C887b61cCd952a53578B04763E7134429e05";
-const SWAP_ROUTER_ADDRESS = "0x2626664c2603336E57B271c5C0b26F421741e481";
+
 
 describe("Migration contract", function () {
 	async function deployFixture() {
@@ -57,6 +56,8 @@ describe("Migration contract", function () {
 			expect(await migration.nfpm()).to.equal(UNI_V3_POS);
 			expect(await migration.swapRouter()).to.equal(SWAP_ROUTER_ADDRESS);
 			expect(await migration.tokenToMigrate()).to.equal(WEWE_ADDRESS);
+			expect(await migration.arrakisV2()).to.equal(ARRAKIS_V2_ADDRESS);
+			expect(await migration.resolverV2()).to.equal(ARRAKIS_V2_RESOLVER_ADDRESS);
 			expect(await migration.usdc()).to.equal(USDC_ADDRESS);
 		});
 		it("Should revert if deployed with a zero address", async function () {
