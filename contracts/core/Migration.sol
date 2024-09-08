@@ -12,8 +12,6 @@ import {ILiquidityManagerFactory} from "../interfaces/ILiquidityManagerFactory.s
 import {IArrakisV2Resolver} from "../arrakis/interfaces/IArrakisV2Resolver.sol";
 import {IArrakisV2} from "../arrakis/interfaces/IArrakisV2.sol";
 
-// import "hardhat/console.sol";
-
 /// @title Migration Contract for Uniswap v3 Positions
 /// @notice This contract is used to migrate liquidity positions from Uniswap v3, decrease liquidity, collect fees, change the unselected token to USDC and deposit all liquidity in a WEWESwap protocol liquidityManager.
 contract Migration is IERC721Receiver {
