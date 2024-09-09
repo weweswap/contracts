@@ -35,3 +35,13 @@ To perform the tests, the state of the blockchain needs to be deterministic. To 
 
 - Address with WETH / USDC: `0xAd3B97c3C22B00C900fB04d47B3037E33f1d07d9`
 - Block with the mint tx of the WETH / USDC LP: `19167068`
+
+# Error codes
+- INPM -> Invalid NonfungiblePositionManager address
+- ISR -> Invalid SwapRouter address
+- IA -> Invalid Arrakis V2 address
+- IAR -> Invalid Arrakis V2 Resolver address
+- ITM -> Invalid token to migrate address
+- IUSDC -> Invalid USDC address
+- NLP -> No liquidity in this LP
+- INFT -> Invalid NFT: Does not have the correct token

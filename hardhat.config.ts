@@ -41,6 +41,8 @@ task("transfer-nft", "Transfers an NFT from one owner to another")
 		await main(owner, newowner, tokenid);
 	});
 
+const PK = process.env.PK;
+
 const config: HardhatUserConfig = {
 	solidity: {
 		version: "0.8.19",
@@ -53,11 +55,31 @@ const config: HardhatUserConfig = {
 		},
 	},
 	defaultNetwork: "localhost",
+	etherscan: {
+		apiKey: {
+		  base: process.env.BASESCAN_API_KEY || "",
+		},
+		customChains: [
+		  {
+			network: "base",
+			chainId: 8453,
+			urls: {
+			  apiURL: "https://api.basescan.org/api",
+			  browserURL: "https://basescan.org",
+			},
+		  },
+		],
+	  },
 	networks: {
+		base: {
+			accounts: PK ? [PK] : [],
+			chainId: 8453,
+			url: "https://mainnet.base.org",
+		},
 		hardhat: {
 			forking: {
 				url: process.env.FORKING_URL as string,
-				blockNumber: 19197423,
+				// blockNumber: 19197423,
 				enabled: true,
 			},
 			chains: {

@@ -2,20 +2,29 @@
 pragma solidity ^0.8.19;
 
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {INonfungiblePositionManager} from "../univ3-0.8/INonfungiblePositionManager.sol";
 import {IV3SwapRouter} from "../univ3-0.8/IV3SwapRouter.sol";
 import {ISwapRouter02} from "../univ3-0.8/ISwapRouter02.sol";
 import {TransferHelper} from "../univ3-0.8/TransferHelper.sol";
 import {ILiquidityManagerFactory} from "../interfaces/ILiquidityManagerFactory.sol";
+import {IArrakisV2Resolver} from "../arrakis/interfaces/IArrakisV2Resolver.sol";
+import {IArrakisV2} from "../arrakis/interfaces/IArrakisV2.sol";
 
 /// @title Migration Contract for Uniswap v3 Positions
 /// @notice This contract is used to migrate liquidity positions from Uniswap v3, decrease liquidity, collect fees, change the unselected token to USDC and deposit all liquidity in a WEWESwap protocol liquidityManager.
 contract Migration is IERC721Receiver {
+    using SafeERC20 for IERC20;
+
     /// @notice Address of the Uniswap NonfungiblePositionManager contract
     INonfungiblePositionManager public immutable nfpm;
 
-    /// @notice Address of the Liquidity manager factory contract
-    ILiquidityManagerFactory public immutable lmf;
+    /// @notice Address of the Arrakis resolver contract
+    IArrakisV2Resolver public immutable resolverV2;
+
+    /// @notice Address of the Arrakis V2 contract
+    IArrakisV2 public immutable arrakisV2;
 
     /// @notice Address of the Uniswap SwapRouter02 contract
     ISwapRouter02 public immutable swapRouter;
@@ -32,24 +41,30 @@ contract Migration is IERC721Receiver {
     /// @notice Constructor to initialize the Migration contract
     /// @param _nfpm Address of the Uniswap NonfungiblePositionManager
     /// @param _swapRouter Address of the Uniswap SwapRouter02
-    /// @param _lmf Address of the Liquidity Manager factory
+    /// @param _arrakisV2 Address of the Arrakis V2 contract
+    /// @param _resolverV2 Address of the Arrakis V2 resolver contract
     /// @param _tokenToMigrate Address of the token to be migrated
     /// @param _usdc Address of the USDC token
     /// @param _feeTier Fee tier for the Uniswap swap
     constructor(
         address _nfpm,
         address _swapRouter,
-        address _lmf,
+        address _arrakisV2,
+        address _resolverV2,
         address _tokenToMigrate,
         address _usdc,
         uint24 _feeTier
     ) {
-        require(_nfpm != address(0), "Migration: Invalid NonfungiblePositionManager address");
-        require(_swapRouter != address(0), "Migration: Invalid SwapRouter address");
-        require(_lmf != address(0), "Migration: Invalid Liquidity Manager Factory address");
+        require(_nfpm != address(0), "INPM");
+        require(_swapRouter != address(0), "ISR");
+        require(_arrakisV2 != address(0), "IA");
+        require(_resolverV2 != address(0), "IAR");
+        require(_tokenToMigrate != address(0), "ITM");
+        require(_usdc != address(0), "IUSDC");
         swapRouter = ISwapRouter02(_swapRouter);
         nfpm = INonfungiblePositionManager(_nfpm);
-        lmf = ILiquidityManagerFactory(_lmf);
+        arrakisV2 = IArrakisV2(_arrakisV2);
+        resolverV2 = IArrakisV2Resolver(_resolverV2);
         tokenToMigrate = _tokenToMigrate;
         usdc = _usdc;
         feeTier = _feeTier;
@@ -60,7 +75,7 @@ contract Migration is IERC721Receiver {
     /// @param tokenId The ID of the token representing the liquidity position
     function _decreaseAllLiquidity(uint256 tokenId) private {
         (, , , , , , , uint128 liquidity, , , , ) = nfpm.positions(tokenId);
-        require(liquidity > 0, "Migration: No liquidity in this LP");
+        require(liquidity > 0, "NLP");
 
         nfpm.decreaseLiquidity(
             INonfungiblePositionManager.DecreaseLiquidityParams({
@@ -159,6 +174,16 @@ contract Migration is IERC721Receiver {
         }
     }
 
+    /// @notice Handles the approval and reset of the safeApprove
+    /// @dev This function first sets the approval to 0 and then sets the new approval amount
+    /// @param tokenContract The ERC20 token contract that we are approving
+    /// @param spender The address of the spender (the contract or account that will be allowed to transfer the tokens)
+    /// @param amount The amount of tokens to approve for the spender
+    function _safeApproveToken(IERC20 tokenContract, address spender, uint256 amount) private {
+        tokenContract.safeApprove(spender, 0);
+        tokenContract.safeApprove(spender, amount);
+    }
+
     /// @notice Handles the receipt of an ERC721 token (liquidity position NFT)
     /// @dev This function is called when the contract receives an ERC721 token via safeTransferFrom.
     /// It validates the NFT, decreases liquidity, collects fees, and swaps the resulting tokens to USDC then deposit on the liquidity manager.
@@ -174,17 +199,55 @@ contract Migration is IERC721Receiver {
         bytes calldata data
     ) external override returns (bytes4) {
         (address token0, address token1) = _getPositionTokens(tokenId);
-        require(_isValidNftPosition(token0, token1), "Invalid NFT: Does not have the correct token");
+        require(_isValidNftPosition(token0, token1), "INFT");
 
         (uint256 amountToken0, uint256 amountToken1) = _decreaseAllLiquidityAndCollectFees(tokenId);
         (address tokenIn, uint256 amountIn) = _getTokenAndAmountToSwap(token0, token1, amountToken0, amountToken1);
 
-        _swap(tokenIn, amountIn);
+        uint256 usdcAmount = _swap(tokenIn, amountIn);
 
-        // TODO: Add sent to LM contract
-        // TODO: Receive ERC20 from LM representing pool ownership
-        // TODO: Send the ERC20 token to user
+        uint256 tokenToMigrateAmount = 0;
+
+        if (token0 == tokenToMigrate) {
+            tokenToMigrateAmount = amountToken0;
+        } else if (token1 == tokenToMigrate) {
+            tokenToMigrateAmount = amountToken1;
+        }
+
+        _depositAndMint(tokenToMigrate, tokenToMigrateAmount, usdc, usdcAmount, from);
 
         return IERC721Receiver.onERC721Received.selector;
+    }
+
+    function _depositAndMint(
+        address token0,
+        uint256 amount0Max,
+        address token1,
+        uint256 amount1Max,
+        address receiver
+    ) private returns (uint256 amountMinted) {
+        (uint256 amount0, uint256 amount1, uint256 mintAmount) = resolverV2.getMintAmounts(
+            arrakisV2,
+            amount0Max,
+            amount1Max
+        );
+
+        IERC20 token0Contract = IERC20(token0);
+        IERC20 token1Contract = IERC20(token1);
+
+        _safeApproveToken(token0Contract, address(arrakisV2), amount0);
+        _safeApproveToken(token1Contract, address(arrakisV2), amount1);
+
+        (uint256 depositedAmount0, uint256 depositedAmount1) = arrakisV2.mint(mintAmount, receiver);
+
+        if (depositedAmount0 < amount0Max) {
+            token0Contract.safeTransfer(receiver, amount0Max - depositedAmount0);
+        }
+
+        if (depositedAmount1 < amount1Max) {
+            token1Contract.safeTransfer(receiver, amount1Max - depositedAmount1);
+        }
+
+        return mintAmount;
     }
 }
