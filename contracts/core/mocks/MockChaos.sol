@@ -6,15 +6,19 @@ import "../../interfaces/ICHAOS.sol";
 import "hardhat/console.sol";
 
 contract MockChaos is ICHAOS {
-    function poolInfo(uint256 pid) external view returns (ICHAOS.PoolInfo memory) {
-        return ICHAOS.PoolInfo({lpToken: IERC20(address(0)), allocPoint: 0, lastRewardBlock: 0, accSushiPerShare: 0});
+    function getPoolInfo(uint256 pid) external view returns (ICHAOS.PoolInfo memory) {
+        return ICHAOS.PoolInfo({allocPoint: 0, lastRewardBlock: 0, accChaosPerShare: 0, totalSupply: 0, weight: 0});
     }
 
-    function totalAllocPoint() external view returns (uint256) {
+    function totalAllocPoint() external pure returns (uint256) {
         return 0;
     }
 
-    function deposit(uint256 _pid, uint256 _amount) external {
-        console.log("deposit", _pid, _amount);
+    function deposit(uint256 pid, uint256 amount, address to) external pure {
+        console.log("deposit", pid, amount, to);
+    }
+
+    function withdraw(uint256 pid, uint256 amount, address to) external pure {
+        console.log("withdraw", pid, amount, to);
     }
 }
