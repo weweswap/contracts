@@ -6,7 +6,7 @@ import "../../interfaces/ICHAOS.sol";
 import "hardhat/console.sol";
 
 contract MockChaos is ICHAOS {
-    function getPoolInfo(uint256 pid) external view returns (ICHAOS.PoolInfo memory) {
+    function getPoolInfo(uint256 pid) external pure returns (ICHAOS.PoolInfo memory) {
         return ICHAOS.PoolInfo({allocPoint: 0, lastRewardBlock: 0, accChaosPerShare: 0, totalSupply: 0, weight: 0});
     }
 
