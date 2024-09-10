@@ -29,7 +29,7 @@ export async function main(owner: string, asset?: string) {
 	/* Execute the swap */
 	const amountIn = ethers.parseEther("2");
 	const swap = await simpleSwap.swapWETHForWEWE(amountIn, owner, {
-		gasLimit: 30000000,
+		gasLimit: 500000,
 	});
 	await swap.wait();
 }
