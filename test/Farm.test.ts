@@ -16,7 +16,7 @@ import { Contract } from "ethers";
 
 const IERC20_ABI = require("../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json").abi;
 
-describe.only("Farm contract", () => {
+describe("Farm contract", () => {
 	async function deployFixture() {
 		const [owner, otherAccount] = await ethers.getSigners();
 		// Reset the blockchain to a deterministic state
