@@ -197,7 +197,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
         // TODO: CHECK LOGIC ON THIS...
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
 
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
+        if (block.number > pool.lastRewardBlock && lpSupply != 0 && totalAllocPoint != 0) {
             // Delta blocks
             uint256 blocks = block.number.sub(pool.lastRewardBlock);
 
@@ -229,7 +229,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
     function updatePool(uint256 pid) public returns (PoolInfo memory pool) {
         pool = poolInfo[pid];
 
-        if (block.number > pool.lastRewardBlock) {
+        if (block.number > pool.lastRewardBlock && totalAllocPoint != 0) {
             uint256 lpSupply = lpToken[pid].balanceOf(address(this));
 
             if (lpSupply > 0) {

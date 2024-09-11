@@ -1,7 +1,6 @@
 import { ethers } from "hardhat";
 
 export async function main(tokenAddress: string, farmAddress: string) {
-
 	const ChaosToken = await ethers.getContractAt("ChaosToken", tokenAddress);
 	const farm_tx = await ChaosToken.setFarm(farmAddress);
 	await farm_tx.wait();

@@ -215,13 +215,13 @@ describe("Farm contract", () => {
 				await _farm.harvest(poolId, account);
 			});
 
-			it.skip("Should withdraw and harvest", async () => {
+			it("Should withdraw and harvest", async () => {
 				const account = ethers.Wallet.createRandom().address;
 				await _farm.withdrawAndHarvest(poolId, 1000000n, account);
 			});
 		});
 
-		it.skip("Should emergency withdraw", async () => {
+		it("Should emergency withdraw", async () => {
 			const { farm } = await loadFixture(deployFixture);
 			const poolId = 0;
 			const account = ethers.Wallet.createRandom().address;
