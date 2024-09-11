@@ -3,6 +3,7 @@
 	"scripts": {
 		"compile": "hardhat compile",
 		"test": "hardhat test",
+		"test:coverage": "hardhat test",
 		"lint": "prettier --check . && hardhat prettier-check",
 		"lint:fix": "prettier --write . && hardhat prettier",
 		"listPositions": "npx hardhat --network localhost run ./scripts/listPositions.ts",
