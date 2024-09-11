@@ -197,7 +197,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
         // TODO: CHECK LOGIC ON THIS...
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
 
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
+        if (block.number > pool.lastRewardBlock && lpSupply != 0 && totalAllocPoint > 0) {
             // Delta blocks
             uint256 blocks = block.number.sub(pool.lastRewardBlock);
 
@@ -229,7 +229,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
     function updatePool(uint256 pid) public returns (PoolInfo memory pool) {
         pool = poolInfo[pid];
 
-        if (block.number > pool.lastRewardBlock) {
+        if (block.number > pool.lastRewardBlock && totalAllocPoint > 0) {
             uint256 lpSupply = lpToken[pid].balanceOf(address(this));
 
             if (lpSupply > 0) {
@@ -296,24 +296,30 @@ contract Farm is ICHAOS, IFarm, Ownable {
     /// @param to Receiver of CHAOS rewards.
     function harvest(uint256 pid, address to) external {
         PoolInfo memory pool = updatePool(pid);
+
+        if (pool.accChaosPerShare == 0) {
+            return;
+        }
+
         UserInfo storage user = userInfo[pid][msg.sender];
+
         int256 accumulatedRewards = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
-        uint256 _pendingSushi = uint256(accumulatedRewards.sub(user.rewardDebt));
+        uint256 _pendingRewards = uint256(accumulatedRewards.sub(user.rewardDebt));
 
         // Effects
         user.rewardDebt = accumulatedRewards;
 
         // Interactions
-        if (_pendingSushi != 0) {
-            CHAOS_TOKEN.safeTransfer(to, _pendingSushi);
+        if (_pendingRewards != 0) {
+            CHAOS_TOKEN.safeTransfer(to, _pendingRewards);
         }
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onChaosReward(pid, msg.sender, to, _pendingSushi, user.amount);
+            _rewarder.onChaosReward(pid, msg.sender, to, _pendingRewards, user.amount);
         }
 
-        emit Harvest(msg.sender, pid, _pendingSushi);
+        emit Harvest(msg.sender, pid, _pendingRewards);
     }
 
     /// @notice Withdraw LP tokens from MCV2 and harvest proceeds for transaction sender to `to`.

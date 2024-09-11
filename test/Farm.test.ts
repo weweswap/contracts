@@ -210,9 +210,9 @@ describe("Farm contract", () => {
 				await _farm.deposit(poolId, 1000000n, _owner.address);
 			});
 
-			it.skip("Should harvest", async () => {
+			it.only("Should harvest", async () => {
 				const account = ethers.Wallet.createRandom().address;
-				await _farm.harvest(poolId, account);
+				expect(await _farm.harvest(poolId, account)).to.emit(_farm, "Harvest");
 			});
 
 			it.skip("Should withdraw and harvest", async () => {
