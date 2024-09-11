@@ -39,7 +39,7 @@ describe("Liquidity Manager Factory contract", function () {
 		return { owner, otherAccount, liquidityManagerFactory };
 	}
 	describe("Pool Configuration", function () {
-		it.only("Should set pool configuration", async function () {
+		it("Should set pool configuration", async function () {
 			const { liquidityManagerFactory } = await loadFixture(deployFixture);
 			const confExpected = { targetPriceDelta: 100, narrowRange: 4000, midRange: 10000, wideRange: 17000, fee: 500 };
 			const LiquidityManagerFactory = await ethers.getContractAt("LiquidityManagerFactory", await liquidityManagerFactory.getAddress());
