@@ -58,6 +58,7 @@ describe("Migration contract", function () {
 			expect(await migration.tokenToMigrate()).to.equal(WEWE_ADDRESS);
 			expect([ARRAKIS_V2_ADDRESS, await arrakisV2Mock.getAddress()]).to.include(await migration.arrakisV2());
 			expect([ARRAKIS_V2_RESOLVER_ADDRESS, await resolverV2Mock.getAddress()]).to.include(await migration.resolverV2());
+			expect(await migration.quoter()).to.equal(QUOTERV2);
 			expect(await migration.usdc()).to.equal(USDC_ADDRESS);
 		});
 		it("Should revert if deployed with a zero address", async function () {
@@ -73,6 +74,9 @@ describe("Migration contract", function () {
 			);
 			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ethers.ZeroAddress, QUOTERV2, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
 				"IAR",
+			);
+			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, ethers.ZeroAddress, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
+				"IQ",
 			);
 			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, QUOTERV2, ethers.ZeroAddress, USDC_ADDRESS, 3000)).to.be.revertedWith(
 				"ITM",
