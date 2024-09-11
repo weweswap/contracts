@@ -5,8 +5,6 @@ import { main as mintNewPosition } from "../scripts/mintNFTPosition";
 import { main as listPositions } from "../scripts/listPositions";
 import {
 	DETERMINISTIC_MIN_HEIGHT,
-	DETERMINISTIC_OWED_TOKEN0_AMOUNT,
-	DETERMINISTIC_OWED_TOKEN1_AMOUNT,
 	DETERMINISTIC_WEWE_WETH_WALLET,
 	ARRAKIS_V2_ADDRESS,
 	ARRAKIS_V2_RESOLVER_ADDRESS,
@@ -14,6 +12,7 @@ import {
 	SWAP_ROUTER_ADDRESS,
 	WEWE_ADDRESS,
 	USDC_ADDRESS,
+	QUOTERV2,
 } from "./constants";
 
 const INonfungiblePositionManager = require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json").abi;
@@ -46,7 +45,7 @@ describe("Migration contract", function () {
 		const arrakisV2Mock = await MockArrakisV2.deploy();
 
 		const Migration = await ethers.getContractFactory("Migration");
-		const migration = await Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, await arrakisV2Mock.getAddress(), await resolverV2Mock.getAddress(), WEWE_ADDRESS, USDC_ADDRESS, 3000);
+		const migration = await Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, await arrakisV2Mock.getAddress(), await resolverV2Mock.getAddress(), QUOTERV2, WEWE_ADDRESS, USDC_ADDRESS, 3000);
 		// const migration = await Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000);
 
 		return { migration, arrakisV2Mock, resolverV2Mock, owner, otherAccount, accountWithFees };
@@ -63,22 +62,22 @@ describe("Migration contract", function () {
 		});
 		it("Should revert if deployed with a zero address", async function () {
 			const Migration = await ethers.getContractFactory("Migration");
-			await expect(Migration.deploy(ethers.ZeroAddress, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
+			await expect(Migration.deploy(ethers.ZeroAddress, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, QUOTERV2, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
 				"INPM",
 			);
-			await expect(Migration.deploy(UNI_V3_POS, ethers.ZeroAddress, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
+			await expect(Migration.deploy(UNI_V3_POS, ethers.ZeroAddress, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, QUOTERV2, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
 				"ISR",
 			);
-			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ethers.ZeroAddress, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
+			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ethers.ZeroAddress, ARRAKIS_V2_RESOLVER_ADDRESS, QUOTERV2, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
 				"IA",
 			);
-			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ethers.ZeroAddress, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
+			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ethers.ZeroAddress, QUOTERV2, WEWE_ADDRESS, USDC_ADDRESS, 3000)).to.be.revertedWith(
 				"IAR",
 			);
-			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, ethers.ZeroAddress, USDC_ADDRESS, 3000)).to.be.revertedWith(
+			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, QUOTERV2, ethers.ZeroAddress, USDC_ADDRESS, 3000)).to.be.revertedWith(
 				"ITM",
 			);
-			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, ethers.ZeroAddress, 3000)).to.be.revertedWith(
+			await expect(Migration.deploy(UNI_V3_POS, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, QUOTERV2, WEWE_ADDRESS, ethers.ZeroAddress, 3000)).to.be.revertedWith(
 				"IUSDC",
 			);
 		});

@@ -65,6 +65,7 @@ contract Migration is IERC721Receiver {
         require(_swapRouter != address(0), "ISR");
         require(_arrakisV2 != address(0), "IA");
         require(_resolverV2 != address(0), "IAR");
+        require(_quoter != address(0), "IQ");
         require(_tokenToMigrate != address(0), "ITM");
         require(_usdc != address(0), "IUSDC");
         swapRouter = ISwapRouter02(_swapRouter);
