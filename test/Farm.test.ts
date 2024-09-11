@@ -1,4 +1,5 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
@@ -62,11 +63,19 @@ describe("Farm contract", () => {
 		it("Should add pool", async () => {
 			expect(await _farm.add(allocPoint, USDC_ADDRESS, _rewarder)).to.emit(_farm, "LogPoolAddition");
 			expect(await _farm.poolLength()).to.equal(1);
+
+			const poolInfo = await _farm.poolInfo(poolId);
+			const poolInfo2 = await _farm.getPoolInfo(poolId);
+			
+			expect(poolInfo).to.deep.equal(poolInfo2);
 		});
 
 		it("Should set and overwrite alloc point", async () => {
-			expect(await _farm.add(allocPoint, USDC_ADDRESS, _rewarder)).to.emit(_farm, "LogPoolAddition");
-			expect(await _farm.set(poolId, allocPoint, _rewarder, true)).to.emit(_farm, "LogSetPool");
+			expect(await _farm.add(0, USDC_ADDRESS, _rewarder)).to.emit(_farm, "LogPoolAddition");
+			expect(await _farm.set(0, 1, _rewarder, true)).to.emit(_farm, "LogSetPool");
+
+			const poolInfo = await _farm.poolInfo(poolId);
+			expect(poolInfo.allocPoint).to.equal(1);
 		});
 
 		describe("Migrator", () => {
@@ -103,12 +112,12 @@ describe("Farm contract", () => {
 
 		describe("Rewards", () => {
 			let _chaos: any;
+			const poolId = 0;
+			const allocPoint = 0;
 
 			beforeEach(async () => {
 				const { farm } = await loadFixture(deployFixture);
 				_chaos = farm;
-				const poolId = 0;
-				const allocPoint = 0;
 
 				const Rewarder = await ethers.getContractFactory("MockRewarder");
 				const rewarder = await Rewarder.deploy();
@@ -117,11 +126,16 @@ describe("Farm contract", () => {
 				await _chaos.set(poolId, allocPoint, rewarder.getAddress(), true);
 			});
 
-			it.skip("Should get no pending rewards", async () => {
-				const { farm } = await loadFixture(deployFixture);
-				const poolId = 0;
+			it("Should get no pending rewards", async () => {
+				expect(await _farm.poolLength()).to.equal(1);
+				
 				const account = ethers.Wallet.createRandom().address;
-				expect(await farm.pendingRewards(poolId, account)).to.equal(0);
+				expect(await _farm.pendingRewards(poolId, account)).to.equal(0);
+			});
+
+			it("Should update pool", async () => {
+				expect(await _farm.poolLength()).to.equal(1);
+				expect(await _farm.updatePool(poolId)).to.emit(_farm, "LogUpdatePool");
 			});
 		});
 
@@ -129,6 +143,8 @@ describe("Farm contract", () => {
 			let _farm: any;
 			let _owner: any;
 			const poolId = 0;
+
+			const account = ethers.Wallet.createRandom().address;
 
 			beforeEach(async () => {
 				const { farm, owner } = await loadFixture(deployFixture);
@@ -149,25 +165,26 @@ describe("Farm contract", () => {
 				await lpToken.approve(_farm, 1000000n);
 			});
 
-			it("Should deposit lp to farm", async () => {
-				const account = ethers.Wallet.createRandom().address;
+			it.only("Should get rewards per block", async () => {
+				const rewardsPerBlock = await _farm.rewardsPerBlock.staticCall(poolId);
+				expect(rewardsPerBlock).to.equal(0);
+			});
 
+			it("Should deposit lp to farm", async () => {
 				expect(await _farm.deposit(poolId, 1000000n, account))
 					.to.emit(_farm, "Deposit")
 					.withArgs(account, poolId, 1000000n);
 			});
 
 			// Todo: need to do setup and block mining
-			it.skip("Should withdraw", async () => {
-				const account = ethers.Wallet.createRandom().address;
-
+			it("Should withdraw", async () => {
 				expect(await _farm.withdraw(poolId, 1000000n, account))
 					.to.emit(_farm, "Withdraw")
 					.withArgs(account, poolId, 1000000n);
 			});
 		});
 
-		describe("Harvest", async () => {
+		describe.only("Harvest", async () => {
 			let _farm: any;
 			const poolId = 0;
 

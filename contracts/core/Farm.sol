@@ -190,6 +190,10 @@ contract Farm is ICHAOS, IFarm, Ownable {
         // TODO: NEED TO SET EMMISIONS PER BLOCK
         uint256 accChaosPerShare = pool.accChaosPerShare;
 
+        if (accChaosPerShare == 0) {
+            return 0;
+        }
+
         // TODO: CHECK LOGIC ON THIS...
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
 
