@@ -78,6 +78,15 @@ describe("Farm contract", () => {
 			expect(poolInfo.allocPoint).to.equal(1);
 		});
 
+		it("Should update pool", async () => {
+			const blockNumber = await ethers.provider.getBlockNumber();
+			expect(await _farm.poolLength()).to.equal(1);
+			expect(await _farm.updatePool(poolId)).to.emit(_farm, "LogUpdatePool");
+
+			const poolInfo = await _farm.poolInfo(poolId);
+			expect(poolInfo.lastRewardBlock).to.equal(blockNumber);
+		});
+
 		describe("Migrator", () => {
 			let mockMigrator: any;
 
@@ -132,11 +141,6 @@ describe("Farm contract", () => {
 				const account = ethers.Wallet.createRandom().address;
 				expect(await _farm.pendingRewards(poolId, account)).to.equal(0);
 			});
-
-			it("Should update pool", async () => {
-				expect(await _farm.poolLength()).to.equal(1);
-				expect(await _farm.updatePool(poolId)).to.emit(_farm, "LogUpdatePool");
-			});
 		});
 
 		describe("Deposit and withdraw", async () => {
@@ -170,7 +174,7 @@ describe("Farm contract", () => {
 				expect(rewardsPerBlock).to.equal(0);
 			});
 
-			it("Should deposit lp to farm", async () => {
+			it("Should deposit shares to farm", async () => {
 				expect(await _farm.deposit(poolId, 1000000n, account))
 					.to.emit(_farm, "Deposit")
 					.withArgs(account, poolId, 1000000n);
@@ -210,18 +214,18 @@ describe("Farm contract", () => {
 				await _farm.deposit(poolId, 1000000n, _owner.address);
 			});
 
-			it.only("Should harvest", async () => {
+			it("Should harvest", async () => {
 				const account = ethers.Wallet.createRandom().address;
 				expect(await _farm.harvest(poolId, account)).to.emit(_farm, "Harvest");
 			});
 
-			it.skip("Should withdraw and harvest", async () => {
+			it("Should withdraw and harvest", async () => {
 				const account = ethers.Wallet.createRandom().address;
 				await _farm.withdrawAndHarvest(poolId, 1000000n, account);
 			});
 		});
 
-		it.skip("Should emergency withdraw", async () => {
+		it("Should emergency withdraw", async () => {
 			const { farm } = await loadFixture(deployFixture);
 			const poolId = 0;
 			const account = ethers.Wallet.createRandom().address;

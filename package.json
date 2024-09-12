@@ -1,9 +1,10 @@
 {
 	"name": "hardhat-project",
 	"scripts": {
+		"coverage": "npx hardhat coverage",
 		"compile": "hardhat compile",
 		"test": "hardhat test",
-		"test:coverage": "hardhat test",
+		"test:coverage": "npx hardhat coverage",
 		"lint": "prettier --check . && hardhat prettier-check",
 		"lint:fix": "prettier --write . && hardhat prettier",
 		"listPositions": "npx hardhat --network localhost run ./scripts/listPositions.ts",

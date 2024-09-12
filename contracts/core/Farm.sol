@@ -66,7 +66,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
     /// Allocate CHAOS to the farming contract.
     /// @param pid The pool ID to allocate the CHAOS to.
     /// @param amount Amount of CHAOS to allocate.
-    function allocateTokens(uint256 pid, uint256 amount) external {
+    function allocateTokens(uint256 pid, uint256 amount) external onlyOwner {
         require(
             _totalSupplyAllocated.add(amount) <= CHAOS_TOKEN.balanceOf(address(this)),
             "Chaos: Insufficient CHAOS balance"
@@ -77,23 +77,16 @@ contract Farm is ICHAOS, IFarm, Ownable {
     }
 
     function setVaultWeight(uint256 pid, uint8 weight) external onlyOwner {
-        // if (weight == 0) {
-        //     // Remove the pool
-        //     _totalWeight -= poolInfo[pid].weight;
-        //     poolInfo[pid].weight = 0;
-        // } else {
-        //     // Calculate the new total weight delta
-        //     uint8 delta = weight > poolInfo[pid].weight ? weight - poolInfo[pid].weight : poolInfo[pid].weight - weight;
-        //     _totalWeight += delta;
+        if (weight == 0) {
+            _totalWeight -= poolInfo[pid].weight;
+            poolInfo[pid].allocPoint = 0;
+        } else {
+            // Calculate the new total weight delta
+            uint8 delta = weight > poolInfo[pid].weight ? weight - poolInfo[pid].weight : poolInfo[pid].weight - weight;
+            _totalWeight += delta;
 
-        //     poolInfo[pid].weight = weight;
-        // }
-
-        // get current allocPoint
-        uint256 allocPoint = poolInfo[pid].allocPoint;
-
-        // get allocPoint as percentage
-        uint256 allocPointAsPercentage = (allocPoint * ACC_CHAOS_PRECISION) / totalAllocPoint;
+            poolInfo[pid].weight = weight;
+        }
 
         emit LogSetPoolWeight(pid, weight);
     }
@@ -108,13 +101,9 @@ contract Farm is ICHAOS, IFarm, Ownable {
 
     function setEmmisionsPerBlock(uint256 amount) external onlyOwner {
         tokensPerBlock = amount;
-    }
 
-    // function collectEmmisions(uint256 pid) external {
-    //     // Collect the emmisions
-    //     uint256 amount = _pendingRewards(pid, msg.sender);
-    //     CHAOS_TOKEN.safeTransfer(owner(), amount);
-    // }
+        emit LogSetEmmisionsPerBlock(amount);
+    }
 
     /// @notice Returns the number of pools.
     function poolLength() public view returns (uint256 pools) {
@@ -129,10 +118,12 @@ contract Farm is ICHAOS, IFarm, Ownable {
     function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) public onlyOwner {
         uint256 lastRewardBlock = block.number;
 
-        //TOOD: REFACTOR TO USE WEIGHTS
         totalAllocPoint += allocPoint;
         lpToken.push(_lpToken);
         rewarder.push(_rewarder);
+
+        // rebalance weights
+        _totalWeight += 1;
 
         poolInfo.push(
             PoolInfo({
@@ -140,7 +131,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
                 lastRewardBlock: lastRewardBlock.toUInt64(),
                 accChaosPerShare: 0,
                 totalSupply: 0,
-                weight: 0
+                weight: 1
             })
         );
 
@@ -153,11 +144,14 @@ contract Farm is ICHAOS, IFarm, Ownable {
     /// @param _rewarder Address of the rewarder delegate.
     /// @param overwrite True if _rewarder should be `set`. Otherwise `_rewarder` is ignored.
     function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool overwrite) public onlyOwner {
-        totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
+        // totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
+        totalAllocPoint -= poolInfo[_pid].allocPoint + _allocPoint;
         poolInfo[_pid].allocPoint = _allocPoint.toUInt64();
+
         if (overwrite) {
             rewarder[_pid] = _rewarder;
         }
+
         emit LogSetPool(_pid, _allocPoint, overwrite ? _rewarder : rewarder[_pid], overwrite);
     }
 
@@ -187,7 +181,6 @@ contract Farm is ICHAOS, IFarm, Ownable {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
 
-        // TODO: NEED TO SET EMMISIONS PER BLOCK
         uint256 accChaosPerShare = pool.accChaosPerShare;
 
         if (accChaosPerShare == 0) {
@@ -254,7 +247,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
         UserInfo storage user = userInfo[pid][to];
 
         // Effects
-        user.amount = user.amount.add(amount);
+        user.amount += amount;
         user.rewardDebt = user.rewardDebt.add(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
 
         // Interactions
@@ -278,7 +271,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
 
         // Effects
         user.rewardDebt = user.rewardDebt.sub(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
-        user.amount = user.amount.sub(amount);
+        user.amount -= amount;
 
         // Interactions
         IRewarder _rewarder = rewarder[pid];
@@ -371,6 +364,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
 
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
+    event LogSetEmmisionsPerBlock(uint256 amount);
     event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
     event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accChaosPerShare);
     event LogSetPoolWeight(uint256 indexed pid, uint8 weight);
