@@ -15,7 +15,7 @@ task("list-positions", "List the positions for a given owner")
 
 task("simple-swap", "Executes a swap from WETH to WEWE")
 	.addParam("owner", "The address of the owner")
-	.addOptionalParam("asset", "The address of the aditional", "0x6b9bb36519538e0C073894E964E90172E1c0B41F")
+	.addOptionalParam("asset", "The address of the additional", "0x6b9bb36519538e0C073894E964E90172E1c0B41F")
 	.setAction(async taskArgs => {
 		const { main } = require("./scripts/getAssetFromEth.ts");
 		await main(taskArgs.owner, taskArgs.asset);
@@ -23,7 +23,7 @@ task("simple-swap", "Executes a swap from WETH to WEWE")
 
 task("mint-nft-position", "Mints a new NFT position on Uniswap")
 	.addParam("owner", "The address of the owner")
-	.addOptionalParam("asset", "The address of the aditional", "0x6b9bb36519538e0C073894E964E90172E1c0B41F")
+	.addOptionalParam("asset", "The address of the additional", "0x6b9bb36519538e0C073894E964E90172E1c0B41F")
 	.setAction(async taskArgs => {
 		const { main } = require("./scripts/mintNftPosition.ts");
 		await main(taskArgs.owner, taskArgs.asset);

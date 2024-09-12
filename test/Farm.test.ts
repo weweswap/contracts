@@ -13,7 +13,6 @@ import {
 	DETERMINISTIC_WEWE_WETH_WALLET,
 	USDC_ADDRESS,
 } from "./constants";
-import { Contract } from "ethers";
 
 const IERC20_ABI = require("../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json").abi;
 
@@ -66,7 +65,7 @@ describe("Farm contract", () => {
 
 			const poolInfo = await _farm.poolInfo(poolId);
 			const poolInfo2 = await _farm.getPoolInfo(poolId);
-			
+
 			expect(poolInfo).to.deep.equal(poolInfo2);
 		});
 
@@ -119,27 +118,85 @@ describe("Farm contract", () => {
 			});
 		});
 
-		describe("Rewards", () => {
-			let _chaos: any;
+		describe("Allocate", () => {
+			let _farm: any;
 			const poolId = 0;
 			const allocPoint = 0;
 
 			beforeEach(async () => {
 				const { farm } = await loadFixture(deployFixture);
-				_chaos = farm;
+				_farm = farm;
 
 				const Rewarder = await ethers.getContractFactory("MockRewarder");
 				const rewarder = await Rewarder.deploy();
 
-				await _chaos.add(allocPoint, USDC_ADDRESS, rewarder.getAddress());
-				await _chaos.set(poolId, allocPoint, rewarder.getAddress(), true);
+				const Chaos = await ethers.getContractFactory("ChaosToken");
+				const _lpToken = await Chaos.deploy([]);
+
+				await _farm.add(allocPoint, await _lpToken.getAddress(), rewarder.getAddress());
+				await _farm.set(poolId, allocPoint, rewarder.getAddress(), true);
+
+				await _lpToken.approve(_farm, 1000000n);
+			});
+
+			it.only("Should allocate $CHAOS tokens", async () => {
+				expect(await _farm.poolLength()).to.equal(1);
+				expect(await _farm.allocateTokens(poolId, 1000000n))
+					.to.emit(_farm, "LogPoolAllocation")
+					.withArgs(poolId, 1000000n);
+
+				const poolInfo = await _farm.poolInfo(poolId);
+				expect(poolInfo.totalSupply).to.equal(1000000n);
+			});
+		});
+
+		describe.only("Rewards", async () => {
+			let _farm: any;
+			let _lpToken: any;
+			const poolId = 0;
+			const allocPoint = 1;
+
+			beforeEach(async () => {
+				const { farm } = await loadFixture(deployFixture);
+				_farm = farm;
+
+				const Rewarder = await ethers.getContractFactory("MockRewarder");
+				const rewarder = await Rewarder.deploy();
+
+				const mockLPToken = await ethers.getContractFactory("MockLPToken");
+				_lpToken = await mockLPToken.deploy();
+
+				await _farm.add(allocPoint, await _lpToken.getAddress(), await rewarder.getAddress());
+				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
+
+				await _lpToken.approve(_farm, 1000000n);
 			});
 
 			it("Should get no pending rewards", async () => {
 				expect(await _farm.poolLength()).to.equal(1);
-				
+
 				const account = ethers.Wallet.createRandom().address;
 				expect(await _farm.pendingRewards(poolId, account)).to.equal(0);
+			});
+
+			it.only("Should get rewards per block", async () => {
+				const blockNumber = await ethers.provider.getBlockNumber();
+				console.log("blockNumber", blockNumber);
+
+				const rewardsPerBlock = await _farm.rewardsPerBlock.staticCall(poolId);
+				expect(rewardsPerBlock).to.equal(0);
+
+				await _farm.deposit(poolId, 1000000n, _owner.address);
+
+				await time.increase(1000);
+				const blockNumber2 = await ethers.provider.getBlockNumber();
+				console.log("blockNumber2", blockNumber2);
+
+				expect(blockNumber2).to.be.greaterThan(blockNumber);
+
+				const rewardsPerBlock2 = await _farm.rewardsPerBlock.staticCall(poolId);
+
+				expect(rewardsPerBlock2).to.equal(0);
 			});
 		});
 
@@ -169,11 +226,6 @@ describe("Farm contract", () => {
 				await lpToken.approve(_farm, 1000000n);
 			});
 
-			it.only("Should get rewards per block", async () => {
-				const rewardsPerBlock = await _farm.rewardsPerBlock.staticCall(poolId);
-				expect(rewardsPerBlock).to.equal(0);
-			});
-
 			it("Should deposit shares to farm", async () => {
 				expect(await _farm.deposit(poolId, 1000000n, account))
 					.to.emit(_farm, "Deposit")
@@ -188,7 +240,7 @@ describe("Farm contract", () => {
 			});
 		});
 
-		describe.only("Harvest", async () => {
+		describe("Harvest", async () => {
 			let _farm: any;
 			const poolId = 0;
 
@@ -204,11 +256,11 @@ describe("Farm contract", () => {
 				const lpToken = await mockLPToken.deploy();
 
 				await _farm.add(allocPoint, await lpToken.getAddress(), await rewarder.getAddress());
-				await _farm.set(poolId, allocPoint, rewarder.getAddress(), true);
+				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
 
 				const usdcContract = new ethers.Contract(USDC_ADDRESS, IERC20_ABI, owner);
 
-				// approve and deposit usdc
+				// approve and deposit usdc share
 				await usdcContract.approve(_farm, 1000000n);
 				await lpToken.approve(_farm, 1000000n);
 				await _farm.deposit(poolId, 1000000n, _owner.address);

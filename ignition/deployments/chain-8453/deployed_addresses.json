@@ -1,3 +1,4 @@
 {
-  "MigrationModule#Migration": "0x6C52f45951603DB7408Ed967d43193f5F0AAeFA2"
+  "MigrationModule#Migration": "0x6C52f45951603DB7408Ed967d43193f5F0AAeFA2",
+  "ChaosTokenModule#ChaosToken": "0xCb69EAaFE84D639021192398c1d2DB0d97AA13aA"
 }

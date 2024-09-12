@@ -12,7 +12,8 @@
 		"format:check": "prettier --check 'contracts/**/*.sol' 'scripts/**/*.ts'",
 		"prettier": "npm run format:check --all",
 		"prettier:fix": "npm run format:write --all",
-		"prepare": "husky"
+		"prepare": "husky",
+		"deploy:chaos:base": "npx hardhat ignition deploy ignition/modules/ChaosToken.ts --network base"
 	},
 	"devDependencies": {
 		"@nomicfoundation/hardhat-ethers": "^3.0.8",

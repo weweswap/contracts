@@ -74,6 +74,8 @@ contract Farm is ICHAOS, IFarm, Ownable {
 
         _totalSupplyAllocated += amount;
         poolInfo[pid].totalSupply += amount;
+
+        emit LogPoolAllocation(pid, amount);
     }
 
     function setVaultWeight(uint256 pid, uint8 weight) external onlyOwner {
@@ -96,7 +98,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
     }
 
     function getPoolWeightAsPercentage(uint256 pid) public view returns (uint8) {
-        return (poolInfo[pid].weight * 100) / _totalWeight;
+        return ((poolInfo[pid].weight * 100) / _totalWeight) * 100;
     }
 
     function setEmmisionsPerBlock(uint256 amount) external onlyOwner {
@@ -144,8 +146,8 @@ contract Farm is ICHAOS, IFarm, Ownable {
     /// @param _rewarder Address of the rewarder delegate.
     /// @param overwrite True if _rewarder should be `set`. Otherwise `_rewarder` is ignored.
     function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool overwrite) public onlyOwner {
-        // totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
-        totalAllocPoint -= poolInfo[_pid].allocPoint + _allocPoint;
+        totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
+
         poolInfo[_pid].allocPoint = _allocPoint.toUInt64();
 
         if (overwrite) {
@@ -213,7 +215,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
 
     /// @notice Calculates and returns the `amount` of CHAOS per block.
     function rewardsPerBlock(uint256 pid) public view returns (uint256 amount) {
-        amount = poolInfo[pid].accChaosPerShare * tokensPerBlock;
+        amount = (poolInfo[pid].accChaosPerShare * tokensPerBlock * poolInfo[pid].weight) / _totalWeight;
     }
 
     /// @notice Update reward variables of the given pool.
@@ -363,6 +365,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
     }
 
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
+    event LogPoolAllocation(uint256 indexed pid, uint256 amount);
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
     event LogSetEmmisionsPerBlock(uint256 amount);
     event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
