@@ -1,11 +1,13 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import { ethers } from "ethers";
 
-const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const CHAOS_ADDRESS = ethers.ZeroAddress;
+import addresses from "../deployments/chain-8453/deployed_addresses.json"
 
 export default buildModule("FarmModule", m => {
-	const farm = m.contract("Farm", [CHAOS_ADDRESS, USDC_ADDRESS]);
+
+	const CHAOS_ADDRESS = addresses["ChaosTokenModule#ChaosToken"];
+	console.log("CHAOS_ADDRESS", CHAOS_ADDRESS);
+
+	const farm = m.contract("Farm", [CHAOS_ADDRESS]);
 
 	return { farm };
 });

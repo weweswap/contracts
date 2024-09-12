@@ -30,10 +30,16 @@ describe("Farm contract", () => {
 		]);
 
 		const accountWithFees = await ethers.getImpersonatedSigner(DETERMINISTIC_WEWE_WETH_WALLET);
-		const Farm = await ethers.getContractFactory("Farm");
-		const farm = await Farm.deploy(USDC_ADDRESS);
 
-		return { farm, owner, otherAccount, accountWithFees };
+		const Chaos = await ethers.getContractFactory("ChaosToken");
+		const chaos = await Chaos.deploy([]);
+
+		const chaosAddress = await chaos.getAddress();
+
+		const Farm = await ethers.getContractFactory("Farm");
+		const farm = await Farm.deploy(chaosAddress);
+
+		return { farm, owner, otherAccount, accountWithFees, chaos };
 	}
 
 	describe("Farm", () => {
@@ -120,26 +126,30 @@ describe("Farm contract", () => {
 
 		describe("Allocate", () => {
 			let _farm: any;
+			let _chaos: any;
 			const poolId = 0;
 			const allocPoint = 0;
 
 			beforeEach(async () => {
-				const { farm } = await loadFixture(deployFixture);
+				const { farm, chaos } = await loadFixture(deployFixture);
 				_farm = farm;
+				_chaos = chaos;
 
 				const Rewarder = await ethers.getContractFactory("MockRewarder");
 				const rewarder = await Rewarder.deploy();
 
-				const Chaos = await ethers.getContractFactory("ChaosToken");
-				const _lpToken = await Chaos.deploy([]);
+				const mockLPToken = await ethers.getContractFactory("MockLPToken");
+				const lpToken = await mockLPToken.deploy();
 
-				await _farm.add(allocPoint, await _lpToken.getAddress(), rewarder.getAddress());
+				await _farm.add(allocPoint, await lpToken.getAddress(), rewarder.getAddress());
 				await _farm.set(poolId, allocPoint, rewarder.getAddress(), true);
-
-				await _lpToken.approve(_farm, 1000000n);
 			});
 
 			it.only("Should allocate $CHAOS tokens", async () => {
+				const farmAddress = await _farm.getAddress();
+				await _chaos.transfer(farmAddress, 1000000n);
+				expect(await _chaos.balanceOf(farmAddress)).to.equal(1000000n);
+
 				expect(await _farm.poolLength()).to.equal(1);
 				expect(await _farm.allocateTokens(poolId, 1000000n))
 					.to.emit(_farm, "LogPoolAllocation")

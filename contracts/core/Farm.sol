@@ -67,10 +67,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
     /// @param pid The pool ID to allocate the CHAOS to.
     /// @param amount Amount of CHAOS to allocate.
     function allocateTokens(uint256 pid, uint256 amount) external onlyOwner {
-        require(
-            _totalSupplyAllocated.add(amount) <= CHAOS_TOKEN.balanceOf(address(this)),
-            "Chaos: Insufficient CHAOS balance"
-        );
+        require(amount <= CHAOS_TOKEN.balanceOf(address(this)), "Chaos: Insufficient CHAOS balance");
 
         _totalSupplyAllocated += amount;
         poolInfo[pid].totalSupply += amount;
