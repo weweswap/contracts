@@ -11,7 +11,6 @@ import {TransferHelper} from "../univ3-0.8/TransferHelper.sol";
 import {ILiquidityManagerFactory} from "../interfaces/ILiquidityManagerFactory.sol";
 import {IArrakisV2Resolver} from "../arrakis/interfaces/IArrakisV2Resolver.sol";
 import {IArrakisV2} from "../arrakis/interfaces/IArrakisV2.sol";
-import {IQuoterV2} from "@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol";
 
 /// @title Migration Contract for Uniswap v3 Positions
 /// @notice This contract is used to migrate liquidity positions from Uniswap v3, decrease liquidity, collect fees, change the unselected token to USDC and deposit all liquidity in a WEWESwap protocol liquidityManager.
@@ -39,15 +38,11 @@ contract Migration is IERC721Receiver {
     /// @notice Fee tier used in the Uniswap SwapRouter02 contract
     uint24 public immutable feeTier;
 
-    /// @notice Address of the Uniswap QuoterV2 contract
-    IQuoterV2 public immutable quoter;
-
     /// @notice Constructor to initialize the Migration contract
     /// @param _nfpm Address of the Uniswap NonfungiblePositionManager
     /// @param _swapRouter Address of the Uniswap SwapRouter02
     /// @param _arrakisV2 Address of the Arrakis V2 contract
     /// @param _resolverV2 Address of the Arrakis V2 resolver contract
-    /// @param _quoter Address of the Uniswap QuoterV2 contract
     /// @param _tokenToMigrate Address of the token to be migrated
     /// @param _usdc Address of the USDC token
     /// @param _feeTier Fee tier for the Uniswap swap
@@ -56,7 +51,6 @@ contract Migration is IERC721Receiver {
         address _swapRouter,
         address _arrakisV2,
         address _resolverV2,
-        address _quoter,
         address _tokenToMigrate,
         address _usdc,
         uint24 _feeTier
@@ -65,14 +59,12 @@ contract Migration is IERC721Receiver {
         require(_swapRouter != address(0), "ISR");
         require(_arrakisV2 != address(0), "IA");
         require(_resolverV2 != address(0), "IAR");
-        require(_quoter != address(0), "IQ");
         require(_tokenToMigrate != address(0), "ITM");
         require(_usdc != address(0), "IUSDC");
         swapRouter = ISwapRouter02(_swapRouter);
         nfpm = INonfungiblePositionManager(_nfpm);
         arrakisV2 = IArrakisV2(_arrakisV2);
         resolverV2 = IArrakisV2Resolver(_resolverV2);
-        quoter = IQuoterV2(_quoter);
         tokenToMigrate = _tokenToMigrate;
         usdc = _usdc;
         feeTier = _feeTier;
@@ -131,27 +123,13 @@ contract Migration is IERC721Receiver {
     /// @return amountOut The amount of USDC received from the swap
     function _swap(address tokenIn, uint256 amountIn) private returns (uint256 amountOut) {
         TransferHelper.safeApprove(tokenIn, address(swapRouter), amountIn);
-
-        IQuoterV2.QuoteExactInputSingleParams memory paramsQuote = IQuoterV2.QuoteExactInputSingleParams({
-            tokenIn: address(tokenIn),
-            tokenOut: address(usdc),
-            amountIn: amountIn,
-            fee: feeTier,
-            sqrtPriceLimitX96: 0
-        });
-
-        (uint256 estimationOut, , , ) = quoter.quoteExactInputSingle(paramsQuote);
-
-        uint256 slippageTolerance = 95;
-        uint256 amountOutMinimum = (estimationOut * slippageTolerance) / 100;
-
         IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,
             tokenOut: usdc,
             fee: feeTier,
             recipient: address(this),
             amountIn: amountIn,
-            amountOutMinimum: amountOutMinimum,
+            amountOutMinimum: 0,
             sqrtPriceLimitX96: 0
         });
         amountOut = swapRouter.exactInputSingle(params);
