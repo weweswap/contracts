@@ -217,12 +217,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
 
     /// @notice Calculates and returns the `amount` of CHAOS per block.
     function rewardsPerBlock(uint256 pid) public view returns (uint256 amount) {
-        // amount = (poolInfo[pid].accChaosPerShare * tokensPerBlock * poolInfo[pid].weight) / _totalWeight;
-
-        // amount = uint256(tokensPerBlock)
-        //     .mul(poolInfo[pid].allocPoint) / totalAllocPoint;
-
-        amount = tokensPerBlock * poolInfo[pid].weight; // _totalWeight;
+        amount = (tokensPerBlock * poolInfo[pid].weight) / _totalWeight;
     }
 
     /// @notice Update reward variables of the given pool.

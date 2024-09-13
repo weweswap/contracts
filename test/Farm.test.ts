@@ -183,7 +183,7 @@ describe("Farm contract", () => {
 			});
 		});
 
-		describe.only("Rewards", async () => {
+		describe("Rewards", async () => {
 			let _farm: any;
 			let _lpToken: any;
 			let _chaos: any;
