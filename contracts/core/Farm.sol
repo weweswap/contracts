@@ -14,8 +14,6 @@ import "../interfaces/IMigratorChef.sol";
 import "../interfaces/ICHAOS.sol";
 import "../interfaces/IFarm.sol";
 
-import "hardhat/console.sol";
-
 contract Farm is ICHAOS, IFarm, Ownable {
     using SafeMath for uint256;
     using SafeCast for int64;
@@ -181,17 +179,13 @@ contract Farm is ICHAOS, IFarm, Ownable {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
 
-        console.log(user.amount);
-
         uint256 accChaosPerShare = pool.accChaosPerShare;
-        console.log(accChaosPerShare);
 
         if (accChaosPerShare == 0) {
             return 0;
         }
 
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
-        console.log(lpSupply);
 
         if (block.number > pool.lastRewardBlock && lpSupply != 0 && totalAllocPoint > 0) {
             // Delta blocks
@@ -202,8 +196,8 @@ contract Farm is ICHAOS, IFarm, Ownable {
             accChaosPerShare = accChaosPerShare.add(rewards.mul(ACC_CHAOS_PRECISION) / lpSupply);
         }
 
-        // pending = uint256(int256(user.amount.mul(accChaosPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt));
-        pending = accChaosPerShare; //
+        pending = uint256(int256(user.amount.mul(accChaosPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt));
+        // pending = accChaosPerShare; //
     }
 
     /// @notice Update reward variables for all pools. Be careful of gas spending!
