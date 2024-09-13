@@ -170,7 +170,7 @@ describe("Farm contract", () => {
 				expect(poolInfo.totalSupply).to.equal(1000000n);
 			});
 
-			it.only("Should set vault weight", async () => {
+			it("Should set vault weight", async () => {
 				await _farm.set(poolId, 1, _rewarder, true);
 				let poolInfo = await _farm.poolInfo(poolId);
 				expect(poolInfo.allocPoint).to.equal(1);
@@ -206,17 +206,20 @@ describe("Farm contract", () => {
 
 				await _lpToken.approve(_farm, 1000000n);
 				await _farm.add(allocPoint, await _lpToken.getAddress(), await rewarder.getAddress());
-				// await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
 
 				// set the reward per block
-				await _farm.setEmmisionsPerBlock(1);
+				await _farm.setEmisionsPerBlock(1);
 
 				// allocate tokens
 				await _chaos.transfer(await _farm.getAddress(), 1000000n);
 				await _farm.allocateTokens(poolId, 1000000n);
 			});
 
-			it.skip("Should get no pending rewards", async () => {
+			it("Should set emissions per block", async () => {
+				expect(await _farm.setEmisionsPerBlock(2)).to.emit(_farm, "LogSetEmissionsPerBlock");
+			});
+
+			it("Should get no pending rewards", async () => {
 				expect(await _farm.poolLength()).to.equal(1);
 
 				const account = ethers.Wallet.createRandom().address;
