@@ -226,7 +226,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
     function updatePool(uint256 pid) public returns (PoolInfo memory pool) {
         pool = poolInfo[pid];
 
-        if (block.number > pool.lastRewardBlock) {
+        if (block.number > pool.lastRewardBlock && totalAllocPoint > 0) {
             uint256 lpSupply = lpToken[pid].balanceOf(address(this));
 
             if (lpSupply > 0) {
@@ -275,17 +275,20 @@ contract Farm is ICHAOS, IFarm, Ownable {
 
         // Effects
         user.rewardDebt = user.rewardDebt.sub(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
-        user.amount -= amount;
 
-        // Interactions
-        IRewarder _rewarder = rewarder[pid];
-        if (address(_rewarder) != address(0)) {
-            _rewarder.onChaosReward(pid, msg.sender, to, 0, user.amount);
+        if (user.amount >= amount) {
+            user.amount = user.amount.sub(amount);
+
+            // Interactions
+            IRewarder _rewarder = rewarder[pid];
+            if (address(_rewarder) != address(0)) {
+                _rewarder.onChaosReward(pid, msg.sender, to, 0, user.amount);
+            }
+
+            lpToken[pid].safeTransfer(to, amount);
+
+            emit Withdraw(msg.sender, pid, amount, to);
         }
-
-        lpToken[pid].safeTransfer(to, amount);
-
-        emit Withdraw(msg.sender, pid, amount, to);
     }
 
     /// @notice Harvest proceeds for transaction sender to `to`.
