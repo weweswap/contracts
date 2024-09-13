@@ -129,6 +129,7 @@ describe("Farm contract", () => {
 			let _chaos: any;
 			const poolId = 0;
 			const allocPoint = 0;
+			let _rewarder: string;
 
 			beforeEach(async () => {
 				const { farm, chaos } = await loadFixture(deployFixture);
@@ -141,8 +142,9 @@ describe("Farm contract", () => {
 				const mockLPToken = await ethers.getContractFactory("MockLPToken");
 				const lpToken = await mockLPToken.deploy();
 
-				await _farm.add(allocPoint, await lpToken.getAddress(), rewarder.getAddress());
-				await _farm.set(poolId, allocPoint, rewarder.getAddress(), true);
+				_rewarder = await rewarder.getAddress();
+				await _farm.add(allocPoint, await lpToken.getAddress(), _rewarder);
+				await _farm.set(poolId, allocPoint, _rewarder, true);
 			});
 
 			it.only("Should allocate $CHAOS tokens", async () => {
@@ -157,6 +159,18 @@ describe("Farm contract", () => {
 
 				const poolInfo = await _farm.poolInfo(poolId);
 				expect(poolInfo.totalSupply).to.equal(1000000n);
+			});
+
+			it.only("Should set vault weight", async () => {
+				await _farm.set(poolId, 1, _rewarder, true);
+				let poolInfo = await _farm.poolInfo(poolId);
+				expect(poolInfo.allocPoint).to.equal(1);
+
+				expect(await _farm.setVaultWeight(poolId, 100)).to.emit(_farm, "LogSetVaultWeight");
+				poolInfo = await _farm.poolInfo(poolId);
+
+				expect(poolInfo.allocPoint).to.equal(1);
+				expect(poolInfo.weight).to.equal(100);
 			});
 		});
 
