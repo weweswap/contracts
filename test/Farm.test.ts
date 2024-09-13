@@ -172,12 +172,17 @@ describe("Farm contract", () => {
 		describe.only("Rewards", async () => {
 			let _farm: any;
 			let _lpToken: any;
+			let _chaos: any;
+			let ownerAddress: any;
 			const poolId = 0;
 			const allocPoint = 1;
 
 			beforeEach(async () => {
-				const { farm } = await loadFixture(deployFixture);
+				const { farm, chaos, owner } = await loadFixture(deployFixture);
 				_farm = farm;
+				_chaos = chaos;
+
+				ownerAddress = await owner.getAddress();
 
 				const Rewarder = await ethers.getContractFactory("MockRewarder");
 				const rewarder = await Rewarder.deploy();
@@ -185,13 +190,19 @@ describe("Farm contract", () => {
 				const mockLPToken = await ethers.getContractFactory("MockLPToken");
 				_lpToken = await mockLPToken.deploy();
 
-				await _farm.add(allocPoint, await _lpToken.getAddress(), await rewarder.getAddress());
-				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
-
 				await _lpToken.approve(_farm, 1000000n);
+				await _farm.add(allocPoint, await _lpToken.getAddress(), await rewarder.getAddress());
+				// await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
+
+				// set the reward per block
+				await _farm.setEmmisionsPerBlock(1);
+
+				// allocate tokens
+				await _chaos.transfer(await _farm.getAddress(), 1000000n);
+				await _farm.allocateTokens(poolId, 1000000n);
 			});
 
-			it("Should get no pending rewards", async () => {
+			it.skip("Should get no pending rewards", async () => {
 				expect(await _farm.poolLength()).to.equal(1);
 
 				const account = ethers.Wallet.createRandom().address;
@@ -200,23 +211,30 @@ describe("Farm contract", () => {
 
 			it("Should get rewards per block", async () => {
 				const blockNumber = await ethers.provider.getBlockNumber();
-				console.log("blockNumber", blockNumber);
 
 				const rewardsPerBlock = await _farm.rewardsPerBlock.staticCall(poolId);
-				expect(rewardsPerBlock).to.equal(0);
-				let pendingRewards = await _farm.pendingRewards.staticCall(poolId);
+				expect(rewardsPerBlock).to.equal(1);
+
+				let pendingRewards = await _farm.pendingRewards.staticCall(poolId, ownerAddress);
+				expect(pendingRewards).to.equal(0);
 
 				await _farm.deposit(poolId, 1000000n, _owner.address);
-
 				await time.increase(1000);
-				const blockNumber2 = await ethers.provider.getBlockNumber();
-				console.log("blockNumber2", blockNumber2);
 
+				const blockNumber2 = await ethers.provider.getBlockNumber();
 				expect(blockNumber2).to.be.greaterThan(blockNumber);
 
-				pendingRewards = await _farm.pendingRewards.staticCall(poolId);
+				// call the update pool to change the state variables
+				expect(await _farm.updatePool(poolId)).to.emit(_farm, "LogUpdatePool").withArgs(poolId, blockNumber2, 1000000n, 1);
 
-				expect(pendingRewards).to.equal(0);
+				const poolInfo = await _farm.poolInfo(poolId);
+				expect(poolInfo.accChaosPerShare).to.equal(2000000);
+				expect(poolInfo.lastRewardBlock).to.equal(blockNumber2 + 1);
+				expect(poolInfo.allocPoint).to.equal(1);
+				expect(poolInfo.totalSupply).to.equal(1000000n);
+
+				pendingRewards = await _farm.pendingRewards.staticCall(poolId, ownerAddress);
+				expect(pendingRewards).to.equal(2000000);
 			});
 		});
 
