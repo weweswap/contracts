@@ -14,6 +14,8 @@ import "../interfaces/IMigratorChef.sol";
 import "../interfaces/ICHAOS.sol";
 import "../interfaces/IFarm.sol";
 
+import "hardhat/console.sol";
+
 contract Farm is ICHAOS, IFarm, Ownable {
     using SafeMath for uint256;
     using SafeCast for int64;
@@ -144,7 +146,6 @@ contract Farm is ICHAOS, IFarm, Ownable {
     /// @param overwrite True if _rewarder should be `set`. Otherwise `_rewarder` is ignored.
     function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool overwrite) public onlyOwner {
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
-
         poolInfo[_pid].allocPoint = _allocPoint.toUInt64();
 
         if (overwrite) {
@@ -180,25 +181,30 @@ contract Farm is ICHAOS, IFarm, Ownable {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
 
+        console.log(user.amount);
+
         uint256 accChaosPerShare = pool.accChaosPerShare;
+        console.log(accChaosPerShare);
 
         if (accChaosPerShare == 0) {
             return 0;
         }
 
-        // TODO: CHECK LOGIC ON THIS...
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
+        console.log(lpSupply);
 
-        if (block.number > pool.lastRewardBlock && lpSupply != 0 && totalAllocPoint > 0) {
-            // Delta blocks
-            uint256 blocks = block.number.sub(pool.lastRewardBlock);
+        // if (block.number > pool.lastRewardBlock && lpSupply != 0 && totalAllocPoint > 0) {
+        //     // Delta blocks
+        //     uint256 blocks = block.number.sub(pool.lastRewardBlock);
 
-            // Calculate rewards
-            uint256 rewards = blocks.mul(rewardsPerBlock(_pid)).mul(pool.allocPoint) / totalAllocPoint;
-            accChaosPerShare = accChaosPerShare.add(rewards.mul(ACC_CHAOS_PRECISION) / lpSupply);
-        }
+        //     // Calculate rewards
+        //     uint256 rewards = blocks.mul(rewardsPerBlock(_pid)).mul(pool.allocPoint) / totalAllocPoint;
+        //     // accChaosPerShare = accChaosPerShare.add(rewards.mul(ACC_CHAOS_PRECISION) / lpSupply);
+        //     accChaosPerShare = accChaosPerShare.add(rewards.mul(ACC_CHAOS_PRECISION));
+        // }
 
-        pending = uint256(int256(user.amount.mul(accChaosPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt));
+        // pending = uint256(int256(user.amount.mul(accChaosPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt));
+        pending = accChaosPerShare; //
     }
 
     /// @notice Update reward variables for all pools. Be careful of gas spending!
@@ -212,7 +218,12 @@ contract Farm is ICHAOS, IFarm, Ownable {
 
     /// @notice Calculates and returns the `amount` of CHAOS per block.
     function rewardsPerBlock(uint256 pid) public view returns (uint256 amount) {
-        amount = (poolInfo[pid].accChaosPerShare * tokensPerBlock * poolInfo[pid].weight) / _totalWeight;
+        // amount = (poolInfo[pid].accChaosPerShare * tokensPerBlock * poolInfo[pid].weight) / _totalWeight;
+
+        // amount = uint256(tokensPerBlock)
+        //     .mul(poolInfo[pid].allocPoint) / totalAllocPoint;
+
+        amount = tokensPerBlock * poolInfo[pid].weight; // _totalWeight;
     }
 
     /// @notice Update reward variables of the given pool.
@@ -221,7 +232,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
     function updatePool(uint256 pid) public returns (PoolInfo memory pool) {
         pool = poolInfo[pid];
 
-        if (block.number > pool.lastRewardBlock && totalAllocPoint > 0) {
+        if (block.number > pool.lastRewardBlock) {
             uint256 lpSupply = lpToken[pid].balanceOf(address(this));
 
             if (lpSupply > 0) {
