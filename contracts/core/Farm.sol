@@ -12,8 +12,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IRewarder.sol";
 import "../interfaces/IMigratorChef.sol";
 import "../interfaces/ICHAOS.sol";
+import "../interfaces/IFarm.sol";
 
-contract Farm is Ownable {
+contract Farm is ICHAOS, IFarm, Ownable {
     using SafeMath for uint256;
     using SafeCast for int64;
     using SafeCast for uint64;
@@ -26,53 +27,35 @@ contract Farm is Ownable {
     // Total CHAOS allocated to the pools
     uint256 private _totalSupplyAllocated;
 
+    // Global emmissions of CHAOS tokens to be distributed per block
+    uint256 public tokensPerBlock;
+
     // Sum of the weights of all vaults
     uint8 private _totalWeight;
-
-    /// @notice Info of each MCV2 user.
-    /// `amount` LP token amount the user has provided.
-    /// `rewardDebt` The amount of CHAOS entitled to the user.
-    struct UserInfo {
-        uint256 amount;
-        int256 rewardDebt;
-    }
-
-    /// @notice Info of each MCV2 pool.
-    /// `allocPoint` The amount of allocation points assigned to the pool.
-    /// Also known as the amount of CHAOS to distribute per block.
-    struct PoolInfo {
-        uint128 accChaosPerShare;
-        uint64 lastRewardBlock;
-        uint64 allocPoint;
-        uint256 totalSupply; // CHAOS allocated to the pool
-        uint8 weight; // Arbitrary weight for the pool
-    }
 
     /// @notice Address of MCV1 contract.
     // ICHAOS public immutable CHAOS;
     /// @notice Address of CHAOS contract.
     IERC20 public immutable CHAOS_TOKEN;
 
-    // /// @notice The index of MCV2 master pool in MCV1.
-    // uint256 public immutable MASTER_PID;
-
     // @notice The migrator contract. It has a lot of power. Can only be set through governance (owner).
     IMigratorChef public migrator;
 
     /// @notice Info of each MCV2 pool.
     PoolInfo[] public poolInfo;
+
     /// @notice Address of the LP token for each MCV2 pool.
     IERC20[] public lpToken;
+
     /// @notice Address of each `IRewarder` contract in MCV2.
     IRewarder[] public rewarder;
 
     /// @notice Info of each user that stakes LP tokens.
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
+
     /// @dev Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint;
 
-    // NEEDS TO BE PER POOL, PER BLOCK
-    // uint256 private constant CHAOS_PER_BLOCK = 1e20;
     uint256 private constant ACC_CHAOS_PRECISION = 1e12;
 
     /// @param _reward The reward token contract address.
@@ -83,21 +66,19 @@ contract Farm is Ownable {
     /// Allocate CHAOS to the farming contract.
     /// @param pid The pool ID to allocate the CHAOS to.
     /// @param amount Amount of CHAOS to allocate.
-    function allocate(uint256 pid, uint256 amount) external {
-        require(
-            _totalSupplyAllocated.add(amount) <= CHAOS_TOKEN.balanceOf(address(this)),
-            "Chaos: Insufficient CHAOS balance"
-        );
+    function allocateTokens(uint256 pid, uint256 amount) external onlyOwner {
+        require(amount <= CHAOS_TOKEN.balanceOf(address(this)), "Chaos: Insufficient CHAOS balance");
 
         _totalSupplyAllocated += amount;
         poolInfo[pid].totalSupply += amount;
+
+        emit LogPoolAllocation(pid, amount);
     }
 
     function setVaultWeight(uint256 pid, uint8 weight) external onlyOwner {
         if (weight == 0) {
-            // Remove the pool
             _totalWeight -= poolInfo[pid].weight;
-            poolInfo[pid].weight = 0;
+            poolInfo[pid].allocPoint = 0;
         } else {
             // Calculate the new total weight delta
             uint8 delta = weight > poolInfo[pid].weight ? weight - poolInfo[pid].weight : poolInfo[pid].weight - weight;
@@ -109,13 +90,18 @@ contract Farm is Ownable {
         emit LogSetPoolWeight(pid, weight);
     }
 
-    function getPoolWeightAsPercentage(uint256 pid) public view returns (uint8) {
-        return (poolInfo[pid].weight * 100) / _totalWeight;
+    function getPoolInfo(uint256 pid) public view returns (PoolInfo memory) {
+        return poolInfo[pid];
     }
 
-    function setEmmisionsPerBlock(uint256 pid, uint128 amount) external onlyOwner {
-        // Set the new emmisions per block
-        poolInfo[pid].accChaosPerShare = amount;
+    function getPoolWeightAsPercentage(uint256 pid) public view returns (uint8) {
+        return ((poolInfo[pid].weight * 100) / _totalWeight) * 100;
+    }
+
+    function setEmisionsPerBlock(uint256 amount) external onlyOwner {
+        tokensPerBlock = amount;
+
+        emit LogSetEmisionsPerBlock(amount);
     }
 
     /// @notice Returns the number of pools.
@@ -130,9 +116,13 @@ contract Farm is Ownable {
     /// @param _rewarder Address of the rewarder delegate.
     function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) public onlyOwner {
         uint256 lastRewardBlock = block.number;
+
         totalAllocPoint += allocPoint;
         lpToken.push(_lpToken);
         rewarder.push(_rewarder);
+
+        // rebalance weights
+        _totalWeight += 1;
 
         poolInfo.push(
             PoolInfo({
@@ -140,7 +130,7 @@ contract Farm is Ownable {
                 lastRewardBlock: lastRewardBlock.toUInt64(),
                 accChaosPerShare: 0,
                 totalSupply: 0,
-                weight: 0
+                weight: 1
             })
         );
 
@@ -155,9 +145,11 @@ contract Farm is Ownable {
     function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool overwrite) public onlyOwner {
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         poolInfo[_pid].allocPoint = _allocPoint.toUInt64();
+
         if (overwrite) {
             rewarder[_pid] = _rewarder;
         }
+
         emit LogSetPool(_pid, _allocPoint, overwrite ? _rewarder : rewarder[_pid], overwrite);
     }
 
@@ -187,19 +179,25 @@ contract Farm is Ownable {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
 
-        // TODO: NEED TO SET EMMISIONS PER BLOCK
         uint256 accChaosPerShare = pool.accChaosPerShare;
 
-        // TODO: CHECK LOGIC ON THIS...
+        if (accChaosPerShare == 0) {
+            return 0;
+        }
+
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
 
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
+        if (block.number > pool.lastRewardBlock && lpSupply != 0 && totalAllocPoint > 0) {
+            // Delta blocks
             uint256 blocks = block.number.sub(pool.lastRewardBlock);
-            uint256 sushiReward = blocks.mul(rewardsPerBlock(_pid)).mul(pool.allocPoint) / totalAllocPoint;
-            accChaosPerShare = accChaosPerShare.add(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply);
+
+            // Calculate rewards
+            uint256 rewards = blocks.mul(rewardsPerBlock(_pid)).mul(pool.allocPoint) / totalAllocPoint;
+            accChaosPerShare = accChaosPerShare.add(rewards.mul(ACC_CHAOS_PRECISION) / lpSupply);
         }
 
         pending = uint256(int256(user.amount.mul(accChaosPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt));
+        // pending = accChaosPerShare; //
     }
 
     /// @notice Update reward variables for all pools. Be careful of gas spending!
@@ -213,9 +211,7 @@ contract Farm is Ownable {
 
     /// @notice Calculates and returns the `amount` of CHAOS per block.
     function rewardsPerBlock(uint256 pid) public view returns (uint256 amount) {
-        // amount = uint256(CHAOS_PER_BLOCK).mul(CHAOS.poolInfo(MASTER_PID).allocPoint) / CHAOS.totalAllocPoint();
-
-        amount = poolInfo[pid].accChaosPerShare;
+        amount = (tokensPerBlock * poolInfo[pid].weight) / _totalWeight;
     }
 
     /// @notice Update reward variables of the given pool.
@@ -224,13 +220,13 @@ contract Farm is Ownable {
     function updatePool(uint256 pid) public returns (PoolInfo memory pool) {
         pool = poolInfo[pid];
 
-        if (block.number > pool.lastRewardBlock) {
+        if (block.number > pool.lastRewardBlock && totalAllocPoint > 0) {
             uint256 lpSupply = lpToken[pid].balanceOf(address(this));
 
             if (lpSupply > 0) {
                 uint256 blocks = block.number.sub(pool.lastRewardBlock);
-                uint256 sushiReward = blocks.mul(rewardsPerBlock(pid)).mul(pool.allocPoint) / totalAllocPoint;
-                pool.accChaosPerShare += uint128(sushiReward.mul(ACC_CHAOS_PRECISION) / lpSupply);
+                uint256 reward = blocks.mul(rewardsPerBlock(pid)).mul(pool.allocPoint) / totalAllocPoint;
+                pool.accChaosPerShare += uint128(reward.mul(ACC_CHAOS_PRECISION) / lpSupply);
             }
 
             pool.lastRewardBlock = block.number.toUInt64();
@@ -244,12 +240,12 @@ contract Farm is Ownable {
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to deposit.
     /// @param to The receiver of `amount` deposit benefit.
-    function deposit(uint256 pid, uint256 amount, address to) public {
+    function deposit(uint256 pid, uint256 amount, address to) external {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][to];
 
         // Effects
-        user.amount = user.amount.add(amount);
+        user.amount += amount;
         user.rewardDebt = user.rewardDebt.add(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
 
         // Interactions
@@ -267,76 +263,85 @@ contract Farm is Ownable {
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to withdraw.
     /// @param to Receiver of the LP tokens.
-    function withdraw(uint256 pid, uint256 amount, address to) public {
+    function withdraw(uint256 pid, uint256 amount, address to) external {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
 
         // Effects
         user.rewardDebt = user.rewardDebt.sub(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
-        user.amount = user.amount.sub(amount);
 
-        // Interactions
-        IRewarder _rewarder = rewarder[pid];
-        if (address(_rewarder) != address(0)) {
-            _rewarder.onChaosReward(pid, msg.sender, to, 0, user.amount);
+        if (user.amount >= amount) {
+            user.amount = user.amount.sub(amount);
+
+            // Interactions
+            IRewarder _rewarder = rewarder[pid];
+            if (address(_rewarder) != address(0)) {
+                _rewarder.onChaosReward(pid, msg.sender, to, 0, user.amount);
+            }
+
+            lpToken[pid].safeTransfer(to, amount);
+
+            emit Withdraw(msg.sender, pid, amount, to);
         }
-
-        lpToken[pid].safeTransfer(to, amount);
-
-        emit Withdraw(msg.sender, pid, amount, to);
     }
 
     /// @notice Harvest proceeds for transaction sender to `to`.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param to Receiver of CHAOS rewards.
-    function harvest(uint256 pid, address to) public {
+    function harvest(uint256 pid, address to) external {
         PoolInfo memory pool = updatePool(pid);
+
+        if (pool.accChaosPerShare == 0) {
+            return;
+        }
+
         UserInfo storage user = userInfo[pid][msg.sender];
-        int256 accumulatedSushi = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
-        uint256 _pendingSushi = uint256(accumulatedSushi.sub(user.rewardDebt));
+
+        int256 accumulatedRewards = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
+        uint256 _pendingRewards = uint256(accumulatedRewards.sub(user.rewardDebt));
 
         // Effects
-        user.rewardDebt = accumulatedSushi;
+        user.rewardDebt = accumulatedRewards;
 
         // Interactions
-        if (_pendingSushi != 0) {
-            CHAOS_TOKEN.safeTransfer(to, _pendingSushi);
+        if (_pendingRewards != 0) {
+            CHAOS_TOKEN.safeTransfer(to, _pendingRewards);
         }
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onChaosReward(pid, msg.sender, to, _pendingSushi, user.amount);
+            _rewarder.onChaosReward(pid, msg.sender, to, _pendingRewards, user.amount);
         }
 
-        emit Harvest(msg.sender, pid, _pendingSushi);
+        emit Harvest(msg.sender, pid, _pendingRewards);
     }
 
     /// @notice Withdraw LP tokens from MCV2 and harvest proceeds for transaction sender to `to`.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to withdraw.
     /// @param to Receiver of the LP tokens and CHAOS rewards.
-    function withdrawAndHarvest(uint256 pid, uint256 amount, address to) public {
+    function withdrawAndHarvest(uint256 pid, uint256 amount, address to) external {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
-        int256 accumulatedSushi = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
-        uint256 _pendingSushi = uint256(accumulatedSushi.sub(user.rewardDebt)); // uint256 _pendingSushi = accumulatedSushi.sub(user.rewardDebt).toUInt256();
+        int256 accumulatedRewards = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
+        uint256 _pendingRewards = uint256(accumulatedRewards.sub(user.rewardDebt)); // uint256 _pendingSushi = accumulatedSushi.sub(user.rewardDebt).toUInt256();
 
         // Effects
-        user.rewardDebt = accumulatedSushi.sub(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
+        user.rewardDebt = accumulatedRewards.sub(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
         user.amount = user.amount.sub(amount);
 
         // Interactions
-        CHAOS_TOKEN.safeTransfer(to, _pendingSushi);
+        CHAOS_TOKEN.safeTransfer(to, _pendingRewards);
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onChaosReward(pid, msg.sender, to, _pendingSushi, user.amount);
+            _rewarder.onChaosReward(pid, msg.sender, to, _pendingRewards, user.amount);
         }
 
         lpToken[pid].safeTransfer(to, amount);
 
         emit Withdraw(msg.sender, pid, amount, to);
-        emit Harvest(msg.sender, pid, _pendingSushi);
+        emit Harvest(msg.sender, pid, _pendingRewards);
     }
 
     /// @notice Withdraw without caring about rewards. EMERGENCY ONLY.
@@ -358,11 +363,10 @@ contract Farm is Ownable {
         emit EmergencyWithdraw(msg.sender, pid, amount, to);
     }
 
-    event Deposit(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
-    event Withdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
-    event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
+    event LogPoolAllocation(uint256 indexed pid, uint256 amount);
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
+    event LogSetEmisionsPerBlock(uint256 amount);
     event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
     event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accChaosPerShare);
     event LogSetPoolWeight(uint256 indexed pid, uint8 weight);

@@ -4,5 +4,7 @@
 	},
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
 	"editor.formatOnSave": false,
-	"editor.formatOnPaste": false
+	"editor.formatOnPaste": false,
+	"solidity.defaultCompiler": "localFile",
+	"solidity.compileUsingRemoteVersion": "v0.8.19+commit.7dd6d404"
 }
