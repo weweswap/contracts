@@ -206,7 +206,7 @@ describe("Farm contract", () => {
 				await _farm.setEmisionsPerBlock(1);
 
 				// allocate tokens
-				await _chaos.transfer(await _farm.getAddress(), 1000000n);
+				await _chaos.mint(1000000n);
 				await _farm.allocateTokens(poolId, 1000000n);
 			});
 
@@ -328,7 +328,7 @@ describe("Farm contract", () => {
 			});
 		});
 
-		it.skip("Should emergency withdraw", async () => {
+		it("Should emergency withdraw", async () => {
 			const { farm } = await loadFixture(deployFixture);
 			const poolId = 0;
 			const account = ethers.Wallet.createRandom().address;
