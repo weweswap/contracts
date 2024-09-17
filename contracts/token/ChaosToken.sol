@@ -15,7 +15,7 @@ contract ChaosToken is ERC20, Ownable {
         _farm = IFarm(farm);
     }
 
-    function mint(uint256 amount) public onlyOwner {
+    function mint(uint256 amount) external onlyOwner {
         require(address(_farm) != address(0), "ChaosToken: Farm not set");
         require(totalSupply() + amount <= _maxSupply, "ChaosToken: Max supply exceeded");
         _mint(address(_farm), amount);

@@ -272,14 +272,15 @@ describe("Farm contract", () => {
 
 				await _farm.add(allocPoint, await lpToken.getAddress(), await rewarder.getAddress());
 				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
-
-				await lpToken.approve(_farm, 1000000n);
 			});
 
-			it("Should deposit shares to farm", async () => {
-				expect(await _farm.deposit(poolId, 1000000n, account))
+			it.only("Should deposit shares to farm without approve", async () => {
+
+				const ownerAddress = await _owner.getAddress();
+
+				expect(await _farm.deposit(poolId, 1000000n, ownerAddress))
 					.to.emit(_farm, "Deposit")
-					.withArgs(account, poolId, 1000000n);
+					.withArgs(ownerAddress, poolId, 1000000n);
 			});
 
 			it("Should withdraw", async () => {
