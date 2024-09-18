@@ -385,6 +385,20 @@ contract Farm is ICHAOS, IFarm, Ownable {
         emit EmergencyWithdraw(msg.sender, pid, amount, to);
     }
 
+    function refundAll() public onlyOwner(){
+        unit256 amount = CHAOS_TOKEN.balanceOf(_self);
+
+        if (amount > 0){
+            CHAOS_TOKEN.safeTransferFrom(_self, x, amount);
+        }
+    }
+
+    function refund(uint256 amount) public onlyOwner(){
+        CHAOS_TOKEN.safeTransferFrom(_self,x , amount);
+
+        emmit Refund(amount);
+    }
+
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
     event LogPoolAllocation(uint256 indexed pid, uint256 amount);
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
