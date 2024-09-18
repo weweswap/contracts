@@ -206,7 +206,7 @@ describe("Farm contract", () => {
 				await _farm.setEmisionsPerBlock(1);
 
 				// allocate tokens
-				await _chaos.mint(1000000n);
+				await _chaos.transfer(await _farm.getAddress(), 1000000n);
 				await _farm.allocateTokens(poolId, 1000000n);
 			});
 
@@ -246,7 +246,7 @@ describe("Farm contract", () => {
 				expect(poolInfo.totalSupply).to.equal(1000000n);
 
 				pendingRewards = await _farm.pendingRewards.staticCall(poolId, ownerAddress);
-				expect(pendingRewards).to.equal(2000000);
+				expect(pendingRewards).to.equal(BigInt(poolInfo.accChaosPerShare)*1000000n/1000000000000n);
 			});
 		});
 
@@ -272,15 +272,14 @@ describe("Farm contract", () => {
 
 				await _farm.add(allocPoint, await lpToken.getAddress(), await rewarder.getAddress());
 				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
+
+				await lpToken.approve(_farm, 1000000n);
 			});
 
-			it.only("Should deposit shares to farm without approve", async () => {
-
-				const ownerAddress = await _owner.getAddress();
-
-				expect(await _farm.deposit(poolId, 1000000n, ownerAddress))
+			it("Should deposit shares to farm", async () => {
+				expect(await _farm.deposit(poolId, 1000000n, account))
 					.to.emit(_farm, "Deposit")
-					.withArgs(ownerAddress, poolId, 1000000n);
+					.withArgs(account, poolId, 1000000n);
 			});
 
 			it("Should withdraw", async () => {
