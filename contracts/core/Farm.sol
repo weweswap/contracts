@@ -23,7 +23,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
     using SafeCast for uint128;
     using SafeCast for int128;
     using SafeCast64 for uint256;
-    // using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20;
     using SignedSafeMath for int256;
 
     // Total CHAOS allocated to the pools
@@ -383,6 +383,20 @@ contract Farm is ICHAOS, IFarm, Ownable {
         // Note: transfer can fail or succeed if `amount` is zero.
         lpToken[pid].transfer(to, amount);
         emit EmergencyWithdraw(msg.sender, pid, amount, to);
+    }
+
+    function refundAll() public onlyOwner(){
+        unit256 amount = CHAOS_TOKEN.balanceOf(_self);
+
+        if (amount > 0){
+            CHAOS_TOKEN.safeTransferFrom(_self, x, amount);
+        }
+    }
+
+    function refund(uint256 amount) public onlyOwner(){
+        CHAOS_TOKEN.safeTransferFrom(_self,x , amount);
+
+        emmit Refund(amount);
     }
 
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
