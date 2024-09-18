@@ -14,8 +14,6 @@ import "../interfaces/IRewarder.sol";
 import "../interfaces/IMigratorChef.sol";
 import "../interfaces/IFarm.sol";
 
-import "hardhat/console.sol";
-
 contract Farm is IFarm, Ownable {
     using SafeMath for uint256;
     using SafeCast for int64;

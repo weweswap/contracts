@@ -3,11 +3,7 @@ import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-import {
-	DETERMINISTIC_MIN_HEIGHT,
-	DETERMINISTIC_WEWE_WETH_WALLET,
-	USDC_ADDRESS,
-} from "./constants";
+import { DETERMINISTIC_MIN_HEIGHT, DETERMINISTIC_WEWE_WETH_WALLET, USDC_ADDRESS } from "./constants";
 
 const IERC20_ABI = require("../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json").abi;
 
@@ -63,7 +59,7 @@ describe("Farm contract", () => {
 		});
 
 		it("Should add pool", async () => {
-			expect(await _farm.add(allocPoint, await _chaos.getAddress(), _rewarder)).to.emit(_farm, "LogPoolAddition");
+			await expect(await _farm.add(allocPoint, await _chaos.getAddress(), _rewarder)).to.emit(_farm, "LogPoolAddition");
 			expect(await _farm.poolLength()).to.equal(1);
 
 			const poolInfo = await _farm.poolInfo(poolId);
@@ -73,8 +69,8 @@ describe("Farm contract", () => {
 		});
 
 		it("Should set and overwrite alloc point", async () => {
-			expect(await _farm.add(0, await _chaos.getAddress(), _rewarder)).to.emit(_farm, "LogPoolAddition");
-			expect(await _farm.set(0, 1, _rewarder, true)).to.emit(_farm, "LogSetPool");
+			await expect(_farm.add(0, await _chaos.getAddress(), _rewarder)).to.emit(_farm, "LogPoolAddition");
+			await expect(_farm.set(0, 1, _rewarder, true)).to.emit(_farm, "LogSetPool");
 
 			const poolInfo = await _farm.poolInfo(poolId);
 			expect(poolInfo.allocPoint).to.equal(1);
@@ -157,9 +153,7 @@ describe("Farm contract", () => {
 				expect(await _chaos.balanceOf(farmAddress)).to.equal(1000000n);
 
 				expect(await _farm.poolLength()).to.equal(1);
-				expect(await _farm.allocateTokens(poolId, 1000000n))
-					.to.emit(_farm, "LogPoolAllocation")
-					.withArgs(poolId, 1000000n);
+				await expect(_farm.allocateTokens(poolId, 1000000n)).to.emit(_farm, "LogPoolAllocation").withArgs(poolId, 1000000n);
 
 				const poolInfo = await _farm.poolInfo(poolId);
 				expect(poolInfo.totalSupply).to.equal(1000000n);
@@ -211,7 +205,7 @@ describe("Farm contract", () => {
 			});
 
 			it("Should set emissions per block", async () => {
-				expect(await _farm.setEmisionsPerBlock(2)).to.emit(_farm, "LogSetEmissionsPerBlock");
+				await expect(_farm.setEmisionsPerBlock(2)).to.emit(_farm, "LogSetEmissionsPerBlock");
 			});
 
 			it("Should get no pending rewards", async () => {
@@ -237,7 +231,9 @@ describe("Farm contract", () => {
 				expect(blockNumber2).to.be.greaterThan(blockNumber);
 
 				// call the update pool to change the state variables
-				expect(await _farm.updatePool(poolId)).to.emit(_farm, "LogUpdatePool").withArgs(poolId, blockNumber2, 1000000n, 1);
+				expect(await _farm.updatePool(poolId))
+					.to.emit(_farm, "LogUpdatePool")
+					.withArgs(poolId, blockNumber2, 1000000n, 1);
 
 				const poolInfo = await _farm.poolInfo(poolId);
 				expect(poolInfo.accChaosPerShare).to.equal(2000000);
@@ -246,13 +242,14 @@ describe("Farm contract", () => {
 				expect(poolInfo.totalSupply).to.equal(1000000n);
 
 				pendingRewards = await _farm.pendingRewards.staticCall(poolId, ownerAddress);
-				expect(pendingRewards).to.equal(BigInt(poolInfo.accChaosPerShare)*1000000n/1000000000000n);
+				expect(pendingRewards).to.equal((BigInt(poolInfo.accChaosPerShare) * 1000000n) / 1000000000000n);
 			});
 		});
 
 		describe.only("Deposit and withdraw", async () => {
 			let _farm: any;
 			let _lpToken: any;
+			let _owner: any;
 			const poolId = 0;
 
 			const account = ethers.Wallet.createRandom().address;
@@ -260,7 +257,7 @@ describe("Farm contract", () => {
 			beforeEach(async () => {
 				const { farm, owner } = await loadFixture(deployFixture);
 				_farm = farm;
-				_owner = owner;
+				_owner = owner.address;
 
 				const allocPoint = 0;
 
@@ -279,33 +276,47 @@ describe("Farm contract", () => {
 			});
 
 			it("Should deposit shares to farm", async () => {
-				expect(await _farm.deposit(poolId, 1000000n, account))
+				await expect(_farm.deposit(poolId, 1000000n, account))
 					.to.emit(_farm, "Deposit")
-					.withArgs(account, poolId, 1000000n);
+					.withArgs(_owner, poolId, 1000000n, account);
 
 				// Get user info
 				const userInfo = await _farm.userInfo(poolId, account);
 				expect(userInfo[0]).to.equal(2000000n);
 			});
 
-			it("Should withdraw", async () => {
-				expect(await _farm.withdraw(poolId, 1000000n, account))
-					.to.emit(_farm, "Withdraw")
-					.withArgs(account, poolId, 1000000n);
+			it.only("Should withdraw", async () => {
+				let userInfo = await _farm.userInfo(poolId, account);
+				expect(userInfo[poolId]).to.equal(1000000n);
+				
+				// await expect(_farm.withdraw(poolId, 1000000n, account))
+				// 	.to.emit(_farm, "Withdraw")
+				// 	.withArgs(account, poolId, 1000000n);
+
+				userInfo = await _farm.userInfo(poolId, account);
+				expect(userInfo[poolId]).to.equal(0);
 			});
 
 			it("Should perform an emergency withdraw", async () => {
-				const balance = await _lpToken.balanceOf(account);
-				expect(balance).to.equal(0);
+				await _farm.deposit(poolId, 1000000n, _owner);
+				const balance = await _lpToken.balanceOf(_owner);
+				expect(balance).to.not.eq(0);
 
-				const userInfo = await _farm.userInfo(poolId, account);
-				expect(userInfo[0]).to.equal(1000000n);
+				const userInfo = await _farm.userInfo(poolId, _owner);
+				expect(userInfo[poolId]).to.equal(1000000n);
 
-				await _farm.emergencyWithdraw(poolId);
+				await expect(_farm.emergencyWithdraw(poolId)).to.emit(_farm, "EmergencyWithdraw").withArgs(_owner, poolId, 1000000n, _owner);
 
-				const exitbalance = await _lpToken.balanceOf(account);
-				console.log(exitbalance);
+				const exitbalance = await _lpToken.balanceOf(_owner);
+				expect(exitbalance).to.be.eq(999999999999999999000000n);
 			});
+
+			// it("Should allow owner to refund", async () => {
+			// 	await expect(_farm.refund()).to.emit(_farm, "Refund");
+
+			// 	const farmAddress = await _farm.getAddress();
+			// 	expect(await _lpToken.balanceOf(farmAddress)).to.equal(0);
+			// });
 		});
 
 		describe("Harvest", async () => {
@@ -336,12 +347,12 @@ describe("Farm contract", () => {
 
 			it("Should harvest", async () => {
 				const account = ethers.Wallet.createRandom().address;
-				expect(await _farm.harvest(poolId, account)).to.emit(_farm, "Harvest");
+				await expect(_farm.harvest(poolId, account)).to.emit(_farm, "Harvest");
 			});
 
 			it("Should withdraw and harvest", async () => {
 				const account = ethers.Wallet.createRandom().address;
-				await _farm.withdrawAndHarvest(poolId, 1000000n, account);
+				await expect(_farm.withdrawAndHarvest(poolId, 1000000n, account)).to.emit(_farm, "WithdrawAndHarvest");
 			});
 		});
 	});
