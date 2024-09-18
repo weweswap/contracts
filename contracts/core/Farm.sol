@@ -9,14 +9,14 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../libraries/SafeCast64.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "../interfaces/IOwnable.sol";
 import "../interfaces/IRewarder.sol";
 import "../interfaces/IMigratorChef.sol";
-import "../interfaces/ICHAOS.sol";
 import "../interfaces/IFarm.sol";
 
 import "hardhat/console.sol";
 
-contract Farm is ICHAOS, IFarm, Ownable {
+contract Farm is IFarm, Ownable {
     using SafeMath for uint256;
     using SafeCast for int64;
     using SafeCast for uint64;
@@ -346,7 +346,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         int256 accumulatedRewards = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
-        uint256 _pendingRewards = uint256(accumulatedRewards.sub(user.rewardDebt)); // uint256 _pendingSushi = accumulatedSushi.sub(user.rewardDebt).toUInt256();
+        uint256 _pendingRewards = uint256(accumulatedRewards.sub(user.rewardDebt));
 
         // Effects
         user.rewardDebt = accumulatedRewards.sub(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
@@ -385,21 +385,28 @@ contract Farm is ICHAOS, IFarm, Ownable {
         emit EmergencyWithdraw(msg.sender, pid, amount, to);
     }
 
-    function refundAll() public onlyOwner(){
-        unit256 amount = CHAOS_TOKEN.balanceOf(_self);
+    function refundAll() external onlyOwner {
+        uint256 total = CHAOS_TOKEN.balanceOf(_self);
 
-        if (amount > 0){
-            CHAOS_TOKEN.safeTransferFrom(_self, x, amount);
+        if (total > 0) {
+            _refund(total);
         }
     }
 
-    function refund(uint256 amount) public onlyOwner(){
-        CHAOS_TOKEN.safeTransferFrom(_self,x , amount);
-
-        emmit Refund(amount);
+    function refund(uint256 amount) external onlyOwner {
+        _refund(amount);
     }
 
-    event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
+    function _refund(uint256 amount) private {
+        require(amount <= CHAOS_TOKEN.balanceOf(_self), "Chaos: Insufficient CHAOS balance");
+        address to = IOwnable(address(CHAOS_TOKEN)).owner();
+
+        require(to != address(0), "Chaos: Invalid owner address");
+        CHAOS_TOKEN.safeTransferFrom(_self, to, amount);
+
+        emit Refunded(amount);
+    }
+
     event LogPoolAllocation(uint256 indexed pid, uint256 amount);
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
     event LogSetEmisionsPerBlock(uint256 amount);
