@@ -275,7 +275,7 @@ describe("Farm contract", () => {
 				await _farm.deposit(poolId, 1000000n, account);
 			});
 
-			it("Should deposit shares to farm", async () => {
+			it("Should deposit", async () => {
 				await expect(_farm.deposit(poolId, 1000000n, account))
 					.to.emit(_farm, "Deposit")
 					.withArgs(_owner, poolId, 1000000n, account);
@@ -285,16 +285,18 @@ describe("Farm contract", () => {
 				expect(userInfo[0]).to.equal(2000000n);
 			});
 
-			it.only("Should withdraw", async () => {
-				let userInfo = await _farm.userInfo(poolId, account);
-				expect(userInfo[poolId]).to.equal(1000000n);
-				
-				// await expect(_farm.withdraw(poolId, 1000000n, account))
-				// 	.to.emit(_farm, "Withdraw")
-				// 	.withArgs(account, poolId, 1000000n);
+			it("Should withdraw", async () => {
+				await _farm.deposit(poolId, 1000000n, _owner);
 
-				userInfo = await _farm.userInfo(poolId, account);
-				expect(userInfo[poolId]).to.equal(0);
+				let userInfo = await _farm.userInfo(poolId, _owner);
+				expect(userInfo[0]).to.equal(1000000n);
+				
+				await expect(_farm.withdraw(poolId, 1000000n, _owner))
+					.to.emit(_farm, "Withdraw")
+					.withArgs(_owner, poolId, 1000000n, _owner);
+
+				userInfo = await _farm.userInfo(poolId, _owner);
+				expect(userInfo[0]).to.equal(0);
 			});
 
 			it("Should perform an emergency withdraw", async () => {
@@ -303,7 +305,7 @@ describe("Farm contract", () => {
 				expect(balance).to.not.eq(0);
 
 				const userInfo = await _farm.userInfo(poolId, _owner);
-				expect(userInfo[poolId]).to.equal(1000000n);
+				expect(userInfo[0]).to.equal(1000000n);
 
 				await expect(_farm.emergencyWithdraw(poolId)).to.emit(_farm, "EmergencyWithdraw").withArgs(_owner, poolId, 1000000n, _owner);
 
