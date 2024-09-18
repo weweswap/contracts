@@ -23,7 +23,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
     using SafeCast for uint128;
     using SafeCast for int128;
     using SafeCast64 for uint256;
-    // using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20;
     using SignedSafeMath for int256;
 
     // Total CHAOS allocated to the pools
@@ -276,7 +276,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
             _rewarder.onChaosReward(pid, to, to, 0, user.amount);
         }
 
-        lpToken[pid].transferFrom(msg.sender, _self, amount);
+        lpToken[pid].safeTransferFrom(msg.sender, _self, amount);
 
         emit Deposit(msg.sender, pid, amount, to);
     }
@@ -301,7 +301,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
                 _rewarder.onChaosReward(pid, msg.sender, to, 0, user.amount);
             }
 
-            lpToken[pid].transfer(to, amount);
+            lpToken[pid].safeTransfer(to, amount);
 
             emit Withdraw(msg.sender, pid, amount, to);
         }
@@ -327,7 +327,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
 
         // Interactions
         if (_pendingRewards != 0) {
-            CHAOS_TOKEN.transferFrom(_self, to, _pendingRewards);
+            CHAOS_TOKEN.safeTransferFrom(_self, to, _pendingRewards);
         }
 
         IRewarder _rewarder = rewarder[pid];
@@ -353,14 +353,14 @@ contract Farm is ICHAOS, IFarm, Ownable {
         user.amount = user.amount.sub(amount);
 
         // Interactions
-        CHAOS_TOKEN.transfer(to, _pendingRewards);
+        CHAOS_TOKEN.safeTransfer(to, _pendingRewards);
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
             _rewarder.onChaosReward(pid, msg.sender, to, _pendingRewards, user.amount);
         }
 
-        lpToken[pid].transfer(to, amount);
+        lpToken[pid].safeTransfer(to, amount);
 
         emit Withdraw(msg.sender, pid, amount, to);
         emit Harvest(msg.sender, pid, _pendingRewards);
@@ -381,7 +381,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
         }
 
         // Note: transfer can fail or succeed if `amount` is zero.
-        lpToken[pid].transfer(to, amount);
+        lpToken[pid].safeTransfer(to, amount);
         emit EmergencyWithdraw(msg.sender, pid, amount, to);
     }
 
