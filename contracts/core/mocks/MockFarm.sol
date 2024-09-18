@@ -22,6 +22,10 @@ contract MockFarm is IFarm {
         console.log("withdraw", pid, amount, to);
     }
 
+    function emergencyWithdraw(uint256 pid) external pure {
+        console.log("emergencyWithdraw", pid);
+    }
+
     function harvest(uint256 pid, address to) external pure {
         console.log("harvest", pid, to);
     }

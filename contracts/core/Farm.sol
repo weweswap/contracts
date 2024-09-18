@@ -247,22 +247,6 @@ contract Farm is IFarm, Ownable {
     /// @param amount LP token amount to deposit.
     /// @param to The receiver of `amount` deposit benefit.
     function deposit(uint256 pid, uint256 amount, address to) external {
-        if (lpToken[pid].allowance(msg.sender, _self) < amount) {
-            console.log("LP allowance: %s", lpToken[pid].allowance(msg.sender, _self));
-            console.log(_self);
-            console.log(msg.sender);
-
-            // Increase the CHAOS allowance via delegate call, approve CHAOS token to this contract
-            (bool success, ) = address(lpToken[pid]).delegatecall(
-                abi.encodeWithSignature("approve(address,uint256)", _self, amount)
-            );
-
-            console.log(success);
-            console.log("LP allowance: %s", lpToken[pid].allowance(msg.sender, _self));
-
-            require(success, "Chaos: delegate call failed");
-        }
-
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][to];
 
@@ -368,21 +352,21 @@ contract Farm is IFarm, Ownable {
 
     /// @notice Withdraw without caring about rewards. EMERGENCY ONLY.
     /// @param pid The index of the pool. See `poolInfo`.
-    /// @param to Receiver of the LP tokens.
-    function emergencyWithdraw(uint256 pid, address to) public {
+    function emergencyWithdraw(uint256 pid) external {
         UserInfo storage user = userInfo[pid][msg.sender];
+
         uint256 amount = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onChaosReward(pid, msg.sender, to, 0, 0);
+            _rewarder.onChaosReward(pid, msg.sender, msg.sender, 0, 0);
         }
 
         // Note: transfer can fail or succeed if `amount` is zero.
-        lpToken[pid].safeTransfer(to, amount);
-        emit EmergencyWithdraw(msg.sender, pid, amount, to);
+        lpToken[pid].safeTransfer(msg.sender, amount);
+        emit EmergencyWithdraw(msg.sender, pid, amount, msg.sender);
     }
 
     function refundAll() external onlyOwner {

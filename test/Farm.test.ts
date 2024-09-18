@@ -252,7 +252,6 @@ describe("Farm contract", () => {
 
 		describe.only("Deposit and withdraw", async () => {
 			let _farm: any;
-			let _owner: any;
 			let _lpToken: any;
 			const poolId = 0;
 
@@ -275,32 +274,37 @@ describe("Farm contract", () => {
 				await _farm.add(allocPoint, await lpToken.getAddress(), await rewarder.getAddress());
 				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
 
-				await lpToken.approve(_farm, 1000000n);
+				await lpToken.approve(_farm, 2000000n);
+				await _farm.deposit(poolId, 1000000n, account);
 			});
 
 			it("Should deposit shares to farm", async () => {
 				expect(await _farm.deposit(poolId, 1000000n, account))
 					.to.emit(_farm, "Deposit")
 					.withArgs(account, poolId, 1000000n);
+
+				// Get user info
+				const userInfo = await _farm.userInfo(poolId, account);
+				expect(userInfo[0]).to.equal(2000000n);
 			});
 
 			it("Should withdraw", async () => {
-				await _farm.deposit(poolId, 1000000n, account);
-
 				expect(await _farm.withdraw(poolId, 1000000n, account))
 					.to.emit(_farm, "Withdraw")
 					.withArgs(account, poolId, 1000000n);
 			});
 
-			it("Should emergency withdraw", async () => {
-				const { farm } = await loadFixture(deployFixture);
-				const poolId = 0;
-				const account = ethers.Wallet.createRandom().address;
-	
-				await farm.emergencyWithdraw(poolId, account);
-
+			it("Should perform an emergency withdraw", async () => {
 				const balance = await _lpToken.balanceOf(account);
-				expect(balance).to.equal(1000000n);
+				expect(balance).to.equal(0);
+
+				const userInfo = await _farm.userInfo(poolId, account);
+				expect(userInfo[0]).to.equal(1000000n);
+
+				await _farm.emergencyWithdraw(poolId);
+
+				const exitbalance = await _lpToken.balanceOf(account);
+				console.log(exitbalance);
 			});
 		});
 
