@@ -250,9 +250,10 @@ describe("Farm contract", () => {
 			});
 		});
 
-		describe("Deposit and withdraw", async () => {
+		describe.only("Deposit and withdraw", async () => {
 			let _farm: any;
 			let _owner: any;
+			let _lpToken: any;
 			const poolId = 0;
 
 			const account = ethers.Wallet.createRandom().address;
@@ -269,6 +270,7 @@ describe("Farm contract", () => {
 
 				const mockLPToken = await ethers.getContractFactory("MockLPToken");
 				const lpToken = await mockLPToken.deploy();
+				_lpToken = lpToken;
 
 				await _farm.add(allocPoint, await lpToken.getAddress(), await rewarder.getAddress());
 				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
@@ -288,6 +290,17 @@ describe("Farm contract", () => {
 				expect(await _farm.withdraw(poolId, 1000000n, account))
 					.to.emit(_farm, "Withdraw")
 					.withArgs(account, poolId, 1000000n);
+			});
+
+			it("Should emergency withdraw", async () => {
+				const { farm } = await loadFixture(deployFixture);
+				const poolId = 0;
+				const account = ethers.Wallet.createRandom().address;
+	
+				await farm.emergencyWithdraw(poolId, account);
+
+				const balance = await _lpToken.balanceOf(account);
+				expect(balance).to.equal(1000000n);
 			});
 		});
 
@@ -326,14 +339,6 @@ describe("Farm contract", () => {
 				const account = ethers.Wallet.createRandom().address;
 				await _farm.withdrawAndHarvest(poolId, 1000000n, account);
 			});
-		});
-
-		it("Should emergency withdraw", async () => {
-			const { farm } = await loadFixture(deployFixture);
-			const poolId = 0;
-			const account = ethers.Wallet.createRandom().address;
-
-			await farm.emergencyWithdraw(poolId, account);
 		});
 	});
 });
