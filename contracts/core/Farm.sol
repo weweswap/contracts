@@ -9,12 +9,13 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../libraries/SafeCast64.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "../interfaces/IOwnable.sol";
 import "../interfaces/IRewarder.sol";
 import "../interfaces/IMigratorChef.sol";
-import "../interfaces/ICHAOS.sol";
 import "../interfaces/IFarm.sol";
+import "../interfaces/IWeweReceiver.sol";
 
-contract Farm is ICHAOS, IFarm, Ownable {
+contract Farm is IFarm, IWeweReceiver, Ownable {
     using SafeMath for uint256;
     using SafeCast for int64;
     using SafeCast for uint64;
@@ -58,16 +59,19 @@ contract Farm is ICHAOS, IFarm, Ownable {
 
     uint256 private constant ACC_CHAOS_PRECISION = 1e12;
 
+    address private immutable _self;
+
     /// @param _reward The reward token contract address.
     constructor(IERC20 _reward) {
         CHAOS_TOKEN = _reward;
+        _self = address(this);
     }
 
     /// Allocate CHAOS to the farming contract.
     /// @param pid The pool ID to allocate the CHAOS to.
     /// @param amount Amount of CHAOS to allocate.
     function allocateTokens(uint256 pid, uint256 amount) external onlyOwner {
-        require(amount <= CHAOS_TOKEN.balanceOf(address(this)), "Chaos: Insufficient CHAOS balance");
+        require(amount <= CHAOS_TOKEN.balanceOf(_self), "Chaos: Insufficient CHAOS balance");
 
         _totalSupplyAllocated += amount;
         poolInfo[pid].totalSupply += amount;
@@ -163,11 +167,13 @@ contract Farm is ICHAOS, IFarm, Ownable {
     /// @param _pid The index of the pool. See `poolInfo`.
     function migrate(uint256 _pid) public {
         require(address(migrator) != address(0), "Chaos: no migrator set");
+
         IERC20 _lpToken = lpToken[_pid];
-        uint256 bal = _lpToken.balanceOf(address(this));
+        uint256 bal = _lpToken.balanceOf(_self);
         _lpToken.approve(address(migrator), bal);
         IERC20 newLpToken = migrator.migrate(_lpToken);
-        require(bal == newLpToken.balanceOf(address(this)), "Chaos: migrated balance must match");
+
+        require(bal == newLpToken.balanceOf(_self), "Chaos: migrated balance must match");
         lpToken[_pid] = newLpToken;
     }
 
@@ -185,7 +191,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
             return 0;
         }
 
-        uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
+        uint256 lpSupply = lpToken[_pid].balanceOf(_self);
 
         if (block.number > pool.lastRewardBlock && lpSupply != 0 && totalAllocPoint > 0) {
             // Delta blocks
@@ -197,7 +203,6 @@ contract Farm is ICHAOS, IFarm, Ownable {
         }
 
         pending = uint256(int256(user.amount.mul(accChaosPerShare) / ACC_CHAOS_PRECISION).sub(user.rewardDebt));
-        // pending = accChaosPerShare; //
     }
 
     /// @notice Update reward variables for all pools. Be careful of gas spending!
@@ -221,7 +226,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
         pool = poolInfo[pid];
 
         if (block.number > pool.lastRewardBlock && totalAllocPoint > 0) {
-            uint256 lpSupply = lpToken[pid].balanceOf(address(this));
+            uint256 lpSupply = lpToken[pid].balanceOf(_self);
 
             if (lpSupply > 0) {
                 uint256 blocks = block.number.sub(pool.lastRewardBlock);
@@ -236,7 +241,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
         }
     }
 
-    /// @notice Deposit LP tokens to MCV2 for CHAOS allocation.
+    /// @notice Deposit LP tokens to farm for CHAOS allocation.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to deposit.
     /// @param to The receiver of `amount` deposit benefit.
@@ -254,7 +259,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
             _rewarder.onChaosReward(pid, to, to, 0, user.amount);
         }
 
-        lpToken[pid].safeTransferFrom(msg.sender, address(this), amount);
+        lpToken[pid].safeTransferFrom(msg.sender, _self, amount);
 
         emit Deposit(msg.sender, pid, amount, to);
     }
@@ -305,7 +310,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
 
         // Interactions
         if (_pendingRewards != 0) {
-            CHAOS_TOKEN.safeTransfer(to, _pendingRewards);
+            // CHAOS_TOKEN.safeTransferFrom(_self, to, _pendingRewards);
         }
 
         IRewarder _rewarder = rewarder[pid];
@@ -324,7 +329,7 @@ contract Farm is ICHAOS, IFarm, Ownable {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         int256 accumulatedRewards = int256(user.amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION);
-        uint256 _pendingRewards = uint256(accumulatedRewards.sub(user.rewardDebt)); // uint256 _pendingSushi = accumulatedSushi.sub(user.rewardDebt).toUInt256();
+        uint256 _pendingRewards = uint256(accumulatedRewards.sub(user.rewardDebt));
 
         // Effects
         user.rewardDebt = accumulatedRewards.sub(int256(amount.mul(pool.accChaosPerShare) / ACC_CHAOS_PRECISION));
@@ -346,24 +351,53 @@ contract Farm is ICHAOS, IFarm, Ownable {
 
     /// @notice Withdraw without caring about rewards. EMERGENCY ONLY.
     /// @param pid The index of the pool. See `poolInfo`.
-    /// @param to Receiver of the LP tokens.
-    function emergencyWithdraw(uint256 pid, address to) public {
+    function emergencyWithdraw(uint256 pid) external {
         UserInfo storage user = userInfo[pid][msg.sender];
+
         uint256 amount = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onChaosReward(pid, msg.sender, to, 0, 0);
+            _rewarder.onChaosReward(pid, msg.sender, msg.sender, 0, 0);
         }
 
         // Note: transfer can fail or succeed if `amount` is zero.
-        lpToken[pid].safeTransfer(to, amount);
-        emit EmergencyWithdraw(msg.sender, pid, amount, to);
+        lpToken[pid].safeTransfer(msg.sender, amount);
+        emit EmergencyWithdraw(msg.sender, pid, amount, msg.sender);
     }
 
-    event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
+    function refundAll() external onlyOwner {
+        uint256 total = CHAOS_TOKEN.balanceOf(_self);
+
+        if (total > 0) {
+            _refund(total);
+        }
+    }
+
+    function refund(uint256 amount) external onlyOwner {
+        _refund(amount);
+    }
+
+    function _refund(uint256 amount) private {
+        require(amount <= CHAOS_TOKEN.balanceOf(_self), "Chaos: Insufficient CHAOS balance");
+        address to = IOwnable(address(CHAOS_TOKEN)).owner();
+
+        require(to != address(0), "Chaos: Invalid owner address");
+        CHAOS_TOKEN.safeTransfer(to, amount);
+
+        emit Refunded(amount);
+    }
+
+    function receiveApproval(address from, uint256 amount, address token, bytes calldata extraData) external {
+        uint256 pid = abi.decode(extraData, (uint256));
+        require(token == address(lpToken[pid]), "Chaos: Invalid LP token");
+
+        // Approve the spender to spend the tokens
+        lpToken[pid].approve(from, amount);
+    }
+
     event LogPoolAllocation(uint256 indexed pid, uint256 amount);
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
     event LogSetEmisionsPerBlock(uint256 amount);
