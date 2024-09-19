@@ -4,9 +4,8 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IFarm.sol";
-import "../interfaces/IApproveAndCall.sol";
 
-contract ChaosToken is ERC20, IApproveAndCall, Ownable {
+contract ChaosToken is ERC20, Ownable {
     IFarm private _farm;
     uint256 private constant _maxSupply = 1_000_000_000 * 1e18;
 
@@ -25,13 +24,5 @@ contract ChaosToken is ERC20, IApproveAndCall, Ownable {
     function collectEmmisions(uint256 pid) external {
         require(address(_farm) != address(0), "ChaosToken: Farm not set");
         _farm.harvest(pid, msg.sender);
-    }
-
-    function callDeposit(uint256 pid, uint256 amount) external returns (bool) {
-        require(address(_farm) != address(0), "ChaosToken: Farm not set");
-        _approve(address(_farm), msg.sender, amount);
-
-        _farm.deposit(pid, amount, msg.sender);
-        return true;
     }
 }

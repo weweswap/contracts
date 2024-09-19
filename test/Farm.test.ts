@@ -7,7 +7,7 @@ import { DETERMINISTIC_MIN_HEIGHT, DETERMINISTIC_WEWE_WETH_WALLET, USDC_ADDRESS 
 
 const IERC20_ABI = require("../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json").abi;
 
-describe("Farm contract", () => {
+describe.only("Farm contract", () => {
 	async function deployFixture() {
 		const [owner, otherAccount] = await ethers.getSigners();
 		// Reset the blockchain to a deterministic state
@@ -23,7 +23,7 @@ describe("Farm contract", () => {
 		const accountWithFees = await ethers.getImpersonatedSigner(DETERMINISTIC_WEWE_WETH_WALLET);
 
 		const Chaos = await ethers.getContractFactory("ChaosToken");
-		const chaos = await Chaos.deploy([]);
+		const chaos = await Chaos.deploy();
 
 		const chaosAddress = await chaos.getAddress();
 
@@ -145,11 +145,13 @@ describe("Farm contract", () => {
 				_rewarder = await rewarder.getAddress();
 				await _farm.add(allocPoint, await lpToken.getAddress(), _rewarder);
 				await _farm.set(poolId, allocPoint, _rewarder, true);
+
+				await chaos.setFarm(await _farm.getAddress());
+				await chaos.approve(await _farm.getAddress(), 1000000n);
 			});
 
-			it("Should allocate $CHAOS tokens", async () => {
+			it("Should allocate CHAOS tokens", async () => {
 				const farmAddress = await _farm.getAddress();
-				await _chaos.transfer(farmAddress, 1000000n);
 				expect(await _chaos.balanceOf(farmAddress)).to.equal(1000000n);
 
 				expect(await _farm.poolLength()).to.equal(1);
@@ -172,7 +174,7 @@ describe("Farm contract", () => {
 			});
 		});
 
-		describe("Rewards", async () => {
+		describe.only("Rewards", async () => {
 			let _farm: any;
 			let _lpToken: any;
 			let _chaos: any;
@@ -184,6 +186,8 @@ describe("Farm contract", () => {
 				const { farm, chaos, owner } = await loadFixture(deployFixture);
 				_farm = farm;
 				_chaos = chaos;
+
+				await chaos.setFarm(await _farm.getAddress());
 
 				ownerAddress = await owner.getAddress();
 
@@ -200,12 +204,12 @@ describe("Farm contract", () => {
 				await _farm.setEmisionsPerBlock(1);
 
 				// allocate tokens
-				await _chaos.transfer(await _farm.getAddress(), 1000000n);
+				await _chaos.mint(1000000n);
 				await _farm.allocateTokens(poolId, 1000000n);
 			});
 
 			it("Should set emissions per block", async () => {
-				await expect(_farm.setEmisionsPerBlock(2)).to.emit(_farm, "LogSetEmissionsPerBlock");
+				await expect(_farm.setEmisionsPerBlock(2)).to.emit(_farm, "LogSetEmisionsPerBlock");
 			});
 
 			it("Should get no pending rewards", async () => {
@@ -246,11 +250,13 @@ describe("Farm contract", () => {
 			});
 		});
 
-		describe.only("Deposit and withdraw", async () => {
+		describe("Deposit and withdraw", async () => {
 			let _farm: any;
 			let _lpToken: any;
 			let _owner: any;
 			const poolId = 0;
+
+			const approveAndCall = false;
 
 			const account = ethers.Wallet.createRandom().address;
 
@@ -271,7 +277,10 @@ describe("Farm contract", () => {
 				await _farm.add(allocPoint, await lpToken.getAddress(), await rewarder.getAddress());
 				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
 
-				await lpToken.approve(_farm, 2000000n);
+				if (!approveAndCall) {
+					await lpToken.approve(_farm, 2000000n);
+				}
+
 				await _farm.deposit(poolId, 1000000n, account);
 			});
 
