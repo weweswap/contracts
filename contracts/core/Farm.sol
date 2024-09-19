@@ -314,7 +314,7 @@ contract Farm is IFarm, Ownable {
 
         // Interactions
         if (_pendingRewards != 0) {
-            CHAOS_TOKEN.safeTransferFrom(_self, to, _pendingRewards);
+            // CHAOS_TOKEN.safeTransferFrom(_self, to, _pendingRewards);
         }
 
         IRewarder _rewarder = rewarder[pid];

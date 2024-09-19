@@ -174,7 +174,7 @@ describe.only("Farm contract", () => {
 			});
 		});
 
-		describe.only("Rewards", async () => {
+		describe("Rewards", async () => {
 			let _farm: any;
 			let _lpToken: any;
 			let _chaos: any;
@@ -228,7 +228,7 @@ describe.only("Farm contract", () => {
 				let pendingRewards = await _farm.pendingRewards.staticCall(poolId, ownerAddress);
 				expect(pendingRewards).to.equal(0);
 
-				await _farm.deposit(poolId, 1000000n, _owner.address);
+				await _farm.deposit(poolId, 1000000n, ownerAddress);
 				await time.increase(1000);
 
 				const blockNumber2 = await ethers.provider.getBlockNumber();
@@ -257,7 +257,6 @@ describe.only("Farm contract", () => {
 			const poolId = 0;
 
 			const approveAndCall = false;
-
 			const account = ethers.Wallet.createRandom().address;
 
 			beforeEach(async () => {
@@ -271,14 +270,13 @@ describe.only("Farm contract", () => {
 				const rewarder = await Rewarder.deploy();
 
 				const mockLPToken = await ethers.getContractFactory("MockLPToken");
-				const lpToken = await mockLPToken.deploy();
-				_lpToken = lpToken;
+				_lpToken = await mockLPToken.deploy();
 
-				await _farm.add(allocPoint, await lpToken.getAddress(), await rewarder.getAddress());
+				await _farm.add(allocPoint, await _lpToken.getAddress(), await rewarder.getAddress());
 				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
 
 				if (!approveAndCall) {
-					await lpToken.approve(_farm, 2000000n);
+					await _lpToken.approve(_farm, 2000000n);
 				}
 
 				await _farm.deposit(poolId, 1000000n, account);
@@ -299,7 +297,7 @@ describe.only("Farm contract", () => {
 
 				let userInfo = await _farm.userInfo(poolId, _owner);
 				expect(userInfo[0]).to.equal(1000000n);
-				
+
 				await expect(_farm.withdraw(poolId, 1000000n, _owner))
 					.to.emit(_farm, "Withdraw")
 					.withArgs(_owner, poolId, 1000000n, _owner);
@@ -333,32 +331,53 @@ describe.only("Farm contract", () => {
 		describe("Harvest", async () => {
 			let _farm: any;
 			const poolId = 0;
+			let _owner: any;
 
 			beforeEach(async () => {
-				const { farm, owner } = await loadFixture(deployFixture);
+				const { farm, owner, chaos } = await loadFixture(deployFixture);
 				_farm = farm;
+				_owner = owner.address;
 
-				const allocPoint = 0;
+				await chaos.setFarm(await _farm.getAddress());
+
+				const allocPoint = 1;
 				const Rewarder = await ethers.getContractFactory("MockRewarder");
 				const rewarder = await Rewarder.deploy();
 
 				const mockLPToken = await ethers.getContractFactory("MockLPToken");
 				const lpToken = await mockLPToken.deploy();
 
+				// set the reward per block
+				await _farm.setEmisionsPerBlock(1);
+
 				await _farm.add(allocPoint, await lpToken.getAddress(), await rewarder.getAddress());
 				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
+				await chaos.mint(1000000n);
+				await _farm.allocateTokens(poolId, 1000000n);
 
 				const usdcContract = new ethers.Contract(USDC_ADDRESS, IERC20_ABI, owner);
 
 				// approve and deposit usdc share
 				await usdcContract.approve(_farm, 1000000n);
 				await lpToken.approve(_farm, 1000000n);
-				await _farm.deposit(poolId, 1000000n, _owner.address);
+				await _farm.deposit(poolId, 1000000n, _owner);
 			});
 
-			it("Should harvest", async () => {
-				const account = ethers.Wallet.createRandom().address;
-				await expect(_farm.harvest(poolId, account)).to.emit(_farm, "Harvest");
+			it.only("Should harvest", async () => {
+				let poolInfo = await _farm.poolInfo(poolId);
+				const lastRewardBlock = poolInfo.lastRewardBlock;
+				expect(lastRewardBlock).to.greaterThanOrEqual(19197428);
+
+				await time.increase(1000);
+				await _farm.updatePool(poolId);
+
+				poolInfo = await _farm.poolInfo(poolId);
+				expect(poolInfo.lastRewardBlock).to.greaterThanOrEqual(lastRewardBlock);
+
+				const pending = await _farm.pendingRewards.staticCall(poolId, _owner);
+				expect(pending).to.equal(2);
+
+				await expect(_farm.harvest(poolId, _owner)).to.emit(_farm, "Harvest");
 			});
 
 			it("Should withdraw and harvest", async () => {
