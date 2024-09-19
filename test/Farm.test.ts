@@ -7,7 +7,7 @@ import { DETERMINISTIC_MIN_HEIGHT, DETERMINISTIC_WEWE_WETH_WALLET, USDC_ADDRESS 
 
 const IERC20_ABI = require("../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json").abi;
 
-describe.only("Farm contract", () => {
+describe("Farm contract", () => {
 	async function deployFixture() {
 		const [owner, otherAccount] = await ethers.getSigners();
 		// Reset the blockchain to a deterministic state
@@ -148,6 +148,8 @@ describe.only("Farm contract", () => {
 
 				await chaos.setFarm(await _farm.getAddress());
 				await chaos.approve(await _farm.getAddress(), 1000000n);
+
+				await chaos.mint(1000000n);
 			});
 
 			it("Should allocate CHAOS tokens", async () => {
