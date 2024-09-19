@@ -15,6 +15,8 @@ import "../interfaces/IMigratorChef.sol";
 import "../interfaces/IFarm.sol";
 import "../interfaces/IWeweReceiver.sol";
 
+import "hardhat/console.sol";
+
 contract Farm is IFarm, IWeweReceiver, Ownable {
     using SafeMath for uint256;
     using SafeCast for int64;
@@ -310,7 +312,7 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
 
         // Interactions
         if (_pendingRewards != 0) {
-            // CHAOS_TOKEN.safeTransferFrom(_self, to, _pendingRewards);
+            CHAOS_TOKEN.safeTransfer(to, _pendingRewards);
         }
 
         IRewarder _rewarder = rewarder[pid];

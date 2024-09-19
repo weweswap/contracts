@@ -6,6 +6,7 @@ import { ethers } from "hardhat";
 import { DETERMINISTIC_MIN_HEIGHT, DETERMINISTIC_WEWE_WETH_WALLET, USDC_ADDRESS } from "./constants";
 
 const IERC20_ABI = require("../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json").abi;
+const FORKED_BLOCK_NUMBER = 19197428;
 
 describe("Farm contract", () => {
 	async function deployFixture() {
@@ -248,7 +249,7 @@ describe("Farm contract", () => {
 				expect(poolInfo.totalSupply).to.equal(1000000n);
 
 				pendingRewards = await _farm.pendingRewards.staticCall(poolId, ownerAddress);
-				expect(pendingRewards).to.equal(BigInt(poolInfo.accChaosPerShare)*1000000n/1000000000000n);
+				expect(pendingRewards).to.equal((BigInt(poolInfo.accChaosPerShare) * 1000000n) / 1000000000000n);
 			});
 		});
 
@@ -375,7 +376,10 @@ describe("Farm contract", () => {
 			it("Should harvest", async () => {
 				let poolInfo = await _farm.poolInfo(poolId);
 				const lastRewardBlock = poolInfo.lastRewardBlock;
-				expect(lastRewardBlock).to.greaterThanOrEqual(19197428);
+				expect(lastRewardBlock).to.greaterThanOrEqual(FORKED_BLOCK_NUMBER);
+
+				let chaosBalance = await _chaos.balanceOf(_owner);
+				expect(chaosBalance).to.equal(0);
 
 				await time.increase(1000);
 				await _farm.updatePool(poolId);
@@ -383,16 +387,24 @@ describe("Farm contract", () => {
 				poolInfo = await _farm.poolInfo(poolId);
 				expect(poolInfo.lastRewardBlock).to.greaterThanOrEqual(lastRewardBlock);
 
-				const pending = await _farm.pendingRewards.staticCall(poolId, _owner);
+				let pending = await _farm.pendingRewards.staticCall(poolId, _owner);
 				expect(pending).to.equal(2);
 
 				await expect(_farm.harvest(poolId, _owner)).to.emit(_farm, "Harvest");
+				pending = await _farm.pendingRewards.staticCall(poolId, _owner);
+				expect(pending).to.equal(0);
+
+				chaosBalance = await _chaos.balanceOf(_owner);
+				expect(chaosBalance).to.be.greaterThan(0);
 			});
 
 			it("Should withdraw and harvest", async () => {
 				let poolInfo = await _farm.poolInfo(poolId);
 				const lastRewardBlock = poolInfo.lastRewardBlock;
-				expect(lastRewardBlock).to.greaterThanOrEqual(19197428);
+				expect(lastRewardBlock).to.greaterThanOrEqual(FORKED_BLOCK_NUMBER);
+
+				let chaosBalance = await _chaos.balanceOf(_owner);
+				expect(chaosBalance).to.equal(0);
 
 				await time.increase(1000);
 				await _farm.updatePool(poolId);
@@ -408,6 +420,9 @@ describe("Farm contract", () => {
 
 				const userInfo = await _farm.userInfo(poolId, _owner);
 				expect(userInfo[0]).to.equal(0);
+
+				chaosBalance = await _chaos.balanceOf(_owner);
+				expect(chaosBalance).to.be.greaterThan(0);
 			});
 		});
 	});
