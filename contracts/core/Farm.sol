@@ -13,11 +13,9 @@ import "../interfaces/IOwnable.sol";
 import "../interfaces/IRewarder.sol";
 import "../interfaces/IMigratorChef.sol";
 import "../interfaces/IFarm.sol";
-// import "../interfaces/IApproveAndCall.sol";
+import "../interfaces/IWeweReceiver.sol";
 
-import "hardhat/console.sol";
-
-contract Farm is IFarm, Ownable {
+contract Farm is IFarm, IWeweReceiver, Ownable {
     using SafeMath for uint256;
     using SafeCast for int64;
     using SafeCast for uint64;
@@ -395,6 +393,14 @@ contract Farm is IFarm, Ownable {
         CHAOS_TOKEN.safeTransfer(to, amount);
 
         emit Refunded(amount);
+    }
+
+    function receiveApproval(address from, uint256 amount, address token, bytes calldata extraData) external {
+        uint256 pid = abi.decode(extraData, (uint256));
+        require(token == lpToken[pid], "Chaos: Invalid LP token");
+
+        // Approve the spender to spend the tokens
+        lpToken[pid].approve(from, amount);
     }
 
     event LogPoolAllocation(uint256 indexed pid, uint256 amount);
