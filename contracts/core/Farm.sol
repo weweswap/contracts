@@ -15,6 +15,8 @@ import "../interfaces/IMigratorChef.sol";
 import "../interfaces/IFarm.sol";
 // import "../interfaces/IApproveAndCall.sol";
 
+import "hardhat/console.sol";
+
 contract Farm is IFarm, Ownable {
     using SafeMath for uint256;
     using SafeCast for int64;
@@ -374,6 +376,7 @@ contract Farm is IFarm, Ownable {
 
     function refundAll() external onlyOwner {
         uint256 total = CHAOS_TOKEN.balanceOf(_self);
+        console.log("Total CHAOS balance: %s", total);
 
         if (total > 0) {
             _refund(total);
@@ -389,7 +392,7 @@ contract Farm is IFarm, Ownable {
         address to = IOwnable(address(CHAOS_TOKEN)).owner();
 
         require(to != address(0), "Chaos: Invalid owner address");
-        CHAOS_TOKEN.safeTransferFrom(_self, to, amount);
+        CHAOS_TOKEN.safeTransfer(to, amount);
 
         emit Refunded(amount);
     }

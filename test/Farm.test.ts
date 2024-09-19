@@ -254,16 +254,19 @@ describe.only("Farm contract", () => {
 			let _farm: any;
 			let _lpToken: any;
 			let _owner: any;
+			let _chaos: any;
 			const poolId = 0;
 
 			const approveAndCall = false;
 			const account = ethers.Wallet.createRandom().address;
 
 			beforeEach(async () => {
-				const { farm, owner } = await loadFixture(deployFixture);
+				const { farm, owner, chaos } = await loadFixture(deployFixture);
 				_farm = farm;
 				_owner = owner.address;
+				_chaos = chaos;
 
+				await _chaos.setFarm(await _farm.getAddress());
 				const allocPoint = 0;
 
 				const Rewarder = await ethers.getContractFactory("MockRewarder");
@@ -320,12 +323,16 @@ describe.only("Farm contract", () => {
 				expect(exitbalance).to.be.eq(999999999999999999000000n);
 			});
 
-			// it("Should allow owner to refund", async () => {
-			// 	await expect(_farm.refund()).to.emit(_farm, "Refund");
+			it.only("Should allow owner to refund", async () => {
+				await _chaos.mint(1000000n);
 
-			// 	const farmAddress = await _farm.getAddress();
-			// 	expect(await _lpToken.balanceOf(farmAddress)).to.equal(0);
-			// });
+				const farmAddress = await _farm.getAddress();
+				const balance = await _chaos.balanceOf(farmAddress);
+				expect(balance).to.equal(1000000n);
+
+				await expect(_farm.refundAll()).to.emit(_farm, "Refunded");
+				expect(await _chaos.balanceOf(farmAddress)).to.equal(0);
+			});
 		});
 
 		describe("Harvest", async () => {
@@ -363,7 +370,7 @@ describe.only("Farm contract", () => {
 				await _farm.deposit(poolId, 1000000n, _owner);
 			});
 
-			it.only("Should harvest", async () => {
+			it("Should harvest", async () => {
 				let poolInfo = await _farm.poolInfo(poolId);
 				const lastRewardBlock = poolInfo.lastRewardBlock;
 				expect(lastRewardBlock).to.greaterThanOrEqual(19197428);
@@ -381,8 +388,24 @@ describe.only("Farm contract", () => {
 			});
 
 			it("Should withdraw and harvest", async () => {
-				const account = ethers.Wallet.createRandom().address;
-				await expect(_farm.withdrawAndHarvest(poolId, 1000000n, account)).to.emit(_farm, "WithdrawAndHarvest");
+				let poolInfo = await _farm.poolInfo(poolId);
+				const lastRewardBlock = poolInfo.lastRewardBlock;
+				expect(lastRewardBlock).to.greaterThanOrEqual(19197428);
+
+				await time.increase(1000);
+				await _farm.updatePool(poolId);
+
+				poolInfo = await _farm.poolInfo(poolId);
+				expect(poolInfo.lastRewardBlock).to.greaterThanOrEqual(lastRewardBlock);
+
+				const pending = await _farm.pendingRewards.staticCall(poolId, _owner);
+				expect(pending).to.equal(2);
+
+				await expect(_farm.harvest(poolId, _owner)).to.emit(_farm, "Harvest");
+				await expect(_farm.withdrawAndHarvest(poolId, 1000000n, _owner)).to.emit(_farm, "Withdraw");
+
+				const userInfo = await _farm.userInfo(poolId, _owner);
+				expect(userInfo[0]).to.equal(0);
 			});
 		});
 	});
