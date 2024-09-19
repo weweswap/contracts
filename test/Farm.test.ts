@@ -323,7 +323,7 @@ describe.only("Farm contract", () => {
 				expect(exitbalance).to.be.eq(999999999999999999000000n);
 			});
 
-			it.only("Should allow owner to refund", async () => {
+			it("Should allow owner to refund", async () => {
 				await _chaos.mint(1000000n);
 
 				const farmAddress = await _farm.getAddress();
