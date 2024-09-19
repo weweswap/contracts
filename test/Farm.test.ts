@@ -248,7 +248,7 @@ describe("Farm contract", () => {
 				expect(poolInfo.totalSupply).to.equal(1000000n);
 
 				pendingRewards = await _farm.pendingRewards.staticCall(poolId, ownerAddress);
-				expect(pendingRewards).to.equal((BigInt(poolInfo.accChaosPerShare) * 1000000n) / 1000000000000n);
+				expect(pendingRewards).to.equal(BigInt(poolInfo.accChaosPerShare)*1000000n/1000000000000n);
 			});
 		});
 

@@ -55,7 +55,6 @@ To perform the tests, the state of the blockchain needs to be deterministic. To 
 - ISR -> Invalid SwapRouter address
 - IA -> Invalid Arrakis V2 address
 - IAR -> Invalid Arrakis V2 Resolver address
-- IQ -> Invalid QuoteV2 Uniswap Address
 - ITM -> Invalid token to migrate address
 - IUSDC -> Invalid USDC address
 - NLP -> No liquidity in this LP
