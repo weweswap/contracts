@@ -13,11 +13,9 @@ import "../interfaces/IOwnable.sol";
 import "../interfaces/IRewarder.sol";
 import "../interfaces/IMigratorChef.sol";
 import "../interfaces/IFarm.sol";
-// import "../interfaces/IApproveAndCall.sol";
+import "../interfaces/IWeweReceiver.sol";
 
-import "hardhat/console.sol";
-
-contract Farm is IFarm, Ownable {
+contract Farm is IFarm, IWeweReceiver, Ownable {
     using SafeMath for uint256;
     using SafeCast for int64;
     using SafeCast for uint64;
@@ -397,22 +395,13 @@ contract Farm is IFarm, Ownable {
         emit Refunded(amount);
     }
 
-    function tryApprove(address token, uint256 amount) private returns (bool) {
-        // (bool success, bytes memory data) =
-        //     token.call(abi.encodeWithSelector(IERC20.approve.selector, amount));
+    function receiveApproval(address from, uint256 amount, address token, bytes calldata extraData) external {
+        uint256 pid = abi.decode(extraData, (uint256));
+        require(token == lpToken[pid], "Chaos: Invalid LP token");
 
-        (bool success, bytes memory data) = token.delegatecall(abi.encodeWithSelector(IERC20.approve.selector, amount));
-
-        return success && (data.length == 0 || abi.decode(data, (bool)));
+        // Approve the spender to spend the tokens
+        lpToken[pid].approve(from, amount);
     }
-
-    // function callDeposit(uint256 pid, uint256 amount) external returns (bool) {
-    //     require(address(_farm) != address(0), "ChaosToken: Farm not set");
-    //     _approve(address(_farm), msg.sender, amount);
-
-    //     _farm.deposit(pid, amount, msg.sender);
-    //     return true;
-    // }
 
     event LogPoolAllocation(uint256 indexed pid, uint256 amount);
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
