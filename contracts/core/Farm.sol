@@ -246,10 +246,6 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
     /// @param amount LP token amount to deposit.
     /// @param to The receiver of `amount` deposit benefit.
     function deposit(uint256 pid, uint256 amount, address to) external {
-        if (lpToken[pid].allowance(msg.sender, _self) < amount) {
-            require(tryApprove(address(lpToken[pid]), amount), "Chaos: Failed to approve LP token");
-        }
-
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][to];
 
@@ -374,7 +370,6 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
 
     function refundAll() external onlyOwner {
         uint256 total = CHAOS_TOKEN.balanceOf(_self);
-        console.log("Total CHAOS balance: %s", total);
 
         if (total > 0) {
             _refund(total);
@@ -397,7 +392,7 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
 
     function receiveApproval(address from, uint256 amount, address token, bytes calldata extraData) external {
         uint256 pid = abi.decode(extraData, (uint256));
-        require(token == lpToken[pid], "Chaos: Invalid LP token");
+        require(token == address(lpToken[pid]), "Chaos: Invalid LP token");
 
         // Approve the spender to spend the tokens
         lpToken[pid].approve(from, amount);
