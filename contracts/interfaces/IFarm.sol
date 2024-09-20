@@ -8,9 +8,9 @@ interface IFarm {
     }
 
     struct PoolInfo {
-        uint128 accChaosPerShare; // Accumulated SUSHI per share, times 1e12. See below.
-        uint64 lastRewardBlock; // Last block number that SUSHI distribution occurs.
-        uint64 allocPoint; // How many allocation points assigned to this pool. SUSHI to distribute per block.
+        uint128 accChaosPerShare; // Accumulated CHAOS per share, times 1e12.
+        uint64 lastRewardBlock; // Last block number that CHAOS distribution occurs.
+        uint64 allocPoint; // How many allocation points assigned to this pool. CHAOS to distribute per block.
         uint256 totalSupply; // CHAOS allocated to the pool
         uint8 weight; // Arbitrary weight for the pool
     }
