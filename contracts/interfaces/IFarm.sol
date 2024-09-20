@@ -17,7 +17,7 @@ interface IFarm {
 
     function getPoolInfo(uint256 pid) external view returns (PoolInfo memory);
     function totalAllocPoint() external view returns (uint256);
-    function deposit(uint256 pid, uint256, address to) external;
+    function deposit(uint256 pid, uint256 amount, address to) external;
     function withdraw(uint256 pid, uint256 amount, address to) external;
     function emergencyWithdraw(uint256 pid) external;
 
