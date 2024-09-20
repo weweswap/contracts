@@ -1,6 +1,7 @@
-import { HardhatUserConfig, task, vars } from "hardhat/config";
+import { HardhatUserConfig, task } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-ignition-ethers";
+import "solidity-coverage";
 
 import dotenv from "dotenv";
 
