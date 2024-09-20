@@ -1,28 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/token/ERC777/ERC777.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "../interfaces/IOwnable.sol";
 import "../interfaces/IFarm.sol";
 
-contract ChaosToken is ERC777, Ownable {
+contract ChaosToken is ERC20, Ownable {
     IFarm private _farm;
+    uint256 private constant _maxSupply = 1_000_000_000 * 1e18;
 
-    constructor(address[] memory defaultOperators) ERC777("$CHAOS", "CHAOS", defaultOperators) {
-        _mint(msg.sender, 1000000000 * 10 ** 18, "", "");
-    }
+    constructor() ERC20("CHAOS", "CHAOS") {}
 
     function setFarm(address farm) external onlyOwner {
         _farm = IFarm(farm);
     }
 
-    function mint(uint256 amount) public onlyOwner {
-        _mint(address(this), amount, "", "");
+    function mint(uint256 amount) external onlyOwner {
+        require(address(_farm) != address(0), "ChaosToken: Farm not set");
+        require(totalSupply() + amount <= _maxSupply, "ChaosToken: Max supply exceeded");
+        _mint(address(_farm), amount);
     }
 
     function collectEmmisions(uint256 pid) external {
         require(address(_farm) != address(0), "ChaosToken: Farm not set");
-        // Collect the emmisions
         _farm.harvest(pid, msg.sender);
     }
 }
