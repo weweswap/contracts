@@ -15,7 +15,6 @@ import "../interfaces/IMigratorChef.sol";
 import "../interfaces/IFarm.sol";
 import "../interfaces/IWeweReceiver.sol";
 
-
 contract Farm is IFarm, IWeweReceiver, Ownable {
     using SafeMath for uint256;
     using SafeCast for int64;
@@ -247,6 +246,10 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
     /// @param amount LP token amount to deposit.
     /// @param to The receiver of `amount` deposit benefit.
     function deposit(uint256 pid, uint256 amount, address to) external {
+        _deposit(pid, amount, to);
+    }
+
+    function _deposit(uint256 pid, uint256 amount, address to) private {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][to];
 
@@ -393,10 +396,10 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
 
     function receiveApproval(address from, uint256 amount, address token, bytes calldata extraData) external {
         uint256 pid = abi.decode(extraData, (uint256));
+        require(pid < poolInfo.length, "Chaos: Invalid pool ID");
         require(token == address(lpToken[pid]), "Chaos: Invalid LP token");
 
-        // Approve the spender to spend the tokens
-        lpToken[pid].approve(from, amount);
+        _deposit(pid, amount, from);
     }
 
     event LogPoolAllocation(uint256 indexed pid, uint256 amount);
