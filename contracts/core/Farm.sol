@@ -396,7 +396,7 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
 
     function receiveApproval(address from, uint256 amount, address token, bytes calldata extraData) external {
         uint256 pid = abi.decode(extraData, (uint256));
-        require(pid < poolInfo.length, "Chaos: Invalid pool ID");
+        require(pid < lpToken.length, "Chaos: Invalid pool ID");
         require(token == address(lpToken[pid]), "Chaos: Invalid LP token");
 
         _deposit(pid, amount, from);
