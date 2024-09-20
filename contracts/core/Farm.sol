@@ -15,7 +15,6 @@ import "../interfaces/IMigratorChef.sol";
 import "../interfaces/IFarm.sol";
 import "../interfaces/IWeweReceiver.sol";
 
-import "hardhat/console.sol";
 
 contract Farm is IFarm, IWeweReceiver, Ownable {
     using SafeMath for uint256;
