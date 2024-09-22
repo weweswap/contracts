@@ -1,5 +1,3 @@
 {
-  "MigrationModule#Migration": "0x0C157a19eDB32b96A44Fa7EaE4D207522958f32c",
-  "ChaosTokenModule#ChaosToken": "0xCb69EAaFE84D639021192398c1d2DB0d97AA13aA",
-  "FarmModule#Farm": "0x685C8529c797F67FC0afAc553BA7a6700C4b5B12"
+  "FarmModule#Farm": "0xb1389D8A20B6be19111D4435Bd218a9F370472aB"
 }
