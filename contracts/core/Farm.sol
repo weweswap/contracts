@@ -34,8 +34,8 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
     // Sum of the weights of all vaults
     uint8 private _totalWeight;
 
-    /// @notice Address of MCV1 contract.
-    // ICHAOS public immutable CHAOS;
+    /// @notice Address of CHAOS contract.
+    // IERC20 public immutable CHAOS;
     /// @notice Address of CHAOS contract.
     IERC20 public immutable CHAOS_TOKEN;
 
@@ -98,8 +98,12 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
         return poolInfo[pid];
     }
 
-    function getPoolWeightAsPercentage(uint256 pid) public view returns (uint8) {
-        return ((poolInfo[pid].weight * 100) / _totalWeight) * 100;
+    function getPoolWeightAsPercentage(uint256 pid) public view returns (uint256) {
+        if (_totalWeight == 0) {
+            return 0;
+        }
+
+        return (uint256(poolInfo[pid].weight) * 100) / uint256(_totalWeight);
     }
 
     function setEmissionsPerBlock(uint256 amount) external onlyOwner {
