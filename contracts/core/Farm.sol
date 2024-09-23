@@ -102,10 +102,10 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
         return ((poolInfo[pid].weight * 100) / _totalWeight) * 100;
     }
 
-    function setEmisionsPerBlock(uint256 amount) external onlyOwner {
+    function setEmissionsPerBlock(uint256 amount) external onlyOwner {
         tokensPerBlock = amount;
 
-        emit LogSetEmisionsPerBlock(amount);
+        emit LogSetEmissionsPerBlock(amount);
     }
 
     /// @notice Returns the number of pools.
@@ -404,7 +404,7 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
 
     event LogPoolAllocation(uint256 indexed pid, uint256 amount);
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
-    event LogSetEmisionsPerBlock(uint256 amount);
+    event LogSetEmissionsPerBlock(uint256 amount);
     event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
     event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accChaosPerShare);
     event LogSetPoolWeight(uint256 indexed pid, uint8 weight);
