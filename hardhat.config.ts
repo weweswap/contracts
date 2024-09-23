@@ -55,7 +55,7 @@ const config: HardhatUserConfig = {
 			viaIR: true,
 		},
 	},
-	defaultNetwork: "localhost",
+	// defaultNetwork: "localhost",
 	etherscan: {
 		apiKey: {
 			base: process.env.BASESCAN_API_KEY || "",
@@ -90,6 +90,7 @@ const config: HardhatUserConfig = {
 					},
 				},
 			},
+			blockGasLimit: 60000000 // Network block gasLimit
 		},
 	},
 };
