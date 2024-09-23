@@ -250,6 +250,14 @@ describe("Farm contract", () => {
 
 				pendingRewards = await _farm.pendingRewards.staticCall(poolId, ownerAddress);
 				expect(pendingRewards).to.equal((BigInt(poolInfo.accChaosPerShare) * 1000000n) / 1000000000000n);
+
+				await _farm.updatePool(poolId);
+				time.increase(1000);
+
+				const blockNumber3 = await ethers.provider.getBlockNumber();
+				expect(blockNumber3).to.be.greaterThan(blockNumber2);
+				pendingRewards = await _farm.pendingRewards.staticCall(poolId, ownerAddress);
+				expect(pendingRewards).to.be.greaterThan((BigInt(poolInfo.accChaosPerShare) * 1000000n) / 1000000000000n);
 			});
 		});
 

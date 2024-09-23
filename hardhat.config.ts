@@ -55,7 +55,6 @@ const config: HardhatUserConfig = {
 			viaIR: true,
 		},
 	},
-	// defaultNetwork: "localhost",
 	etherscan: {
 		apiKey: {
 			base: process.env.BASESCAN_API_KEY || "",
