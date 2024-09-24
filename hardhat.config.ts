@@ -1,6 +1,7 @@
-import { HardhatUserConfig, task, vars } from "hardhat/config";
+import { HardhatUserConfig, task } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-ignition-ethers";
+import "solidity-coverage";
 
 import dotenv from "dotenv";
 
@@ -54,7 +55,6 @@ const config: HardhatUserConfig = {
 			viaIR: true,
 		},
 	},
-	// defaultNetwork: "localhost",
 	etherscan: {
 		apiKey: {
 			base: process.env.BASESCAN_API_KEY || "",
@@ -89,6 +89,7 @@ const config: HardhatUserConfig = {
 					},
 				},
 			},
+			blockGasLimit: 60000000 // Network block gasLimit
 		},
 	},
 };
