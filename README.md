@@ -67,5 +67,5 @@ To perform the tests, the state of the blockchain needs to be deterministic. To 
 | NonfungiblePositionManager | 0xC36442b4a4522E871399CD717aBDD847Ab11FE88 | Base |
 | SwapRouter | 0xE592427A0AEce92De3Edee1F18E0157C05861564 | Base |
 | ArrakisV2 | 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984 | Base |
-| Farm | 0xb1389D8A20B6be19111D4435Bd218a9F370472aB | Base |
+| Farm | 0x24A969b0864fD51B6c45dD5545A20a65d9dA2cA5 | Base |
 | ChaosToken | 0xf901F4ec62590231f374cA7C5d34BbcA49B11d6B | Base |
