@@ -93,7 +93,11 @@ describe("Migration contract", function () {
 			const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, owner);
 			const tokenId = positions[0].id; // Assume this is an invalid liquidity position for the WEWE-WETH pair
 			// Attempt to transfer the NFT to the migration contract and expect it to revert with the specified message
-			await expect(positionsContract.safeTransferFrom(owner.address, await migration.getAddress(), tokenId)).to.be.revertedWith(
+			const amountOutMinimum = ethers.AbiCoder.defaultAbiCoder().encode(
+				["uint256"], 
+				[3]          
+			);
+			await expect(positionsContract["safeTransferFrom(address,address,uint256,bytes)"](owner.address, await migration.getAddress(), tokenId, amountOutMinimum)).to.be.revertedWith(
 				"INFT",
 			);
 		});
@@ -108,10 +112,13 @@ describe("Migration contract", function () {
 			// Get contract balance of NFTs before the transfer
 			const contractBalanceBefore = await positionsContract.balanceOf(await migration.getAddress());
 
-			// await migration.read(BigInt("34999999999999999998335"), BigInt("2889688"), "0x33443b4942581d0aa6f0e1076eaa18ed72c07a2d");
-			
+			const amountOutMinimum = ethers.AbiCoder.defaultAbiCoder().encode(
+				["uint256"], 
+				[3]          
+			);
+	
 			// Transfer the NFT to the migration contract
-			const tx = await positionsContract.safeTransferFrom(otherAccount, await migration.getAddress(), tokenId);
+			const tx = await positionsContract["safeTransferFrom(address,address,uint256,bytes)"](otherAccount, await migration.getAddress(), tokenId, amountOutMinimum);
 			await tx.wait();
 
 			// Verify the contract now holds the NFT
@@ -128,9 +135,14 @@ describe("Migration contract", function () {
 
 			const positionsContract = new ethers.Contract(UNI_V3_POS, INonfungiblePositionManager, otherAccount);
 
+			const amountOutMinimum = ethers.AbiCoder.defaultAbiCoder().encode(
+				["uint256"], 
+				[3]          
+			);
+
 			// Transfer multiple NFTs to the migration contract
 			for (const position of positions) {
-				const tx = await positionsContract.safeTransferFrom(otherAccount.address, await migration.getAddress(), position.id);
+				const tx = await positionsContract["safeTransferFrom(address,address,uint256,bytes)"](otherAccount.address, await migration.getAddress(), position.id, amountOutMinimum);
 				await tx.wait();
 			}
 
@@ -161,8 +173,13 @@ describe("Migration contract", function () {
 			expect(await token0Contract.balanceOf(migration.getAddress())).to.equal(0)
 			expect(await usdcContract.balanceOf(migration.getAddress())).to.equal(0)
 
+			const amountOutMinimum = ethers.AbiCoder.defaultAbiCoder().encode(
+				["uint256"], 
+				[3]          
+			);
+
 			// Transfer the NFT to the migration contract
-			const tx = await positionsContract.safeTransferFrom(otherAccount, await migration.getAddress(), tokenId);
+			const tx = await positionsContract["safeTransferFrom(address,address,uint256,bytes)"](otherAccount, await migration.getAddress(), tokenId, amountOutMinimum);
 			await tx.wait();
 
 			// Verify the contract now holds the NFT
