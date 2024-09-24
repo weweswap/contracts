@@ -112,7 +112,7 @@ describe("Farm contract", () => {
 			const poolInfo0 = await _farm.poolInfo(0);
 			expect(poolInfo0.lastRewardBlock).to.equal(blockNumber + 1);
 
-			const poolInfo1 = await _farm.poolInfo(0);
+			const poolInfo1 = await _farm.poolInfo(1);
 			expect(poolInfo1.lastRewardBlock).to.equal(blockNumber + 1);
 		});
 
