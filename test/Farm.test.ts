@@ -93,7 +93,7 @@ describe("Farm contract", () => {
 			expect(poolInfo.lastRewardBlock).to.equal(blockNumber + 1);
 		});
 
-		it.only("Should mass update pool", async () => {
+		it("Should mass update pool", async () => {
 			// Arrange
 			await _farm.add(0, await _chaos.getAddress(), _rewarder);
 			await _farm.add(1, await _chaos.getAddress(), _rewarder);
