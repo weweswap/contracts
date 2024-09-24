@@ -9,6 +9,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 abstract contract Eater is Ownable {
     uint256 internal _rate;
 
+    IERC20 internal wewe;
+
     function _eat(address token, uint256 amount, address from, address to) internal {
         IERC20(token).transferFrom(from, to, amount);
         emit Eaten(amount, from);

@@ -10,8 +10,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract BroEather is Eater, IEater {
     address public constant underlying = 0x93750140C2EcEA27a53c6ed30380829607815A31;
 
-    constructor(uint256 rate) {
+    constructor(uint256 rate, address _wewe) {
         _rate = rate;
+        wewe = IERC20(_wewe);
     }
 
     function getRate() external view returns (uint256) {
