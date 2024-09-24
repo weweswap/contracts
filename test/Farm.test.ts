@@ -93,6 +93,29 @@ describe("Farm contract", () => {
 			expect(poolInfo.lastRewardBlock).to.equal(blockNumber + 1);
 		});
 
+		it("Should mass update pool", async () => {
+			// Arrange
+			await _farm.add(0, await _chaos.getAddress(), _rewarder);
+			await _farm.add(1, await _chaos.getAddress(), _rewarder);
+			await _farm.set(0, 1, _rewarder, true);
+			await _farm.set(1, 1, _rewarder, true);
+
+			expect(await _farm.poolLength()).to.equal(2);
+			const blockNumber = await ethers.provider.getBlockNumber();
+
+			const ids = [0, 1];
+
+			// Act
+			await _farm.massUpdatePools(ids);
+
+			// Assert
+			const poolInfo0 = await _farm.poolInfo(0);
+			expect(poolInfo0.lastRewardBlock).to.equal(blockNumber + 1);
+
+			const poolInfo1 = await _farm.poolInfo(1);
+			expect(poolInfo1.lastRewardBlock).to.equal(blockNumber + 1);
+		});
+
 		describe("Migrator", () => {
 			let mockMigrator: any;
 
@@ -204,7 +227,7 @@ describe("Farm contract", () => {
 				await _farm.add(allocPoint, await _lpToken.getAddress(), await rewarder.getAddress());
 
 				// set the reward per block
-				await _farm.setEmisionsPerBlock(1);
+				await _farm.setEmissionsPerBlock(1);
 
 				// allocate tokens
 				await _chaos.mint(1000000n);
@@ -212,7 +235,7 @@ describe("Farm contract", () => {
 			});
 
 			it("Should set emissions per block", async () => {
-				await expect(_farm.setEmisionsPerBlock(2)).to.emit(_farm, "LogSetEmisionsPerBlock");
+				await expect(_farm.setEmissionsPerBlock(2)).to.emit(_farm, "LogSetEmissionsPerBlock");
 			});
 
 			it("Should get no pending rewards", async () => {
@@ -250,6 +273,14 @@ describe("Farm contract", () => {
 
 				pendingRewards = await _farm.pendingRewards.staticCall(poolId, ownerAddress);
 				expect(pendingRewards).to.equal((BigInt(poolInfo.accChaosPerShare) * 1000000n) / 1000000000000n);
+
+				await _farm.updatePool(poolId);
+				time.increase(1000);
+
+				const blockNumber3 = await ethers.provider.getBlockNumber();
+				expect(blockNumber3).to.be.greaterThan(blockNumber2);
+				pendingRewards = await _farm.pendingRewards.staticCall(poolId, ownerAddress);
+				expect(pendingRewards).to.be.greaterThan((BigInt(poolInfo.accChaosPerShare) * 1000000n) / 1000000000000n);
 			});
 		});
 
@@ -358,7 +389,7 @@ describe("Farm contract", () => {
 				const lpToken = await mockLPToken.deploy();
 
 				// set the reward per block
-				await _farm.setEmisionsPerBlock(1);
+				await _farm.setEmissionsPerBlock(1);
 
 				await _farm.add(allocPoint, await lpToken.getAddress(), await rewarder.getAddress());
 				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
