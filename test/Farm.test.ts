@@ -235,7 +235,7 @@ describe("Farm contract", () => {
 			});
 
 			it("Should set emissions per block", async () => {
-				await expect(_farm.setEmisionsPerBlock(2)).to.emit(_farm, "LogSetEmissionsPerBlock");
+				await expect(_farm.setEmissionsPerBlock(2)).to.emit(_farm, "LogSetEmissionsPerBlock");
 			});
 
 			it("Should get no pending rewards", async () => {
