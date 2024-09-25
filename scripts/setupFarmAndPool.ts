@@ -13,18 +13,16 @@ const ercAbi = [
 	"function approve(address spender, uint256 amount) returns (bool)",
 ];
 
-const farmAbi = [
-    "function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) external",
-];
+const farmAbi = ["function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) external"];
 
 export async function main(owner: string, asset?: string) {
 	let signers = await ethers.getSigners();
 
-    const chaos = new ethers.Contract(CHAOS_ADDRESS, ercAbi, signers[0]);
+	const chaos = new ethers.Contract(CHAOS_ADDRESS, ercAbi, signers[0]);
 
 	const farm = new ethers.Contract(FARM_ADDRESS, farmAbi, signers[0]);
 	const add = await farm.add();
-    await add.wait();
+	await add.wait();
 }
 
 if (require.main === module) {
