@@ -1,5 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
+// This gets reset so hard to use this on deploy
 // import addresses from "../deployments/chain-8453/deployed_addresses.json"
 
 export default buildModule("FarmModule", m => {

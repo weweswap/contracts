@@ -5,18 +5,17 @@ pragma solidity ^0.8.19;
 import "./IEater.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import "../../interfaces/IApproveAndCall.sol";
 
 abstract contract Eater is Ownable {
     uint256 internal _rate;
     address internal wewe;
 
-    function _eat(address token, uint256 amount, address from, address to) internal {
-        IERC20(token).transferFrom(from, to, amount);
+    function _eat(uint256 amount, address underlying, address from) internal {
+        uint256 weweToTransfer = amount * _rate;
+        require(weweToTransfer >= IERC20(wewe).balanceOf(address(this)), "Eater: Insufficient amount to transfer");
 
-        IApproveAndCall(wewe).approveAndCall(from, amount, "");
-
-        emit Eaten(amount, from);
+        IERC20(underlying).transferFrom(from, address(this), amount);
+        IERC20(wewe).transfer(from, weweToTransfer);
     }
 
     event Eaten(uint256 amount, address indexed account);

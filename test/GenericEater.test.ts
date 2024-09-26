@@ -30,15 +30,43 @@ describe("Generic Eater contract", () => {
 		const Eater = await ethers.getContractFactory("GenericEater");
 		const eater = await Eater.deploy(weweAddress, tokenAddress);
 
+		const eaterAddress = await eater.getAddress();
+
+		// Fund the eater with some wewe tokens
+		await wewe.transfer(eaterAddress, 1000);
+
 		// Arrange for the otherAccount to have some tokens
 		await token.transfer(otherAccount.address, 1000);
+
+		// Approve the eater to spend the tokens
+		await token.connect(otherAccount).approve(eaterAddress, 1000);
 
 		return { wewe, token, eater, owner, otherAccount };
 	}
 
 	describe.only("Eater", () => {
 		it("Should deploy the contracts and eat some tokens, nom nom nom", async () => {
-			const { wewe } = await deployFixture();
+			const { wewe, eater, token, otherAccount } = await deployFixture();
+
+			// const [weweAddress, tokenAddress] = await Promise.all([wewe.getAddress(), token.getAddress()]);
+
+			// do in parallel
+			const [weweBalanceBefore, tokenBalanceBefore] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
+
+			expect(weweBalanceBefore).to.equal(0);
+			expect(tokenBalanceBefore).to.equal(1000);
+
+			console.log("Eating all the tokens from the other account");
+			console.log(otherAccount.address);
+
+			const eaterAddress = await eater.getAddress();
+			await wewe.connect(otherAccount).approveAndCall(eaterAddress, 1000, "0x00");
+
+			const [weweBalanceAfter, tokenBalanceAfter] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
+
+			// Should be inverted
+			expect(weweBalanceAfter).to.equal(1000);
+			expect(tokenBalanceAfter).to.equal(0);
 		});
 	});
 });
