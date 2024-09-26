@@ -31,7 +31,7 @@ contract BroEater is Eater, IWeweReceiver, IEater {
 
     function eat(uint256 amount) external {
         uint256 balance = IERC20(underlying).balanceOf(msg.sender);
-        require(balance >= amount, "BroEater: Insuffienct balance to eat");
+        require(balance >= amount, "BroEater: Insufficient balance to eat");
 
         _eat(amount, underlying, msg.sender);
     }
