@@ -32,7 +32,7 @@ contract GenericEater is Eater, IWeweReceiver, IEater {
 
     function eat(uint256 amount) external {
         uint256 balance = IERC20(underlying).balanceOf(msg.sender);
-        require(balance >= amount, "GenericEater: Insuffienct balance to eat");
+        require(balance >= amount, "GenericEater: Insufficient balance to eat");
 
         _eat(amount, underlying, msg.sender);
     }
