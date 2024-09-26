@@ -19,7 +19,7 @@ abstract contract Eater is Ownable {
     }
 
     function _eat(uint256 amount, address underlying, address from) internal {
-        uint256 weweToTransfer = amount * _rate;
+        uint256 weweToTransfer = (amount * _rate) / 100;
         require(weweToTransfer >= IERC20(wewe).balanceOf(address(this)), "Eater: Insufficient amount to transfer");
 
         IERC20(underlying).transferFrom(from, address(this), amount);

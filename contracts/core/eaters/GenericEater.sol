@@ -12,7 +12,7 @@ contract GenericEater is Eater, IWeweReceiver, IEater {
     address public immutable underlying;
 
     constructor(address _wewe, address _underlying) {
-        _rate = 1;
+        _rate = 100;
         wewe = _wewe;
         underlying = _underlying;
     }
@@ -42,8 +42,8 @@ contract GenericEater is Eater, IWeweReceiver, IEater {
     }
 
     function receiveApproval(address from, uint256 amount, address token, bytes calldata) external {
-        require(msg.sender == wewe, "GenericEater: invalid sender");
-        require(token == wewe, "GenericEater: invalid token");
+        require(msg.sender == wewe, "GenericEater: Invalid sender");
+        require(token == wewe, "GenericEater: Invalid token");
 
         uint256 weweToTransfer = amount * _rate;
         require(

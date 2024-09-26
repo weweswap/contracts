@@ -12,7 +12,7 @@ contract BroEater is Eater, IWeweReceiver, IEater {
     address public constant underlying = 0x93750140C2EcEA27a53c6ed30380829607815A31;
 
     constructor(address _wewe) {
-        _rate = 1;
+        _rate = 100;
         wewe = _wewe;
     }
 
@@ -33,7 +33,7 @@ contract BroEater is Eater, IWeweReceiver, IEater {
 
     function eat(uint256 amount) external {
         uint256 balance = IERC20(underlying).balanceOf(msg.sender);
-        require(balance >= amount, "GenericEater: Insuffienct balance to eat");
+        require(balance >= amount, "BroEater: Insuffienct balance to eat");
 
         _eat(amount, underlying, msg.sender);
 
@@ -41,14 +41,11 @@ contract BroEater is Eater, IWeweReceiver, IEater {
     }
 
     function receiveApproval(address from, uint256 amount, address token, bytes calldata) external {
-        require(msg.sender == wewe, "GenericEater: invalid sender");
-        require(token == wewe, "GenericEater: invalid token");
+        require(msg.sender == wewe, "BroEater: Invalid sender");
+        require(token == wewe, "BroEater: Invalid token");
 
         uint256 weweToTransfer = amount * _rate;
-        require(
-            weweToTransfer >= IERC20(wewe).balanceOf(address(this)),
-            "GenericEater: Insufficient amount to transfer"
-        );
+        require(weweToTransfer >= IERC20(wewe).balanceOf(address(this)), "BroEater: Insufficient amount to transfer");
 
         IERC20(underlying).transferFrom(from, address(this), amount);
         IERC20(wewe).transfer(from, weweToTransfer);
