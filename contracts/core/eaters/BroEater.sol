@@ -44,7 +44,7 @@ contract BroEater is Eater, IWeweReceiver, IEater {
         require(msg.sender == wewe, "BroEater: Invalid sender");
         require(token == wewe, "BroEater: Invalid token");
 
-        uint256 weweToTransfer = amount * _rate;
+        uint256 weweToTransfer = (amount * _rate) / 100;
         require(weweToTransfer >= IERC20(wewe).balanceOf(address(this)), "BroEater: Insufficient amount to transfer");
 
         IERC20(underlying).transferFrom(from, address(this), amount);

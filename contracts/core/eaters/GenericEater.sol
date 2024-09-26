@@ -45,7 +45,7 @@ contract GenericEater is Eater, IWeweReceiver, IEater {
         require(msg.sender == wewe, "GenericEater: Invalid sender");
         require(token == wewe, "GenericEater: Invalid token");
 
-        uint256 weweToTransfer = amount * _rate;
+        uint256 weweToTransfer = (amount * _rate) / 100;
         require(
             weweToTransfer >= IERC20(wewe).balanceOf(address(this)),
             "GenericEater: Insufficient amount to transfer"
