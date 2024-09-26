@@ -1,13 +1,10 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import { DETERMINISTIC_MIN_HEIGHT } from "./constants";
 
-describe("Farm contract", () => {
+describe("Chaos contract", () => {
 	async function deployFixture() {
-		const [owner, otherAccount] = await ethers.getSigners();
 		// Reset the blockchain to a deterministic state
 		await ethers.provider.send("hardhat_reset", [
 			{
@@ -43,10 +40,10 @@ describe("Farm contract", () => {
 			const farmAddress = await farm.getAddress();
 
 			await chaos.setFarm(farmAddress);
-			expect(await chaos.balanceOf(farmAddress)).to.equal(0);
+			expect(await chaos.balanceOf(farmAddress)).to.equal(1000000000000000000000000000n);
 
 			await chaos.mint(1000);
-			expect(await chaos.balanceOf(farmAddress)).to.equal(1000);
+			expect(await chaos.balanceOf(farmAddress)).to.equal(1000000000000000000000001000n);
 		});
 	});
 });

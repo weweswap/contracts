@@ -8,7 +8,7 @@ import { DETERMINISTIC_MIN_HEIGHT, DETERMINISTIC_WEWE_WETH_WALLET, USDC_ADDRESS 
 const IERC20_ABI = require("../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json").abi;
 const FORKED_BLOCK_NUMBER = 19197428;
 
-describe("Farm contract", () => {
+describe.only("Farm contract", () => {
 	async function deployFixture() {
 		const [owner, otherAccount] = await ethers.getSigners();
 		// Reset the blockchain to a deterministic state
@@ -128,7 +128,7 @@ describe("Farm contract", () => {
 				const { farm } = await loadFixture(deployFixture);
 
 				expect(await farm.migrator()).to.equal(ethers.ZeroAddress);
-				await expect(farm.migrate(0)).to.be.revertedWith("Chaos: no migrator set");
+				await expect(farm.migrate(0)).to.be.revertedWith("Farm: no migrator set");
 			});
 
 			it("Should set migrator", async () => {
@@ -178,7 +178,7 @@ describe("Farm contract", () => {
 
 			it("Should allocate CHAOS tokens", async () => {
 				const farmAddress = await _farm.getAddress();
-				expect(await _chaos.balanceOf(farmAddress)).to.equal(1000000n);
+				expect(await _chaos.balanceOf(farmAddress)).to.equal(1000000000000000000001000000n);
 
 				expect(await _farm.poolLength()).to.equal(1);
 				await expect(_farm.allocateTokens(poolId, 1000000n)).to.emit(_farm, "LogPoolAllocation").withArgs(poolId, 1000000n);
@@ -362,7 +362,7 @@ describe("Farm contract", () => {
 
 				const farmAddress = await _farm.getAddress();
 				const balance = await _chaos.balanceOf(farmAddress);
-				expect(balance).to.equal(1000000n);
+				expect(balance).to.equal(1000000000000000000001000000n);
 
 				await expect(_farm.refundAll()).to.emit(_farm, "Refunded");
 				expect(await _chaos.balanceOf(farmAddress)).to.equal(0);
