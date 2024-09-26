@@ -71,7 +71,7 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
     /// @param pid The pool ID to allocate the CHAOS to.
     /// @param amount Amount of CHAOS to allocate.
     function allocateTokens(uint256 pid, uint256 amount) external onlyOwner {
-        require(amount <= CHAOS_TOKEN.balanceOf(_self), "Chaos: Insufficient CHAOS balance");
+        require(amount <= CHAOS_TOKEN.balanceOf(_self), "Farm: Insufficient CHAOS balance");
 
         _totalSupplyAllocated += amount;
         poolInfo[pid].totalSupply += amount;
@@ -170,14 +170,14 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
     /// @notice Migrate LP token to another LP contract through the `migrator` contract.
     /// @param _pid The index of the pool. See `poolInfo`.
     function migrate(uint256 _pid) public {
-        require(address(migrator) != address(0), "Chaos: no migrator set");
+        require(address(migrator) != address(0), "Farm: no migrator set");
 
         IERC20 _lpToken = lpToken[_pid];
         uint256 bal = _lpToken.balanceOf(_self);
         _lpToken.approve(address(migrator), bal);
         IERC20 newLpToken = migrator.migrate(_lpToken);
 
-        require(bal == newLpToken.balanceOf(_self), "Chaos: migrated balance must match");
+        require(bal == newLpToken.balanceOf(_self), "Farm: migrated balance must match");
         lpToken[_pid] = newLpToken;
     }
 
@@ -389,7 +389,7 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
     }
 
     function _refund(uint256 amount) private {
-        require(amount <= CHAOS_TOKEN.balanceOf(_self), "Chaos: Insufficient CHAOS balance");
+        require(amount <= CHAOS_TOKEN.balanceOf(_self), "Farm: Insufficient CHAOS balance");
         address to = IOwnable(address(CHAOS_TOKEN)).owner();
 
         require(to != address(0), "Chaos: Invalid owner address");
@@ -400,8 +400,8 @@ contract Farm is IFarm, IWeweReceiver, Ownable {
 
     function receiveApproval(address from, uint256 amount, address token, bytes calldata extraData) external {
         uint256 pid = abi.decode(extraData, (uint256));
-        require(pid < lpToken.length, "Chaos: Invalid pool ID");
-        require(token == address(lpToken[pid]), "Chaos: Invalid LP token");
+        require(pid < lpToken.length, "Farm: Invalid pool ID");
+        require(token == address(lpToken[pid]), "Farm: Invalid LP token");
 
         _deposit(pid, amount, from);
     }

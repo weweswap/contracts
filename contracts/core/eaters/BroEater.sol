@@ -20,7 +20,7 @@ contract BroEater is Eater, IEater {
     }
 
     function setRate(uint256 rate) external onlyOwner {
-        require(_rate > 0, "Rate must be greater than 0");
+        require(_rate > 0, "BroEater: Rate must be greater than 0");
 
         if (_rate != rate) {
             _rate = rate;
@@ -36,7 +36,7 @@ contract BroEater is Eater, IEater {
 
     function eat(uint256 amount) external {
         uint256 balance = IERC20(underlying).balanceOf(msg.sender);
-        require(balance >= amount, "Insuffienct balance to eat");
+        require(balance >= amount, "BroEater: Insuffienct balance to eat");
 
         _eat(underlying, amount, msg.sender, address(this));
     }
