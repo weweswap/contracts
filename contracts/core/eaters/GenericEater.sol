@@ -7,8 +7,9 @@ import "../../interfaces/IWeweReceiver.sol";
 import {Eater} from "./Eater.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract GenericEater is Eater, IWeweReceiver, IEater {
+contract GenericEater is Eater, IWeweReceiver, IEater, ReentrancyGuard {
     address public immutable underlying;
 
     constructor(address _wewe, address _underlying) {
@@ -37,7 +38,7 @@ contract GenericEater is Eater, IWeweReceiver, IEater {
         _eat(amount, underlying, msg.sender);
     }
 
-    function receiveApproval(address from, uint256 amount, address token, bytes calldata) external {
+    function receiveApproval(address from, uint256 amount, address token, bytes calldata) external nonReentrant {
         require(msg.sender == wewe, "GenericEater: Invalid sender");
         require(token == wewe, "GenericEater: Invalid token");
 
