@@ -28,8 +28,6 @@ contract GenericEater is Eater, IWeweReceiver, IEater {
     function eatAll() external {
         uint256 balance = IERC20(underlying).balanceOf(msg.sender);
         _eat(balance, underlying, msg.sender);
-
-        emit Eaten(balance, msg.sender);
     }
 
     function eat(uint256 amount) external {
@@ -37,23 +35,12 @@ contract GenericEater is Eater, IWeweReceiver, IEater {
         require(balance >= amount, "GenericEater: Insuffienct balance to eat");
 
         _eat(amount, underlying, msg.sender);
-
-        emit Eaten(amount, msg.sender);
     }
 
     function receiveApproval(address from, uint256 amount, address token, bytes calldata) external {
         require(msg.sender == wewe, "GenericEater: Invalid sender");
         require(token == wewe, "GenericEater: Invalid token");
 
-        uint256 weweToTransfer = (amount * _rate) / 100;
-        require(
-            weweToTransfer >= IERC20(wewe).balanceOf(address(this)),
-            "GenericEater: Insufficient amount to transfer"
-        );
-
-        IERC20(underlying).transferFrom(from, address(this), amount);
-        IERC20(wewe).transfer(from, weweToTransfer);
-
-        emit Eaten(amount, from);
+        _eat(amount, underlying, from);
     }
 }
