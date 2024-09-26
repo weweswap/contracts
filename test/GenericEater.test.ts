@@ -48,8 +48,6 @@ describe("Generic Eater contract", () => {
 		it("Should deploy the contracts and eat some tokens, nom nom nom", async () => {
 			const { wewe, eater, token, otherAccount } = await deployFixture();
 
-			// const [weweAddress, tokenAddress] = await Promise.all([wewe.getAddress(), token.getAddress()]);
-
 			// do in parallel
 			const [weweBalanceBefore, tokenBalanceBefore] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
 
