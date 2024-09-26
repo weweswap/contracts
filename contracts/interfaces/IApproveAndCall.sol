@@ -4,5 +4,5 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IApproveAndCall {
-    function callDeposit(uint256 pid, uint256 amount) external returns (bool);
+    function approveAndCall(address spender, uint256 amount, bytes calldata extraData) external returns (bool);
 }

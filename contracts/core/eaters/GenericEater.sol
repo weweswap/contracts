@@ -7,12 +7,13 @@ import {Eater} from "./Eater.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract BroEater is Eater, IEater {
-    address public constant underlying = 0x93750140C2EcEA27a53c6ed30380829607815A31;
+contract GenericEater is Eater, IEater {
+    address public immutable underlying;
 
-    constructor(address _wewe) {
+    constructor(address _wewe, address _underlying) {
         _rate = 1;
         wewe = _wewe;
+        underlying = _underlying;
     }
 
     function getRate() external view returns (uint256) {

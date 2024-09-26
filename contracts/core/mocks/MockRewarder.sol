@@ -6,9 +6,13 @@ import "../../interfaces/IRewarder.sol";
 import "hardhat/console.sol";
 
 contract MockRewarder is IRewarder {
-    function onChaosReward(uint256 pid, address user, address recipient, uint256 amount, uint256 newLpAmount) external {
-        // console.log("onChaosReward", pid, user, recipient, amount, newLpAmount);
-    }
+    function onChaosReward(
+        uint256 pid,
+        address user,
+        address recipient,
+        uint256 amount,
+        uint256 newLpAmount
+    ) external {}
 
     function pendingTokens(
         uint256 pid,
