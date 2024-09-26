@@ -45,7 +45,7 @@ describe("Generic Eater contract", () => {
 	}
 
 	describe.only("Eater", () => {
-		it("Should deploy the contracts and eat some tokens, nom nom nom", async () => {
+		it("Should eat some tokens, nom nom nom", async () => {
 			const { wewe, eater, token, otherAccount } = await deployFixture();
 
 			// do in parallel
