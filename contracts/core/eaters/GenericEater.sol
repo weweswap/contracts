@@ -8,8 +8,6 @@ import {Eater} from "./Eater.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "hardhat/console.sol";
-
 contract GenericEater is Eater, IWeweReceiver, IEater {
     address public immutable underlying;
 
@@ -24,11 +22,7 @@ contract GenericEater is Eater, IWeweReceiver, IEater {
     }
 
     function setRate(uint256 rate) external onlyOwner {
-        require(_rate > 0, "GenericEater: Rate must be greater than 0");
-
-        if (_rate != rate) {
-            _rate = rate;
-        }
+        _setRate(rate);
     }
 
     function eatAll() external {
