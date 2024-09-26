@@ -11,7 +11,7 @@ abstract contract Eater is Ownable {
     address internal wewe;
 
     function _setRate(uint256 rate) internal {
-        require(_rate > 0, "Eater: Rate must be greater than 0");
+        require(rate > 0, "Eater: Rate must be greater than 0");
 
         if (_rate != rate) {
             _rate = rate;
