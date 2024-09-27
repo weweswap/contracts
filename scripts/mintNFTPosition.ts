@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
+import { WEWE_ADDRESS } from "../test/constants";
 
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
-const WEWE_ADDRESS = "0x6b9bb36519538e0C073894E964E90172E1c0B41F";
 const NonFungiblePositionManager = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1";
 const UniswapV3Factory = "0x33128a8fC17869897dcE68Ed026d694621f6FDfD";
 

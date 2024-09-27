@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
+import { WEWE_ADDRESS } from "../test/constants";
 
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
-const WEWE_ADDRESS = "0x6b9bb36519538e0C073894E964E90172E1c0B41F";
 const SwapRouterAddress = "0x2626664c2603336E57B271c5C0b26F421741e481";
 
 const ercAbi = [
