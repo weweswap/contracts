@@ -70,3 +70,4 @@ To perform the tests, the state of the blockchain needs to be deterministic. To 
 | Farm | 0x24A969b0864fD51B6c45dD5545A20a65d9dA2cA5 | Base |
 | ChaosToken | 0xf901F4ec62590231f374cA7C5d34BbcA49B11d6B | Base |
 | BroEater | 0x28fCa04dAb03FBc7cbE281773093F4A0d97E163a | Base |
+| WEWE | 0x6b9bb36519538e0C073894E964E90172E1c0B41F | Base |
