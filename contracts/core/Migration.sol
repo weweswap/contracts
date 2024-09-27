@@ -121,7 +121,7 @@ contract Migration is IERC721Receiver {
     /// @param tokenIn The address of the token to be swapped
     /// @param amountIn The amount of the token to be swapped
     /// @return amountOut The amount of USDC received from the swap
-    function _swap(address tokenIn, uint256 amountIn) private returns (uint256 amountOut) {
+    function _swap(address tokenIn, uint256 amountIn, uint256 amountOutMinimum) private returns (uint256 amountOut) {
         TransferHelper.safeApprove(tokenIn, address(swapRouter), amountIn);
         IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,
@@ -129,7 +129,7 @@ contract Migration is IERC721Receiver {
             fee: feeTier,
             recipient: address(this),
             amountIn: amountIn,
-            amountOutMinimum: 0,
+            amountOutMinimum: amountOutMinimum,
             sqrtPriceLimitX96: 0
         });
         amountOut = swapRouter.exactInputSingle(params);
@@ -203,7 +203,14 @@ contract Migration is IERC721Receiver {
         (uint256 amountToken0, uint256 amountToken1) = _decreaseAllLiquidityAndCollectFees(tokenId);
         (address tokenIn, uint256 amountIn) = _getTokenAndAmountToSwap(token0, token1, amountToken0, amountToken1);
 
-        uint256 usdcAmount = _swap(tokenIn, amountIn);
+        uint256 amountOutMinimum;
+        if (data.length > 0) {
+            amountOutMinimum = abi.decode(data, (uint256));
+        } else {
+            revert("Data is required for slippage protection");
+        }
+
+        uint256 usdcAmount = _swap(tokenIn, amountIn, amountOutMinimum);
 
         uint256 tokenToMigrateAmount = 0;
 

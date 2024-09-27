@@ -1,4 +1,5 @@
 {
   "FarmModule#Farm": "0x24A969b0864fD51B6c45dD5545A20a65d9dA2cA5",
-  "BroEater#BroEater": "0x28fCa04dAb03FBc7cbE281773093F4A0d97E163a"
+  "BroEater#BroEater": "0x28fCa04dAb03FBc7cbE281773093F4A0d97E163a",
+  "MigrationModule#Migration": "0xd2627fF0c6A1d08996f507E94E4a275ae2e4F3b7"
 }
