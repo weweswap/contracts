@@ -14,7 +14,8 @@
 		"prettier:fix": "npm run format:write --all",
 		"prepare": "husky",
 		"deploy:chaos:base": "npx hardhat ignition deploy ignition/modules/ChaosToken.ts --network base --verify",
-		"deploy:farm:base": "npx hardhat ignition deploy ignition/modules/Farm.ts --network base --verify"
+		"deploy:farm:base": "npx hardhat ignition deploy ignition/modules/Farm.ts --network base --verify",
+		"deploy:bro:base": "npx hardhat ignition deploy ignition/modules/BroEater.ts --network base --verify"
 	},
 	"devDependencies": {
 		"@nomicfoundation/hardhat-ethers": "^3.0.8",
