@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 
 import { DETERMINISTIC_MIN_HEIGHT } from "./constants";
 
-describe("Chaos contract", () => {
+describe.only("CHAOS Token", () => {
 	async function deployFixture() {
 		// Reset the blockchain to a deterministic state
 		await ethers.provider.send("hardhat_reset", [
@@ -15,7 +15,7 @@ describe("Chaos contract", () => {
 			},
 		]);
 
-		const Chaos = await ethers.getContractFactory("ChaosToken");
+		const Chaos = await ethers.getContractFactory("CHAOS");
 		const chaos = await Chaos.deploy();
 
 		return { chaos };

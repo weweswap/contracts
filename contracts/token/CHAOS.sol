@@ -111,9 +111,6 @@ contract CHAOS is IERC20, IApproveAndCall, Ownable, ReentrancyGuard {
         require(owner != address(0), "CHAOS: approve from the zero address");
         require(spender != address(0), "CHAOS: approve to the zero address");
 
-        uint256 currentAllowance = _allowances[owner][spender];
-        require(currentAllowance == 0 || currentAllowance == amount, "ERC20: unsafe allowance change");
-
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
