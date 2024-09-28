@@ -37,31 +37,28 @@ contract CHAOS is IERC20, IApproveAndCall, Ownable, ReentrancyGuard {
     }
 
     function transfer(address to, uint256 amount) public override returns (bool) {
-        require(to != address(0), "CHAOS: transfer to the zero address");
-
-        uint256 fromBalance = _balances[msg.sender];
-        require(fromBalance >= amount, "CHAOS: transfer amount exceeds balance");
-        unchecked {
-            _balances[msg.sender] = fromBalance - amount;
-            // Overflow not possible: the sum of all balances is capped by totalSupply, and the sum is preserved by
-            // decrementing then incrementing.
-            _balances[to] += amount;
-        }
-
-        emit Transfer(msg.sender, to, amount);
+        _transfer(msg.sender, to, amount);
         return true;
     }
 
     function transferFrom(address from, address to, uint256 amount) public returns (bool) {
-        address sender = from;
-        require(_balances[sender] >= amount, "CHAOS: transfer amount exceeds balance");
-        require(_allowances[sender][msg.sender] >= amount, "CHAOS: transfer amount exceeds allowance");
-
-        _balances[sender] -= amount;
-        _balances[to] += amount;
-        _allowances[sender][msg.sender] -= amount;
-        emit Transfer(sender, to, amount);
+        _transfer(from, to, amount);
         return true;
+    }
+
+    function _transfer(address from, address to, uint256 amount) private {
+        require(from != address(0), "CHAOS: transfer from the zero address");
+        require(to != address(0), "CHAOS: transfer to the zero address");
+
+        require(_balances[from] >= amount, "CHAOS: transfer amount exceeds balance");
+        require(_allowances[from][msg.sender] >= amount, "CHAOS: transfer amount exceeds allowance");
+
+
+        _balances[from] -= amount;
+        _balances[to] += amount;
+        _allowances[from][msg.sender] -= amount;        
+
+        emit Transfer(from, to, amount);
     }
 
     function allowance(address owner, address spender) public view returns (uint256) {
