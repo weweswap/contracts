@@ -30,7 +30,7 @@ describe("Chaos contract", () => {
 			expect(await chaos.decimals()).to.equal(18);
 		});
 
-		it("Should increament allowance", async () => {
+		it("Should increment allowance", async () => {
 			const { chaos } = await deployFixture();
 
 			const [owner, spender] = await ethers.getSigners();
