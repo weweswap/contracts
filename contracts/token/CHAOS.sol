@@ -84,7 +84,7 @@ contract CHAOS is IERC20, IApproveAndCall, Ownable, ReentrancyGuard {
         _mint(address(_farm), amount);
     }
 
-    function collectEmmisions(uint256 pid) external {
+    function collectEmissions(uint256 pid) external {
         require(address(_farm) != address(0), "CHAOS: Farm not set");
         _farm.harvest(pid, msg.sender);
     }
