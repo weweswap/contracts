@@ -42,6 +42,8 @@ contract CHAOS is IERC20, IApproveAndCall, Ownable, ReentrancyGuard {
     }
 
     function transferFrom(address from, address to, uint256 amount) public returns (bool) {
+        require(_allowances[from][msg.sender] >= amount, "CHAOS: transfer amount exceeds allowance");
+        _allowances[from][msg.sender] -= amount;
         _transfer(from, to, amount);
         return true;
     }
@@ -51,11 +53,9 @@ contract CHAOS is IERC20, IApproveAndCall, Ownable, ReentrancyGuard {
         require(to != address(0), "CHAOS: transfer to the zero address");
 
         require(_balances[from] >= amount, "CHAOS: transfer amount exceeds balance");
-        require(_allowances[from][msg.sender] >= amount, "CHAOS: transfer amount exceeds allowance");
 
         _balances[from] -= amount;
         _balances[to] += amount;
-        _allowances[from][msg.sender] -= amount;
 
         emit Transfer(from, to, amount);
     }
