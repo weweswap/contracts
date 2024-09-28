@@ -3,12 +3,13 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../interfaces/IOwnable.sol";
 import "../interfaces/IFarm.sol";
 import "../interfaces/IApproveAndCall.sol";
 import {IWeweReceiver} from "../interfaces/IWeweReceiver.sol";
 
-contract ChaosToken is IERC20, IApproveAndCall, Ownable {
+contract CHAOS is IERC20, IApproveAndCall, Ownable, ReentrancyGuard {
     IFarm private _farm;
 
     mapping(address => uint256) private _balances;
@@ -83,16 +84,20 @@ contract ChaosToken is IERC20, IApproveAndCall, Ownable {
     }
 
     function mintToFarm(uint256 amount) external onlyOwner {
-        require(address(_farm) != address(0), "ChaosToken: Farm not set");
+        require(address(_farm) != address(0), "CHAOS: Farm not set");
         _mint(address(_farm), amount);
     }
 
     function collectEmmisions(uint256 pid) external {
-        require(address(_farm) != address(0), "ChaosToken: Farm not set");
+        require(address(_farm) != address(0), "CHAOS: Farm not set");
         _farm.harvest(pid, msg.sender);
     }
 
-    function approveAndCall(address spender, uint256 amount, bytes calldata extraData) external returns (bool) {
+    function approveAndCall(
+        address spender,
+        uint256 amount,
+        bytes calldata extraData
+    ) external nonReentrant returns (bool) {
         // Approve the spender to spend the tokens
         _approve(msg.sender, spender, amount);
 
@@ -103,15 +108,18 @@ contract ChaosToken is IERC20, IApproveAndCall, Ownable {
     }
 
     function _approve(address owner, address spender, uint256 amount) internal virtual {
-        require(owner != address(0), "ERC20: approve from the zero address");
-        require(spender != address(0), "ERC20: approve to the zero address");
+        require(owner != address(0), "CHAOS: approve from the zero address");
+        require(spender != address(0), "CHAOS: approve to the zero address");
+
+        uint256 currentAllowance = _allowances[owner][spender];
+        require(currentAllowance == 0 || currentAllowance == amount, "ERC20: unsafe allowance change");
 
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
 
     function _mint(address account, uint256 amount) internal virtual {
-        require(account != address(0), "ERC20: mint to the zero address");
+        require(account != address(0), "CHAOS: mint to the zero address");
 
         _totalSupply += amount;
         unchecked {

@@ -34,23 +34,23 @@ describe("Chaos contract", () => {
 			const { chaos } = await deployFixture();
 
 			const [owner, spender] = await ethers.getSigners();
-			expect(await chaos.allowance(owner.address, spender.address)).to.equal(0);
+			expect(await chaos.allowance(owner.address, spender.address)).to.be.equal(0);
 
 			await chaos.approve(spender.address, 100);
-			expect(await chaos.allowance(owner.address, spender.address)).to.equal(100);
+			expect(await chaos.allowance(owner.address, spender.address)).to.be.equal(100);
 		});
 
-		it("Should reset increament allowance", async () => {
+		it("Should reset increment allowance", async () => {
 			const { chaos } = await deployFixture();
 
 			const [owner, spender] = await ethers.getSigners();
-			expect(await chaos.allowance(owner.address, spender.address)).to.equal(0);
+			expect(await chaos.allowance(owner.address, spender.address)).to.be.equal(0);
 
 			await chaos.approve(spender.address, 100);
-			expect(await chaos.allowance(owner.address, spender.address)).to.equal(100);
+			expect(await chaos.allowance(owner.address, spender.address)).to.be.equal(100);
 
 			await chaos.approve(spender.address, 0);
-			expect(await chaos.allowance(owner.address, spender.address)).to.equal(0);
+			expect(await chaos.allowance(owner.address, spender.address)).to.be.equal(0);
 		});
 
 		it("Should not allow spender to spend more than allowance", async () => {
