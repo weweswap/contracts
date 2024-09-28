@@ -53,10 +53,9 @@ contract CHAOS is IERC20, IApproveAndCall, Ownable, ReentrancyGuard {
         require(_balances[from] >= amount, "CHAOS: transfer amount exceeds balance");
         require(_allowances[from][msg.sender] >= amount, "CHAOS: transfer amount exceeds allowance");
 
-
         _balances[from] -= amount;
         _balances[to] += amount;
-        _allowances[from][msg.sender] -= amount;        
+        _allowances[from][msg.sender] -= amount;
 
         emit Transfer(from, to, amount);
     }
