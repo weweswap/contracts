@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import dotenv from "dotenv";
 dotenv.config();
 
-export async function main(broAddress: string, eaterAddress: string) {
+export async function main(tokenAddress: string, eaterAddress: string) {
 	const privateKey = process.env.PK;
 
 	if (!privateKey) {
@@ -22,21 +22,25 @@ export async function main(broAddress: string, eaterAddress: string) {
 		"function allowance(address owner, address spender) external view returns (uint256)",
 	];
 
-	const bro = new ethers.Contract(broAddress, erc20Abi, wallet);
-	const symbol = await bro.symbol();
+	// Any generic erc20 contract address
+	const token = new ethers.Contract(tokenAddress, erc20Abi, wallet);
+	const name = await token.name();
+	const symbol = await token.symbol();
+
+	console.log("name", name);
 	console.log("symbol", symbol);
 
-	const allowance = await bro.allowance(wallet.address, eaterAddress);
+	const allowance = await token.allowance(wallet.address, eaterAddress);
 	if (allowance === 0) {
 		//	If we need to approve the eater contract
-		const tx = await bro.approve(eaterAddress, ethers.MaxUint256);
+		const tx = await token.approve(eaterAddress, ethers.MaxUint256);
 		await tx.wait();
 	}
 
 	console.log("Approved", eaterAddress);
 
 	// Check if bro is in the eater contract
-	const balance = await bro.balanceOf(eaterAddress);
+	const balance = await token.balanceOf(eaterAddress);
 	console.log("Balance", ethers.formatUnits(balance, 18));
 
 	if (balance > 0) {
@@ -44,17 +48,17 @@ export async function main(broAddress: string, eaterAddress: string) {
 		return;
 	}
 
-	const tx = await bro.transfer(eaterAddress, ethers.parseUnits("1", 18));
+	const tx = await token.transfer(eaterAddress, ethers.parseUnits("1", 18));
 	await tx.wait();
 
-	console.log("Transferred 1 BRO to", eaterAddress);
+	console.log("Transferred 1 BRO to ", eaterAddress);
 }
 
 if (require.main === module) {
-	const broAddress = process.argv[2];
+	const tokenAddress = process.argv[2];
 	const eaterAddress = process.argv[3];
 
-	if (!broAddress) {
+	if (!tokenAddress) {
 		console.error("Token address required!");
 		process.exit(1);
 	}
@@ -64,7 +68,7 @@ if (require.main === module) {
 		process.exit(1);
 	}
 
-	main(broAddress, eaterAddress).catch(error => {
+	main(tokenAddress, eaterAddress).catch(error => {
 		console.error(error);
 		process.exitCode = 1;
 	});
