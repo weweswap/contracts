@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 
 import { DETERMINISTIC_MIN_HEIGHT } from "./constants";
 
-describe("CHAOS Token", () => {
+describe("CHAOS", () => {
 	async function deployFixture() {
 		// Reset the blockchain to a deterministic state
 		await ethers.provider.send("hardhat_reset", [
@@ -21,7 +21,7 @@ describe("CHAOS Token", () => {
 		return { chaos };
 	}
 
-	describe("Chaos", () => {
+	describe("Chaos ERC20 functions", () => {
 		it("Should deploy the contract with correct params", async () => {
 			const { chaos } = await deployFixture();
 

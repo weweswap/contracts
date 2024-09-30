@@ -23,7 +23,7 @@ describe("Farm contract", () => {
 
 		const accountWithFees = await ethers.getImpersonatedSigner(DETERMINISTIC_WEWE_WETH_WALLET);
 
-		const Chaos = await ethers.getContractFactory("ChaosToken");
+		const Chaos = await ethers.getContractFactory("CHAOS");
 		const chaos = await Chaos.deploy();
 
 		const chaosAddress = await chaos.getAddress();

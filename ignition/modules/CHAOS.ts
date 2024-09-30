@@ -1,6 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
-export default buildModule("ChaosTokenModule", m => {
+export default buildModule("ChaosModule", m => {
 	const chaos = m.contract("CHAOS");
 
 	return { chaos };
