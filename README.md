@@ -68,4 +68,4 @@ To perform the tests, the state of the blockchain needs to be deterministic. To 
 | SwapRouter | 0xE592427A0AEce92De3Edee1F18E0157C05861564 | Base |
 | ArrakisV2 | 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984 | Base |
 | Farm | 0x62A97E8e1C56F3decc91B3d55ddcda466A967CB0 | Base |
-| ChaosToken | 0xf901F4ec62590231f374cA7C5d34BbcA49B11d6B | Base |
+| CHAOS | 0x207Ce8693781ef7464Fb236Edf4d3617655675bd | Base |
