@@ -13,7 +13,7 @@
 		"prettier": "npm run format:check --all",
 		"prettier:fix": "npm run format:write --all",
 		"prepare": "husky",
-		"deploy:chaos:base": "npx hardhat ignition deploy ignition/modules/ChaosToken.ts --network base --verify",
+		"deploy:chaos:base": "npx hardhat ignition deploy ignition/modules/CHAOS.ts --network base --verify",
 		"deploy:farm:base": "npx hardhat ignition deploy ignition/modules/Farm.ts --network base --verify"
 	},
 	"devDependencies": {
