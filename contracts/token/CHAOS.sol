@@ -11,7 +11,6 @@ import {IWeweReceiver} from "../interfaces/IWeweReceiver.sol";
 
 contract CHAOS is ERC20, IApproveAndCall, Ownable, ReentrancyGuard {
     IFarm private _farm;
-    uint256 private constant _maxSupply = 1_000_000_000 * 1e18;
 
     constructor() ERC20("CHAOS", "CHAOS") {}
 
@@ -20,8 +19,11 @@ contract CHAOS is ERC20, IApproveAndCall, Ownable, ReentrancyGuard {
     }
 
     function mint(uint256 amount) external onlyOwner {
-        require(address(_farm) != address(0), "ChaosToken: Farm not set");
-        require(totalSupply() + amount <= _maxSupply, "ChaosToken: Max supply exceeded");
+        _mint(msg.sender, amount);
+    }
+
+    function mintToFarm(uint256 amount) external onlyOwner {
+        require(address(_farm) != address(0), "CHAOS: Farm not set");
         _mint(address(_farm), amount);
     }
 
