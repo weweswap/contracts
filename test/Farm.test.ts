@@ -23,7 +23,7 @@ describe("Farm contract", () => {
 
 		const accountWithFees = await ethers.getImpersonatedSigner(DETERMINISTIC_WEWE_WETH_WALLET);
 
-		const Chaos = await ethers.getContractFactory("ChaosToken");
+		const Chaos = await ethers.getContractFactory("CHAOS");
 		const chaos = await Chaos.deploy();
 
 		const chaosAddress = await chaos.getAddress();
@@ -173,7 +173,7 @@ describe("Farm contract", () => {
 				await chaos.setFarm(await _farm.getAddress());
 				await chaos.approve(await _farm.getAddress(), 1000000n);
 
-				await chaos.mint(1000000n);
+				await chaos.mintToFarm(1000000n);
 			});
 
 			it("Should allocate CHAOS tokens", async () => {
@@ -230,7 +230,7 @@ describe("Farm contract", () => {
 				await _farm.setEmissionsPerBlock(1);
 
 				// allocate tokens
-				await _chaos.mint(1000000n);
+				await _chaos.mintToFarm(1000000n);
 				await _farm.allocateTokens(poolId, 1000000n);
 			});
 
@@ -358,7 +358,7 @@ describe("Farm contract", () => {
 			});
 
 			it("Should allow owner to refund", async () => {
-				await _chaos.mint(1000000n);
+				await _chaos.mintToFarm(1000000n);
 
 				const farmAddress = await _farm.getAddress();
 				const balance = await _chaos.balanceOf(farmAddress);
@@ -393,7 +393,7 @@ describe("Farm contract", () => {
 
 				await _farm.add(allocPoint, await lpToken.getAddress(), await rewarder.getAddress());
 				await _farm.set(poolId, allocPoint, await rewarder.getAddress(), true);
-				await chaos.mint(1000000n);
+				await chaos.mintToFarm(1000000n);
 				await _farm.allocateTokens(poolId, 1000000n);
 
 				const usdcContract = new ethers.Contract(USDC_ADDRESS, IERC20_ABI, owner);
