@@ -1,5 +1,3 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
@@ -27,34 +25,34 @@ describe("Generic merge contract", () => {
 		const weweAddress = await wewe.getAddress();
 		const tokenAddress = await token.getAddress();
 
-		const Eater = await ethers.getContractFactory("GenericEater");
-		const eater = await Eater.deploy(weweAddress, tokenAddress);
+		const Merge = await ethers.getContractFactory("GenericMerge");
+		const merge = await Merge.deploy(weweAddress, tokenAddress);
 
-		const eaterAddress = await eater.getAddress();
+		const mergeAddress = await merge.getAddress();
 
-		// Fund the eater with some wewe tokens
-		await wewe.transfer(eaterAddress, weweAmount);
+		// Fund the merge with some wewe tokens
+		await wewe.transfer(mergeAddress, weweAmount);
 
 		// Arrange for the otherAccount to have some tokens
 		await token.transfer(otherAccount.address, tokenAmount);
 
-		// Approve the eater to spend the tokens
-		await token.connect(otherAccount).approve(eaterAddress, tokenAmount);
+		// Approve the merge to spend the tokens
+		await token.connect(otherAccount).approve(mergeAddress, tokenAmount);
 
-		return { wewe, token, eater, owner, otherAccount };
+		return { wewe, token, merge, owner, otherAccount };
 	}
 
 	describe("Merge", () => {
 		it("Should eat some tokens, nom nom nom", async () => {
-			const { wewe, eater, token, otherAccount } = await deployFixture();
+			const { wewe, merge, token, otherAccount } = await deployFixture();
 
 			const [weweBalanceBefore, tokenBalanceBefore] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
 
 			expect(weweBalanceBefore).to.equal(0);
 			expect(tokenBalanceBefore).to.equal(1000);
 
-			const eaterAddress = await eater.getAddress();
-			await wewe.connect(otherAccount).approveAndCall(eaterAddress, 1000, "0x00");
+			const mergeAddress = await merge.getAddress();
+			await wewe.connect(otherAccount).approveAndCall(mergeAddress, 1000, "0x00");
 
 			const [weweBalanceAfter, tokenBalanceAfter] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
 
@@ -63,17 +61,17 @@ describe("Generic merge contract", () => {
 		});
 
 		it("Should eat some tokens at 2:1", async () => {
-			const { wewe, eater, token, otherAccount } = await deployFixture(2000, 1000);
+			const { wewe, merge, token, otherAccount } = await deployFixture(2000, 1000);
 
-			await eater.setRate(200);
+			await merge.setRate(200);
 
 			const [weweBalanceBefore, tokenBalanceBefore] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
 
 			expect(weweBalanceBefore).to.equal(0);
 			expect(tokenBalanceBefore).to.equal(1000);
 
-			const eaterAddress = await eater.getAddress();
-			await wewe.connect(otherAccount).approveAndCall(eaterAddress, 1000, "0x00");
+			const mergeAddress = await merge.getAddress();
+			await wewe.connect(otherAccount).approveAndCall(mergeAddress, 1000, "0x00");
 
 			const [weweBalanceAfter, tokenBalanceAfter] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
 

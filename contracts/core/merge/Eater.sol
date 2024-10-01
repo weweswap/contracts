@@ -4,10 +4,13 @@ pragma solidity ^0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "../../interfaces/IWeweReceiver.sol";
 
-abstract contract Eater is Ownable {
+abstract contract Eater is IWeweReceiver, ReentrancyGuard, Ownable {
     uint256 internal _rate;
-    address public constant wewe = 0x6b9bb36519538e0C073894E964E90172E1c0B41F;
+    address internal _token;
+    address public wewe;
 
     function _setRate(uint256 rate) internal {
         require(rate > 0, "Eater: Rate must be greater than 0");
@@ -28,6 +31,13 @@ abstract contract Eater is Ownable {
         IERC20(wewe).transfer(from, weweToTransfer);
 
         emit Eaten(amount, from);
+    }
+
+    function receiveApproval(address from, uint256 amount, address token, bytes calldata) external nonReentrant {
+        require(msg.sender == wewe, "GenericEater: Invalid sender");
+        require(token == wewe, "GenericEater: Invalid token");
+
+        _eat(amount, _token, from);
     }
 
     event Eaten(uint256 amount, address indexed account);
