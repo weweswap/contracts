@@ -70,7 +70,7 @@ describe("CHAOS", () => {
 
 			await expect(chaos.connect(spender).transferFrom(owner.address, spender.address, 1000)).to.be.revertedWith("ERC20: insufficient allowance");
 
-			expect(await chaos.connect(spender).transferFrom(owner.address, spender.address, 100))
+			await expect(chaos.connect(spender).transferFrom(owner.address, spender.address, 100))
 				.to.emit(chaos, "Transfer")
 				.withArgs(owner.address, spender.address, 100);
 
