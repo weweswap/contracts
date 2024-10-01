@@ -63,7 +63,7 @@ describe("CHAOS", () => {
 			expect(await chaos.totalSupply()).to.equal(1000);
 			expect(await chaos.allowance(owner.address, spender.address)).to.equal(0);
 
-			expect(chaos.connect(spender).transferFrom(owner.address, spender.address, 100)).to.be.revertedWith("CHAOS: transfer amount exceeds allowance");
+			expect(chaos.connect(spender).transferFrom(owner.address, spender.address, 100)).to.be.revertedWith("ERC20: insufficient allowance");
 
 			await expect(chaos.approve(spender.address, 100)).to.emit(chaos, "Approval");
 			expect(await chaos.allowance(owner.address, spender.address)).to.equal(100);
@@ -89,7 +89,7 @@ describe("CHAOS", () => {
 			expect(await chaos.balanceOf(owner.address)).to.equal(1000);
 			expect(await chaos.totalSupply()).to.equal(1000);
 
-			await expect(chaos.transfer(receiver.address, 2000)).to.be.revertedWith("CHAOS: transfer amount exceeds balance");
+			await expect(chaos.transfer(receiver.address, 2000)).to.be.revertedWith("ERC20: transfer amount exceeds balance");
 
 			await chaos.transfer(receiver.address, 100);
 
