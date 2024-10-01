@@ -68,9 +68,7 @@ describe("CHAOS", () => {
 			await expect(chaos.approve(spender.address, 100)).to.emit(chaos, "Approval");
 			expect(await chaos.allowance(owner.address, spender.address)).to.equal(100);
 
-			await expect(chaos.connect(spender).transferFrom(owner.address, spender.address, 1000)).to.be.revertedWith(
-				"CHAOS: transfer amount exceeds allowance",
-			);
+			await expect(chaos.connect(spender).transferFrom(owner.address, spender.address, 1000)).to.be.revertedWith("ERC20: insufficient allowance");
 
 			expect(await chaos.connect(spender).transferFrom(owner.address, spender.address, 100))
 				.to.emit(chaos, "Transfer")
@@ -108,10 +106,10 @@ describe("CHAOS", () => {
 			const farmAddress = await farm.getAddress();
 
 			await chaos.setFarm(farmAddress);
-			expect(await chaos.balanceOf(farmAddress)).to.equal(1000000000000000000000000000n);
+			expect(await chaos.balanceOf(farmAddress)).to.equal(0);
 
 			await chaos.mintToFarm(1000);
-			expect(await chaos.balanceOf(farmAddress)).to.equal(1000000000000000000000001000n);
+			expect(await chaos.balanceOf(farmAddress)).to.equal(1000);
 		});
 	});
 });
