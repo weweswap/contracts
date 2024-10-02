@@ -78,5 +78,25 @@ describe("Generic merge contract", () => {
 			expect(weweBalanceAfter).to.equal(2000);
 			expect(tokenBalanceAfter).to.equal(0);
 		});
+
+		it("Should eat some tokens at 0.5:1", async () => {
+			const { wewe, merge, token, otherAccount } = await deployFixture(2000, 1000);
+
+			await merge.setRate(50);
+
+			const [weweBalanceBefore, tokenBalanceBefore] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
+
+			expect(weweBalanceBefore).to.equal(0);
+			expect(tokenBalanceBefore).to.equal(1000);
+
+			const mergeAddress = await merge.getAddress();
+			await wewe.connect(otherAccount).approveAndCall(mergeAddress, 1000, "0x00");
+
+			const [weweBalanceAfter, tokenBalanceAfter] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
+
+			// half of 1000 is 500
+			expect(weweBalanceAfter).to.equal(500);
+			expect(tokenBalanceAfter).to.equal(0);
+		});
 	});
 });
