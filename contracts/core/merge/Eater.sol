@@ -34,9 +34,11 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Ownable {
     }
 
     function receiveApproval(address from, uint256 amount, address token, bytes calldata) external nonReentrant {
+        // After wewe approve and call, it will call this function
         require(msg.sender == wewe, "GenericEater: Invalid sender");
         require(token == wewe, "GenericEater: Invalid token");
 
+        // Eat the underlying token "_token" with the amount of "amount"
         _eat(amount, _token, from);
     }
 
