@@ -17,6 +17,7 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Ownable {
 
         if (_rate != rate) {
             _rate = rate;
+            emit RateChanged(rate);
         }
     }
 
@@ -43,4 +44,5 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Ownable {
     }
 
     event Eaten(uint256 amount, address indexed account);
+    event RateChanged(uint256 newRate);
 }
