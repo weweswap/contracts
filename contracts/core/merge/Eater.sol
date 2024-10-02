@@ -21,7 +21,7 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Ownable {
         }
     }
 
-    function _eat(uint256 amount, address token, address from) internal {
+    function _merge(uint256 amount, address token, address from) internal {
         uint256 weweToTransfer = (amount * _rate) / 100;
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
@@ -31,9 +31,10 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Ownable {
         IERC20(token).transferFrom(from, address(this), amount);
         IERC20(wewe).transfer(from, weweToTransfer);
 
-        emit Eaten(amount, from);
+        emit Merged(amount, from);
     }
 
+    /// @notice Wewe token approveAndCall function
     function receiveApproval(address from, uint256 amount, address token, bytes calldata) external nonReentrant {
         // After wewe approve and call, it will call this function
         require(token != address(0), "GenericEater: Token address not set");
@@ -41,9 +42,13 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Ownable {
         require(token == wewe, "GenericEater: Invalid token");
 
         // Eat the underlying token "_token" with the amount of "amount"
-        _eat(amount, _token, from);
+        _merge(amount, _token, from);
     }
 
-    event Eaten(uint256 amount, address indexed account);
+    function _deposit(uint256 amount) internal {
+        IERC20(wewe).transferFrom(msg.sender, address(this), amount);
+    }
+
+    event Merged(uint256 amount, address indexed account);
     event RateChanged(uint256 newRate);
 }

@@ -27,15 +27,20 @@ contract BroMerge is Eater, IMergeV2 {
         _setRate(rate);
     }
 
-    function depositAll() external {
+    function mergeAll() external {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
-        _eat(balance, _token, msg.sender);
+        _merge(balance, _token, msg.sender);
     }
 
-    function deposit(uint256 amount) external {
+    function merge(uint256 amount) external {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         require(balance >= amount, "BroMerge: Insufficient balance");
 
-        _eat(amount, _token, msg.sender);
+        _merge(amount, _token, msg.sender);
+    }
+
+    // @notice Fund this contract with wewe token
+    function deposit(uint256 amount) external onlyOwner {
+        _deposit(amount);
     }
 }
