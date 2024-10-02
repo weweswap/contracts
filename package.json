@@ -16,7 +16,7 @@
 		"deploy:chaos:base": "npx hardhat ignition deploy ignition/modules/ChaosToken.ts --network base --verify",
 		"deploy:farm:base": "npx hardhat ignition deploy ignition/modules/Farm.ts --network base --verify",
 		"deploy:bro:base": "npx hardhat ignition deploy ignition/modules/BroEater.ts --network base --verify",
-		"eat:bro": "ts-node scripts/tokenEater.ts 0x93750140C2EcEA27a53c6ed30380829607815A31 0x28fCa04dAb03FBc7cbE281773093F4A0d97E163a"
+		"eat:bro": "ts-node scripts/tokenEater.ts 0x93750140C2EcEA27a53c6ed30380829607815A31 0x28fCa04dAb03FBc7cbE281773093F4A0d97E163a 1"
 	},
 	"devDependencies": {
 		"@nomicfoundation/hardhat-ethers": "^3.0.8",

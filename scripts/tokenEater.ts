@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import dotenv from "dotenv";
 dotenv.config();
 
-export async function main(tokenAddress: string, eaterAddress: string) {
+export async function main(tokenAddress: string, eaterAddress: string, amount: number = 0) {
 	const privateKey = process.env.PK;
 
 	if (!privateKey) {
@@ -17,6 +17,7 @@ export async function main(tokenAddress: string, eaterAddress: string) {
 		// Some minimal ABI that allows you to interact with the contract
 		"function balanceOf(address owner) view returns (uint256)",
 		"function transfer(address to, uint amount) returns (bool)",
+		"function name() view returns (string)",
 		"function symbol() view returns (string)",
 		"function approve(address spender, uint256 amount) external returns (bool)",
 		"function allowance(address owner, address spender) external view returns (uint256)",
@@ -31,6 +32,7 @@ export async function main(tokenAddress: string, eaterAddress: string) {
 	console.log("symbol", symbol);
 
 	const allowance = await token.allowance(wallet.address, eaterAddress);
+	console.log("Allowance", ethers.formatUnits(allowance, 18));
 	if (allowance === 0) {
 		//	If we need to approve the eater contract
 		const tx = await token.approve(eaterAddress, ethers.MaxUint256);
@@ -41,15 +43,26 @@ export async function main(tokenAddress: string, eaterAddress: string) {
 
 	// Check if bro is in the eater contract
 	const balance = await token.balanceOf(eaterAddress);
-	console.log("Balance", ethers.formatUnits(balance, 18));
+	console.log("Eater balance of", name, "tokens", ethers.formatUnits(balance, 18));
+
+	const userTokenBalance = await token.balanceOf(wallet.address);
+	console.log("User balance of", name, "tokens", ethers.formatUnits(userTokenBalance, 18));
+
+	const weweTokenBalance = await token.balanceOf("0x");
 
 	if (balance > 0) {
-		console.log("Bro is in the eater contract");
-		return;
+		console.log(name, "is in the eater contract");
 	}
 
-	const tx = await token.transfer(eaterAddress, ethers.parseUnits("1", 18));
-	await tx.wait();
+	if (amount > 0) {
+		const tx = await token.transfer(eaterAddress, ethers.parseUnits(amount.toString(), 18));
+		await tx.wait();
+
+		console.log("Transferred", amount, symbol, "to", eaterAddress);
+	} else {
+		const tx = await token.transfer(eaterAddress, userTokenBalance);
+		await tx.wait();
+	}
 
 	console.log("Transferred 1 BRO to ", eaterAddress);
 }

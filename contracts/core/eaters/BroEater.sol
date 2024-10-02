@@ -11,10 +11,20 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 
 contract BroEater is Eater, IWeweReceiver, IEater, ReentrancyGuard {
     address public constant underlying = 0x93750140C2EcEA27a53c6ed30380829607815A31;
+    uint256 private _startPeriod;
+    uint256 private _mergePeriod;
 
     constructor(address _wewe) {
         _rate = 100;
         wewe = _wewe;
+    }
+
+    function startPeriod() external view returns (bool) {
+        return true;
+    }
+
+    function mergePeriod() external view returns (bool) {
+        return true;
     }
 
     function getRate() external view returns (uint256) {
@@ -25,12 +35,20 @@ contract BroEater is Eater, IWeweReceiver, IEater, ReentrancyGuard {
         _setRate(rate);
     }
 
+    function setStartPeriod() external onlyOwner {
+        _startPeriod = block.timestamp + 30 days;
+    }
+
+    function setMergePeriod() external onlyOwner {
+        _mergePeriod = block.timestamp + 30 days;
+    }
+
     function eatAll() external {
         uint256 balance = IERC20(underlying).balanceOf(msg.sender);
         _eat(balance, underlying, msg.sender);
     }
 
-    function eat(uint256 amount) external {
+    function deposit(uint256 amount) external {
         uint256 balance = IERC20(underlying).balanceOf(msg.sender);
         require(balance >= amount, "BroEater: Insufficient balance to eat");
 
