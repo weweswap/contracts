@@ -38,7 +38,7 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     function sweep() external onlyOwner {
         uint256 balance = IERC20(wewe).balanceOf(address(this));
         require(balance > 0, "Eater: No balance to sweep");
-        IERC20(wewe).transfer(wewe, balance);
+        IERC20(wewe).transfer(owner(), balance);
     }
 
     /// @notice Wewe token approveAndCall function
