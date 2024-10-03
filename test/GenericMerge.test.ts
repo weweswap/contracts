@@ -98,5 +98,48 @@ describe("Generic merge contract", () => {
 			expect(weweBalanceAfter).to.equal(500);
 			expect(tokenBalanceAfter).to.equal(0);
 		});
+
+		it("should allow only the owner to toggle pause", async () => {
+			const { merge, owner, otherAccount } = await deployFixture(2000, 1000);
+
+			// Owner can toggle pause
+			await expect(merge.connect(owner).togglePause()).to.not.be.reverted;
+
+			// Contract should be paused
+			expect(await merge.paused()).to.equal(true);
+
+			// Non-owner cannot toggle pause
+			await expect(merge.connect(otherAccount).togglePause()).to.be.revertedWith("Ownable: caller is not the owner");
+		});
+
+		// Verify these requirements:
+		it.skip("should not sweep when unpaused", async () => {
+			const { wewe, merge, owner, otherAccount } = await deployFixture(1000, 1000);
+
+			// Owner can toggle pause to On
+			await merge.connect(owner).togglePause();
+
+			// Non-owner attempts to call sweep
+			await expect(merge.connect(owner).sweep()).to.be.revertedWith("Pausable: not paused");
+
+		});
+
+
+		it("should allow only the owner to call sweep", async () => {
+			const { wewe, merge, owner, otherAccount } = await deployFixture(1000, 1000);
+
+			// Non-owner attempts to call sweep
+			await expect(merge.connect(otherAccount).sweep()).to.be.revertedWith("Ownable: caller is not the owner");
+
+			const ownerWeweBalanceBefore = await wewe.balanceOf(owner.address);
+
+			await merge.connect(owner).sweep();
+			const ownerWeweBalanceAfter = await wewe.balanceOf(owner.address);
+
+			expect(ownerWeweBalanceBefore).to.be.lessThan(ownerWeweBalanceAfter);
+			expect(ownerWeweBalanceAfter).to.equal(100000000000000000000000000000n);
+
+			await expect(merge.connect(owner).sweep()).to.be.revertedWith("Eater: No balance to sweep");
+		});
 	});
 });
