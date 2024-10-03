@@ -42,7 +42,12 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     /// @notice Wewe token approveAndCall function
-    function receiveApproval(address from, uint256 amount, address token, bytes calldata) external nonReentrant whenNotPaused {
+    function receiveApproval(
+        address from,
+        uint256 amount,
+        address token,
+        bytes calldata
+    ) external nonReentrant whenNotPaused {
         // After wewe approve and call, it will call this function
         require(_token != address(0), "GenericEater: Token address not set");
         require(msg.sender == wewe, "GenericEater: Invalid sender");
