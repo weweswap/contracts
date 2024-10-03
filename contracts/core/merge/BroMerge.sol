@@ -17,6 +17,8 @@ contract BroMerge is Eater, IMergeV2 {
         _rate = 100;
         _token = 0x93750140C2EcEA27a53c6ed30380829607815A31;
         wewe = 0x6b9bb36519538e0C073894E964E90172E1c0B41F;
+
+        _pause();
     }
 
     function getRate() external view returns (uint256) {
