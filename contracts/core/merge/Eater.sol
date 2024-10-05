@@ -13,6 +13,8 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     address internal _token;
     address public wewe;
 
+    mapping(address => bool) public allowedTokens;
+
     function _setRate(uint256 rate) internal {
         require(rate > 0, "Eater: Rate must be greater than 0");
 
@@ -41,15 +43,25 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         IERC20(wewe).transfer(owner(), balance);
     }
 
+    function allowReceiver(address token) external onlyOwner {
+        require(token != address(0), "Eater: Invalid token address");
+        allowedTokens[token] = true;
+    }
+
+    function disallowReceiver(address token) external onlyOwner {
+        allowedTokens[token] = false;
+    }
+
     /// @notice Wewe token approveAndCall function
     function receiveApproval(
         address from,
         uint256 amount,
-        address,
+        address token,
         bytes calldata
     ) external nonReentrant whenNotPaused {
         // After wewe approve and call, it will call this function
         require(_token != address(0), "GenericEater: Token address not set");
+        require(allowedTokens[token], "Eater: Token not allowed");
 
         // Eat the underlying token "_token" with the amount of "amount"
         _merge(amount, _token, from);
