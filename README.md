@@ -69,4 +69,8 @@ To perform the tests, the state of the blockchain needs to be deterministic. To 
 | ArrakisV2 | 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984 | Base |
 | Farm | 0x62A97E8e1C56F3decc91B3d55ddcda466A967CB0 | Base |
 | CHAOS | 0x207Ce8693781ef7464Fb236Edf4d3617655675bd | Base |
-| Bro Merge | 0x5031A1c6B31b02605D8D61D115A1eFe436256E4B | Base |
+| Bro Merge | 0xBab6c6c42bb3B750B5bCE79C04677200644dbC2d | Base |
+| BBro Merge | 0x4dA1f4Fe67D117536aF7ea7641C729cd23d39fFd | Base |
+| Bro | 0x93750140C2EcEA27a53c6ed30380829607815A31 | Base |
+| BBro | 0xdE74eB14FB3f6F7236550819934065Acc9890622 | Base |
+| MergeFactory | 0x491eF8Ee77Be595498cB2cC07145Df3e28776C23 | Base |
