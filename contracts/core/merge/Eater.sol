@@ -63,11 +63,7 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function togglePause() external onlyOwner {
-        if (paused()) {
-            _unpause();
-        } else {
-            _pause();
-        }
+        paused() ? _unpause() : _pause();
     }
 
     function _deposit(uint256 amount) internal {
