@@ -15,6 +15,7 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     address public wewe;
 
     function name() external view virtual returns (string memory) {
+        require(_token != address(0), "Eater: Token address not set");
         return string.concat("WEWW:", IERC20Metadata(_token).symbol());
     }
 
