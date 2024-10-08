@@ -9,7 +9,7 @@ import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 
 contract UniswapDynamicFee is IAMM, Ownable {
     address private router = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-    address private wewe = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address private wewe = 0x6b9bb36519538e0C073894E964E90172E1c0B41F;
 
     constructor() Ownable() {}
 
@@ -17,8 +17,10 @@ contract UniswapDynamicFee is IAMM, Ownable {
         // slice bytes
         bytes memory _fee = extraData[:6];
 
+        uint24 fee = uint24(uint256(keccak256(_fee)));
+
         // max uint24 is 16777215 or 0xFFFFFF
-        uint256 amountOut = _swap(wewe, token, amount, 0, _fee);
+        uint256 amountOut = _swap(wewe, token, amount, 0, fee);
         return amountOut;
     }
 

@@ -6,10 +6,11 @@ import {IUniswapv3} from "../../core/amm/IUniswapv3.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract Uniswapv3 is IAMM, Ownable {
     address private router = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-    address private wewe = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address private wewe = 0x6b9bb36519538e0C073894E964E90172E1c0B41F;
 
     uint24 public fee;
 
@@ -43,6 +44,8 @@ contract Uniswapv3 is IAMM, Ownable {
     ) private returns (uint256 amountOut) {
         address pool = IUniswapv3(router).getPool(tokenIn, tokenOut, fee);
         require(pool != address(0), "Uniswapv3: Pool not found");
+
+        ERC20(tokenIn).approve(router, amountIn);
 
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,
