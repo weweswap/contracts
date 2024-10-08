@@ -9,10 +9,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract MergeWithMarket is GenericMerge {
     constructor(address _wewe, address token) GenericMerge(_wewe, token) {}
 
-    // function setAMM(address _amm) external onlyOwner {
-    //     amm = IAMM(_amm);
-    // }
-
     function mergeAndBuy(uint256 amount, IAMM amm, bytes calldata extraData) external {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         require(balance >= amount, "GenericMerge: Insufficient balance to eat");
@@ -20,7 +16,7 @@ contract MergeWithMarket is GenericMerge {
         IERC20(_token).approve(address(amm), amount);
         _merge(amount, _token, msg.sender);
 
-        amm.buy(amount, extraData);
+        amm.buy(amount, _token, extraData);
     }
 
     function mergeAndSell(uint256 amount, IAMM amm, bytes calldata extraData) external {
@@ -30,6 +26,6 @@ contract MergeWithMarket is GenericMerge {
         _merge(amount, _token, msg.sender);
 
         IERC20(_token).approve(address(amm), amount);
-        amm.sell(amount, extraData);
+        amm.sell(amount, _token, extraData);
     }
 }

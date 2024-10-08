@@ -7,20 +7,6 @@ import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 
 interface IUniswapv3 {
-    // function swapExactTokensForTokens(
-    //     uint amountIn,
-    //     uint amountOutMin,
-    //     address[] calldata path,
-    //     address to,
-    //     uint deadline
-    // ) external returns (uint[] memory amounts);
-    // function swapTokensForExactTokens(
-    //     uint amountOut,
-    //     uint amountInMax,
-    //     address[] calldata path,
-    //     address to,
-    //     uint deadline
-    // ) external returns (uint[] memory amounts);
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address pool);
 }
 
