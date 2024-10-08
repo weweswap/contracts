@@ -50,9 +50,8 @@ describe("Generic merge contract", () => {
 
 			expect(weweBalanceBefore).to.equal(0);
 			expect(tokenBalanceBefore).to.equal(1000);
-
 			const mergeAddress = await merge.getAddress();
-			await wewe.connect(otherAccount).approveAndCall(mergeAddress, 1000, "0x00");
+			await token.connect(otherAccount).approveAndCall(mergeAddress, 1000, "0x00");
 
 			const [weweBalanceAfter, tokenBalanceAfter] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
 
@@ -71,7 +70,7 @@ describe("Generic merge contract", () => {
 			expect(tokenBalanceBefore).to.equal(1000);
 
 			const mergeAddress = await merge.getAddress();
-			await wewe.connect(otherAccount).approveAndCall(mergeAddress, 1000, "0x00");
+			await token.connect(otherAccount).approveAndCall(mergeAddress, 1000, "0x00");
 
 			const [weweBalanceAfter, tokenBalanceAfter] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
 
@@ -90,7 +89,7 @@ describe("Generic merge contract", () => {
 			expect(tokenBalanceBefore).to.equal(1000);
 
 			const mergeAddress = await merge.getAddress();
-			await wewe.connect(otherAccount).approveAndCall(mergeAddress, 1000, "0x00");
+			await token.connect(otherAccount).approveAndCall(mergeAddress, 1000, "0x00");
 
 			const [weweBalanceAfter, tokenBalanceAfter] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
 
