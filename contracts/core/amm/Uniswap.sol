@@ -33,16 +33,16 @@ contract Uniswapv3 is IAMM {
     constructor() {}
 
     function buy(uint256 amount, address token, bytes calldata extraData) external returns (uint256) {
-        uint256 amountOut = swap(wewe, token, amount, 0);
+        uint256 amountOut = _swap(wewe, token, amount, 0);
         return amountOut;
     }
 
     function sell(uint256 amount, address token, bytes calldata extraData) external returns (uint256) {
-        uint256 amountOut = swap(token, wewe, amount, 0);
+        uint256 amountOut = _swap(token, wewe, amount, 0);
         return amountOut;
     }
 
-    function swap(
+    function _swap(
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
