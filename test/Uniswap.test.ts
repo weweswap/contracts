@@ -3,7 +3,7 @@ import hre, { ethers } from "hardhat";
 
 import { DETERMINISTIC_MIN_HEIGHT } from "./constants";
 
-describe.only("Uniswap Adaptor", () => {
+describe.only("UniswapV3 Adaptor", () => {
 	async function deployFixture() {
 		// Reset the blockchain to a deterministic state
 		await ethers.provider.send("hardhat_reset", [
@@ -21,7 +21,7 @@ describe.only("Uniswap Adaptor", () => {
             params: ["0xEa36BDfaE0280831c1cC6Aca0E9e25C7D1ECbAf7"],
         });
 
-        const UniswapAdaptor = await ethers.getContractFactory("Uniswap");
+        const UniswapAdaptor = await ethers.getContractFactory("UniswapV3");
         const uniswapAdaptor = await UniswapAdaptor.deploy();
 
 		return { uniswapAdaptor };
