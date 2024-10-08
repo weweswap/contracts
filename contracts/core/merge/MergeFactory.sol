@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.19;
 
-import "./IMergeV2.sol";
+import "../../interfaces/IMergeV2.sol";
 import {GenericMerge} from "./GenericMerge.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";

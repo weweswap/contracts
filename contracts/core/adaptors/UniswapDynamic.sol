@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {IAMM} from "../../interfaces/IAMM.sol";
-import {IUniswapv3} from "../../core/amm/IUniswapv3.sol";
+import {IUniswapV3} from "../../core/adaptors/IUniswapV3.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
@@ -41,7 +41,7 @@ contract UniswapDynamicFee is IAMM, Ownable {
         uint256 amountOutMinimum,
         uint24 fee
     ) private returns (uint256 amountOut) {
-        address pool = IUniswapv3(router).getPool(tokenIn, tokenOut, fee);
+        address pool = IUniswapV3(router).getPool(tokenIn, tokenOut, fee);
         require(pool != address(0), "Uniswapv3: Pool not found");
 
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({

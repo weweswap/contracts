@@ -2,13 +2,13 @@
 pragma solidity 0.8.19;
 
 import {IAMM} from "../../interfaces/IAMM.sol";
-import {IUniswapv3} from "../../core/amm/IUniswapv3.sol";
+import {IUniswapV3} from "../../core/adaptors/IUniswapV3.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract Uniswapv3 is IAMM, Ownable {
+contract UniswapV3 is IAMM, Ownable {
     address private router = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
     address private wewe = 0x6b9bb36519538e0C073894E964E90172E1c0B41F;
 
@@ -42,7 +42,7 @@ contract Uniswapv3 is IAMM, Ownable {
         uint256 amountIn,
         uint256 amountOutMinimum
     ) private returns (uint256 amountOut) {
-        address pool = IUniswapv3(router).getPool(tokenIn, tokenOut, fee);
+        address pool = IUniswapV3(router).getPool(tokenIn, tokenOut, fee);
         require(pool != address(0), "Uniswapv3: Pool not found");
 
         ERC20(tokenIn).approve(router, amountIn);
