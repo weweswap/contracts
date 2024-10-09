@@ -9,23 +9,25 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract MergeWithMarket is GenericMerge {
     constructor(address _wewe, address token) GenericMerge(_wewe, token) {}
 
-    function mergeAndBuy(uint256 amount, IAMM amm, bytes calldata extraData) external {
-        uint256 balance = IERC20(_token).balanceOf(msg.sender);
-        require(balance >= amount, "GenericMerge: Insufficient balance to eat");
+    // function mergeAndSell(uint256 amount, IAMM amm, bytes calldata extraData) external {
+    //     uint256 balance = IERC20(_token).balanceOf(msg.sender);
+    //     require(balance >= amount, "GenericMerge: Insufficient balance to eat");
 
-        IERC20(_token).approve(address(amm), amount);
-        _merge(amount, _token, msg.sender);
+    //     IERC20(_token).approve(address(amm), amount);
+    //     _merge(amount, _token, msg.sender);
 
-        amm.buy(amount, _token, extraData);
-    }
+    //     amm.buy(amount, _token, extraData);
+    // }
 
     function mergeAndSell(uint256 amount, IAMM amm, bytes calldata extraData) external {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
-        require(balance >= amount, "GenericMerge: Insufficient balance to eat");
+        require(balance >= amount, "MergeWithMarket: Insufficient balance to eat");
+
+        // This contract will call uniswap under the context of itself...
 
         _merge(amount, _token, msg.sender);
 
         IERC20(_token).approve(address(amm), amount);
-        amm.sell(amount, _token, extraData);
+        amm.swap(amount, _token, extraData);
     }
 }
