@@ -6,21 +6,15 @@ import {IUniswapV3} from "../../core/adaptors/IUniswapV3.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract UniswapV3 is IAMM, Ownable {
-    // Universal factory https://docs.uniswap.org/contracts/v3/reference/deployments/base-deployments
-    address private factory = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
-    address private wewe = 0x6b9bb36519538e0C073894E964E90172E1c0B41F;
+    // Factory https://docs.uniswap.org/contracts/v3/reference/deployments/base-deployments
+    address private constant factory = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
+    address private constant wewe = 0x6b9bb36519538e0C073894E964E90172E1c0B41F;
 
     uint24 public fee;
-
-    // enum FeeAmount {
-    //     LOWEST,
-    //     LOW,
-    //     MEDIUM,
-    //     HIGH
-    // }
 
     constructor() Ownable() {
         fee = 10000;
@@ -51,12 +45,18 @@ contract UniswapV3 is IAMM, Ownable {
         address pool = IUniswapV3(factory).getPool(tokenIn, tokenOut, fee);
         require(pool != address(0), "Uniswapv3: Pool not found");
 
+        // address pool = 0x6F71796114B9CDaef29A801BC5cdBCb561990Eeb;
+
         ERC20(tokenIn).approve(pool, amountIn);
 
         address recipient = address(this);
         int256 amountSpecified = int256(amountIn);
-        uint160 sqrtPriceLimitX96 = uint160(amountOutMinimum);
 
+        // if zeroForOne is false, the price cannot be greater than this value after the swap
+        // uint160 sqrtPriceLimitX96 = uint160(amountOutMinimum);
+        uint160 sqrtPriceLimitX96 = type(uint160).max;
+
+        // True is zeroForOne, set to true for token0 to token1
         (, int256 amount1) = IUniswapV3Pool(pool).swap(recipient, false, amountSpecified, sqrtPriceLimitX96, extraData);
 
         if (amount1 < 0) {

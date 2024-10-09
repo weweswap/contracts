@@ -38,7 +38,7 @@ describe.only("UniswapV3 Adaptor", () => {
             value: ethers.parseEther("10"),
         });
 
-		const UniswapAdaptor = await ethers.getContractFactory("UniswapV3");
+		const UniswapAdaptor = await ethers.getContractFactory("UniswapV3ViaRouter");
 		const uniswapAdaptor = await UniswapAdaptor.deploy();
 
 		const MergeWithMarket = await ethers.getContractFactory("MergeWithMarket");
