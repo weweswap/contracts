@@ -6,8 +6,21 @@ import {IUniswapV3} from "../../core/adaptors/IUniswapV3.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+interface ISwapRouter {
+    struct ExactInputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+        uint160 sqrtPriceLimitX96;
+    }
+
+    function exactInputSingle(ExactInputSingleParams calldata params) external returns (uint256 amountOut);
+}
 
 contract UniswapV3ViaRouter is IAMM, Ownable {
     // Router https://docs.uniswap.org/contracts/v3/reference/deployments/base-deployments
@@ -56,11 +69,10 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
             tokenIn: tokenIn,
             tokenOut: wewe,
             fee: fee,
-            recipient: msg.sender, // address(this),
-            deadline: block.timestamp + 60 * 1000,
+            recipient: address(this),
             amountIn: amountIn,
             amountOutMinimum: 0,
-            sqrtPriceLimitX96: type(uint160).max // 0
+            sqrtPriceLimitX96: 0 // type(uint160).max //
         });
 
         // The call to `exactInputSingle` executes the swap.

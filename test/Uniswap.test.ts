@@ -80,7 +80,7 @@ describe.only("UniswapV3 Adaptor", () => {
             expect(await mergeWithMarket.getToken()).to.be.eq(USDC_ADDRESS);
 		});
 
-        it("Should call uniswap via the adaptor", async () => {
+        it.only("Should call uniswap via the adaptor", async () => {
             const { uniswapAdaptor, holder } = await deployFixture();
 
             const uniswapAdaptorAddress = await uniswapAdaptor.getAddress();
@@ -91,6 +91,15 @@ describe.only("UniswapV3 Adaptor", () => {
 
             // Swap 100 of the 5800 usdc for wewe via uniswap on fork at block 20820713
             await uniswapAdaptor.connect(holder).swap(ethers.parseUnits("100", 6), USDC_ADDRESS, "0x");
+
+            // // Check the wewe balance in the contract
+            // const wewe = await ethers.getContractAt("IERC20", WEWE_ADDRESS);
+            // const wewe_holder_balance = await wewe.balanceOf(holder.address);
+            // // const wewe_contract_balance = await wewe.balanceOf(uniswapAdaptorAddress);
+            // const usdc_contract_balance = await usdc.balanceOf(uniswapAdaptorAddress);
+
+            // expect(wewe_holder_balance).to.be.gt(0);
+            // expect(usdc_contract_balance).to.be.eq(ethers.parseUnits("100", 6));
         });
 
 		it.skip("Should merge usdc and swap via uni to wewe", async () => {
