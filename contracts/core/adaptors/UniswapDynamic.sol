@@ -13,7 +13,7 @@ contract UniswapDynamicFee is IAMM, Ownable {
 
     constructor() Ownable() {}
 
-    function buy(uint256 amount, address token, bytes calldata extraData) external returns (uint256) {
+    function swap(uint256 amount, address token, bytes calldata extraData) external returns (uint256) {
         // slice bytes
         bytes memory _fee = extraData[:6];
 
@@ -24,15 +24,15 @@ contract UniswapDynamicFee is IAMM, Ownable {
         return amountOut;
     }
 
-    function sell(uint256 amount, address token, bytes calldata extraData) external returns (uint256) {
-        // slice bytes
-        bytes memory _fee = extraData[:6];
+    // function sell(uint256 amount, address token, bytes calldata extraData) external returns (uint256) {
+    //     // slice bytes
+    //     bytes memory _fee = extraData[:6];
 
-        // max uint24 is 16777215 or 0xFFFFFF
-        uint24 fee = uint24(uint256(keccak256(_fee)));
-        uint256 amountOut = _swap(token, wewe, amount, 0, fee);
-        return amountOut;
-    }
+    //     // max uint24 is 16777215 or 0xFFFFFF
+    //     uint24 fee = uint24(uint256(keccak256(_fee)));
+    //     uint256 amountOut = _swap(token, wewe, amount, 0, fee);
+    //     return amountOut;
+    // }
 
     function _swap(
         address tokenIn,
