@@ -16,13 +16,6 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
 
     uint24 public fee;
 
-    // enum FeeAmount {
-    //     LOWEST,
-    //     LOW,
-    //     MEDIUM,
-    //     HIGH
-    // }
-
     constructor() Ownable() {
         fee = 10000;
     }
@@ -63,11 +56,11 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
             tokenIn: tokenIn,
             tokenOut: wewe,
             fee: fee,
-            recipient: address(this),
-            deadline: block.timestamp + 100000000,
+            recipient: msg.sender, // address(this),
+            deadline: block.timestamp + 60 * 1000,
             amountIn: amountIn,
             amountOutMinimum: 0,
-            sqrtPriceLimitX96: type(uint160).max
+            sqrtPriceLimitX96: type(uint160).max // 0
         });
 
         // The call to `exactInputSingle` executes the swap.
