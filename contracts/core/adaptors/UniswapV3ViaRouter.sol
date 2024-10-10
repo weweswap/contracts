@@ -21,7 +21,6 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
 
     function setFee(uint24 _fee) external onlyOwner {
         // Only allow these https://docs.uniswap.org/sdk/v3/reference/enums/FeeAmount
-
         if (_fee != 100 && _fee != 500 && _fee != 3000 && _fee != 10000) {
             revert("Uniswapv3: Invalid fee");
         }
@@ -35,7 +34,7 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        uint256 amountOut = _swap(token, msg.sender, amount, 0);
+        uint256 amountOut = _swap(token, recipient, msg.sender, amount, 0);
 
         emit Swapped(amount, amountOut, token, recipient);
         return amountOut;
@@ -43,6 +42,7 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
 
     function _swap(
         address tokenIn,
+        address from,
         address recipient,
         uint256 amountIn,
         uint256 amountOutMinimum
@@ -50,9 +50,7 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
         ISwapRouter swapRouter = ISwapRouter(0x2626664c2603336E57B271c5C0b26F421741e481);
 
         // Transfer the specified amount of TOKEN to this contract.
-        if (IERC20(tokenIn).balanceOf(address(this)) < amountIn) {
-            TransferHelper.safeTransferFrom(tokenIn, recipient, address(this), amountIn);
-        }
+        TransferHelper.safeTransferFrom(tokenIn, from, address(this), amountIn);
 
         // Approve the router to spend TOKEN.
         TransferHelper.safeApprove(tokenIn, address(swapRouter), amountIn);

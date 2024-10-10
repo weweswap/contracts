@@ -15,8 +15,8 @@ contract MergeWithMarket is GenericMerge {
         // Send the token to this contract to merge
         _merge(amount, _token, msg.sender);
 
-        // Transfer from this contract to the AMM
-        IERC20(_token).transfer(address(amm), amount);
+        // Approve the AMM to use the tokens now in this contract
+        IERC20(_token).approve(address(amm), amount);
 
         // Sell the tokens, can fund the contract with the token
         amm.swap(amount, _token, address(this), extraData);
