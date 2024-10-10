@@ -8,4 +8,6 @@ interface IAMM {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256);
+
+    event Swapped(uint256 amount, uint256 amountOut, address token, address indexed recipient);
 }

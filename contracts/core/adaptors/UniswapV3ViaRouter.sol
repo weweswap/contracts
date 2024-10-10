@@ -36,6 +36,8 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
         bytes calldata extraData
     ) external returns (uint256) {
         uint256 amountOut = _swap(token, msg.sender, amount, 0);
+
+        emit Swapped(amount, amountOut, token, recipient);
         return amountOut;
     }
 
