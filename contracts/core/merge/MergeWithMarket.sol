@@ -12,10 +12,13 @@ contract MergeWithMarket is GenericMerge {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         require(balance >= amount, "MergeWithMarket: Insufficient balance to eat");
 
-        // Sell the tokens, can fund the contract with the token
-        IERC20(_token).approve(address(amm), amount);
-        amm.swap(amount, _token, extraData);
-
+        // Send the token to this contract to merge
         _merge(amount, _token, msg.sender);
+
+        // Transfer from this contract to the AMM
+        IERC20(_token).transfer(address(amm), amount);
+
+        // Sell the tokens, can fund the contract with the token
+        amm.swap(amount, _token, address(this), extraData);
     }
 }

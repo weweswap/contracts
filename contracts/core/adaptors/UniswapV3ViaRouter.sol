@@ -5,9 +5,8 @@ import {IAMM} from "../../interfaces/IAMM.sol";
 import {IUniswapV3} from "../../core/adaptors/IUniswapV3.sol";
 import {ISwapRouter} from "../../core/adaptors/IUniswapV3.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract UniswapV3ViaRouter is IAMM, Ownable {
     // Router https://docs.uniswap.org/contracts/v3/reference/deployments/base-deployments
@@ -30,16 +29,28 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
         fee = _fee;
     }
 
-    function swap(uint256 amount, address token, bytes calldata extraData) external returns (uint256) {
-        uint256 amountOut = _swap(token, amount, 0);
+    function swap(
+        uint256 amount,
+        address token,
+        address recipient,
+        bytes calldata extraData
+    ) external returns (uint256) {
+        uint256 amountOut = _swap(token, msg.sender, amount, 0);
         return amountOut;
     }
 
-    function _swap(address tokenIn, uint256 amountIn, uint256 amountOutMinimum) private returns (uint256 amountOut) {
+    function _swap(
+        address tokenIn,
+        address recipient,
+        uint256 amountIn,
+        uint256 amountOutMinimum
+    ) private returns (uint256 amountOut) {
         ISwapRouter swapRouter = ISwapRouter(0x2626664c2603336E57B271c5C0b26F421741e481);
 
         // Transfer the specified amount of TOKEN to this contract.
-        TransferHelper.safeTransferFrom(tokenIn, msg.sender, address(this), amountIn);
+        if (IERC20(tokenIn).balanceOf(address(this)) < amountIn) {
+            TransferHelper.safeTransferFrom(tokenIn, recipient, address(this), amountIn);
+        }
 
         // Approve the router to spend TOKEN.
         TransferHelper.safeApprove(tokenIn, address(swapRouter), amountIn);
@@ -50,7 +61,7 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
             tokenIn: tokenIn,
             tokenOut: wewe,
             fee: fee,
-            recipient: msg.sender,
+            recipient: recipient, // send back to the caller, this could be the merge contract
             amountIn: amountIn,
             amountOutMinimum: amountOutMinimum,
             sqrtPriceLimitX96: 0
