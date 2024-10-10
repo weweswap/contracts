@@ -3,7 +3,7 @@ import hre, { ethers } from "hardhat";
 
 import { WEWE_ADDRESS, USDC_ADDRESS } from "./constants";
 
-describe.only("UniswapV3 Adaptor", () => {
+describe("UniswapV3 Adaptor", () => {
 	async function deployFixture(TYPE: string = "UniswapV3ViaRouter") {
 		// Reset the blockchain to a deterministic state
 		await ethers.provider.send("hardhat_reset", [
