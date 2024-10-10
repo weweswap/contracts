@@ -64,6 +64,7 @@ To perform the tests, the state of the blockchain needs to be deterministic. To 
 
 | Contract | Address | Network |
 | --- | --- | --- |
+| WeWe | 0x6b9bb36519538e0C073894E964E90172E1c0B41F | Base |
 | NonfungiblePositionManager | 0xC36442b4a4522E871399CD717aBDD847Ab11FE88 | Base |
 | SwapRouter | 0xE592427A0AEce92De3Edee1F18E0157C05861564 | Base |
 | ArrakisV2 | 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984 | Base |
