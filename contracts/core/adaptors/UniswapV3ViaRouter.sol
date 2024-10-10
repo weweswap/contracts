@@ -47,7 +47,7 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
         uint256 amountIn,
         uint256 amountOutMinimum
     ) private returns (uint256 amountOut) {
-        ISwapRouter swapRouter = ISwapRouter(0x2626664c2603336E57B271c5C0b26F421741e481);
+        ISwapRouter swapRouter = ISwapRouter(router);
 
         // Transfer the specified amount of TOKEN to this contract.
         TransferHelper.safeTransferFrom(tokenIn, from, address(this), amountIn);
