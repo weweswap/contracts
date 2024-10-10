@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import {IAMM} from "../../interfaces/IAMM.sol";
 import {IUniswapV3} from "../../core/adaptors/IUniswapV3.sol";
+import {ISwapRouter} from "../../core/adaptors/IUniswapV3.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 
 contract UniswapDynamicFee is IAMM, Ownable {
@@ -38,8 +38,7 @@ contract UniswapDynamicFee is IAMM, Ownable {
             tokenIn: tokenIn,
             tokenOut: tokenOut,
             fee: fee,
-            recipient: address(this), // msg.sender,
-            deadline: block.timestamp,
+            recipient: msg.sender,
             amountIn: amountIn,
             amountOutMinimum: amountOutMinimum,
             sqrtPriceLimitX96: 0

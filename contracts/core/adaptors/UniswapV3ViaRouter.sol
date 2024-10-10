@@ -3,24 +3,11 @@ pragma solidity 0.8.19;
 
 import {IAMM} from "../../interfaces/IAMM.sol";
 import {IUniswapV3} from "../../core/adaptors/IUniswapV3.sol";
+import {ISwapRouter} from "../../core/adaptors/IUniswapV3.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-interface ISwapRouter {
-    struct ExactInputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-        uint160 sqrtPriceLimitX96;
-    }
-
-    function exactInputSingle(ExactInputSingleParams calldata params) external returns (uint256 amountOut);
-}
 
 contract UniswapV3ViaRouter is IAMM, Ownable {
     // Router https://docs.uniswap.org/contracts/v3/reference/deployments/base-deployments
@@ -44,17 +31,11 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
     }
 
     function swap(uint256 amount, address token, bytes calldata extraData) external returns (uint256) {
-        uint256 amountOut = _swap(token, wewe, amount, 0, extraData);
+        uint256 amountOut = _swap(token, amount, 0);
         return amountOut;
     }
 
-    function _swap(
-        address tokenIn,
-        address tokenOut,
-        uint256 amountIn,
-        uint256 amountOutMinimum,
-        bytes calldata extraData
-    ) private returns (uint256 amountOut) {
+    function _swap(address tokenIn, uint256 amountIn, uint256 amountOutMinimum) private returns (uint256 amountOut) {
         ISwapRouter swapRouter = ISwapRouter(0x2626664c2603336E57B271c5C0b26F421741e481);
 
         // Transfer the specified amount of TOKEN to this contract.
@@ -69,10 +50,10 @@ contract UniswapV3ViaRouter is IAMM, Ownable {
             tokenIn: tokenIn,
             tokenOut: wewe,
             fee: fee,
-            recipient: address(this),
+            recipient: msg.sender,
             amountIn: amountIn,
-            amountOutMinimum: 0,
-            sqrtPriceLimitX96: 0 // type(uint160).max //
+            amountOutMinimum: amountOutMinimum,
+            sqrtPriceLimitX96: 0
         });
 
         // The call to `exactInputSingle` executes the swap.

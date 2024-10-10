@@ -45,8 +45,6 @@ contract UniswapV3 is IAMM, Ownable {
         address pool = IUniswapV3(factory).getPool(tokenIn, tokenOut, fee);
         require(pool != address(0), "Uniswapv3: Pool not found");
 
-        // address pool = 0x6F71796114B9CDaef29A801BC5cdBCb561990Eeb;
-
         ERC20(tokenIn).approve(pool, amountIn);
 
         address recipient = address(this);
