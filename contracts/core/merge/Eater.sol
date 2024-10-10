@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.19;
 
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
@@ -12,6 +13,11 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     uint256 internal _rate;
     address internal _token;
     address public wewe;
+
+    function name() external view virtual returns (string memory) {
+        require(_token != address(0), "Eater: Token address not set");
+        return string.concat("WEWW:", IERC20Metadata(_token).symbol());
+    }
 
     function _setRate(uint256 rate) internal {
         require(rate > 0, "Eater: Rate must be greater than 0");
@@ -56,11 +62,7 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function togglePause() external onlyOwner {
-        if (paused()) {
-            _unpause();
-        } else {
-            _pause();
-        }
+        paused() ? _unpause() : _pause();
     }
 
     function _deposit(uint256 amount) internal {
