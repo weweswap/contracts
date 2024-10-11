@@ -75,3 +75,4 @@ To perform the tests, the state of the blockchain needs to be deterministic. To 
 | Bro | 0x93750140C2EcEA27a53c6ed30380829607815A31 | Base |
 | BBro | 0xdE74eB14FB3f6F7236550819934065Acc9890622 | Base |
 | MergeFactory | 0x491eF8Ee77Be595498cB2cC07145Df3e28776C23 | Base |
+| UniAdapter | 0xbAf371aC1d393cC6e155E1A51Ad8E9d7674151c5 | Base |
