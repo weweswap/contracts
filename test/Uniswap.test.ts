@@ -85,7 +85,9 @@ describe("UniswapV3 Adaptor", () => {
 			expect(await mergeWithMarket.getToken()).to.be.eq(USDC_ADDRESS);
 		});
 
-        // // Not working but is replaced by new contract
+        // Not working but is replaced by new contract
+        // Also, .skip is not working...
+        // @todo: Fix this test
 		// it.skip("Should call uniswap router via the adaptor", async () => {
 		// 	const { uniswapAdaptor, holder } = await deployFixture("UniswapV3ViaRouter");
 
@@ -142,7 +144,7 @@ describe("UniswapV3 Adaptor", () => {
 	});
 
 	describe("Merge with market", () => {
-		it.only("Should merge Token and swap via uni to wewe", async () => {
+		it("Should merge Token and swap via uni to wewe", async () => {
 			const { uniswapAdaptor, mergeWithMarket, holder } = await deployFixture("UniswapV3ViaRouterETH");
 
 			// On fork at block 20820713, we will simulate the token to merge as USDC
