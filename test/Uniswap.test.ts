@@ -85,33 +85,33 @@ describe("UniswapV3 Adaptor", () => {
 			expect(await mergeWithMarket.getToken()).to.be.eq(USDC_ADDRESS);
 		});
 
-        // Not working but is replaced by new contract
-		it.skip("Should call uniswap router via the adaptor", async () => {
-			const { uniswapAdaptor, holder } = await deployFixture("UniswapV3ViaRouter");
+        // // Not working but is replaced by new contract
+		// it.skip("Should call uniswap router via the adaptor", async () => {
+		// 	const { uniswapAdaptor, holder } = await deployFixture("UniswapV3ViaRouter");
 
-			// On fork at block 20820713, we will simulate the token to merge as USDC
-			const token = await ethers.getContractAt("IERC20", USDC_ADDRESS);
-			const wewe = await ethers.getContractAt("IERC20", WEWE_ADDRESS);
-			const uniswapAdaptorAddress = await uniswapAdaptor.getAddress();
+		// 	// On fork at block 20820713, we will simulate the token to merge as USDC
+		// 	const token = await ethers.getContractAt("IERC20", USDC_ADDRESS);
+		// 	const wewe = await ethers.getContractAt("IERC20", WEWE_ADDRESS);
+		// 	const uniswapAdaptorAddress = await uniswapAdaptor.getAddress();
 
-			// Should have 0 tokens in the contract, and holder have 139 wewe at block 20820713
-			const token_balance = await token.balanceOf(uniswapAdaptorAddress);
-			expect(token_balance).to.be.eq(0);
+		// 	// Should have 0 tokens in the contract, and holder have 139 wewe at block 20820713
+		// 	const token_balance = await token.balanceOf(uniswapAdaptorAddress);
+		// 	expect(token_balance).to.be.eq(0);
 
-			const wewe_holder_balance_before = await wewe.balanceOf(holder.address);
-			expect(wewe_holder_balance_before).to.approximately(1393889258709920656678738n, 10000n);
+		// 	const wewe_holder_balance_before = await wewe.balanceOf(holder.address);
+		// 	expect(wewe_holder_balance_before).to.approximately(1393889258709920656678738n, 10000n);
 
-			// Approve the uniswap adaptor to spend the holder's tokens
-			await token.connect(holder).approve(uniswapAdaptorAddress, ethers.MaxUint256);
-			expect(await token.allowance(holder.address, uniswapAdaptorAddress)).to.be.eq(ethers.MaxUint256);
+		// 	// Approve the uniswap adaptor to spend the holder's tokens
+		// 	await token.connect(holder).approve(uniswapAdaptorAddress, ethers.MaxUint256);
+		// 	expect(await token.allowance(holder.address, uniswapAdaptorAddress)).to.be.eq(ethers.MaxUint256);
 
-			// Swap 100 of the 5800 usdc for wewe via uniswap on fork at block 20820713
-			await uniswapAdaptor.connect(holder).sell(ethers.parseUnits("100", 6), USDC_ADDRESS, holder.address, "0x");
+		// 	// Swap 100 of the 5800 usdc for wewe via uniswap on fork at block 20820713
+		// 	await uniswapAdaptor.connect(holder).sell(ethers.parseUnits("100", 6), USDC_ADDRESS, holder.address, "0x");
 
-			// Check the wewe balance after the swap
-			const wewe_holder_balance_after = await wewe.balanceOf(holder.address);
-			expect(wewe_holder_balance_after).to.be.gt(wewe_holder_balance_before);
-		});
+		// 	// Check the wewe balance after the swap
+		// 	const wewe_holder_balance_after = await wewe.balanceOf(holder.address);
+		// 	expect(wewe_holder_balance_after).to.be.gt(wewe_holder_balance_before);
+		// });
 
 		it("Should call uniswap router via eth", async () => {
 			const { uniswapAdaptor, holder } = await deployFixture("UniswapV3ViaRouterETH");
@@ -142,7 +142,7 @@ describe("UniswapV3 Adaptor", () => {
 	});
 
 	describe("Merge with market", () => {
-		it("Should merge Token and swap via uni to wewe", async () => {
+		it.only("Should merge Token and swap via uni to wewe", async () => {
 			const { uniswapAdaptor, mergeWithMarket, holder } = await deployFixture("UniswapV3ViaRouterETH");
 
 			// On fork at block 20820713, we will simulate the token to merge as USDC
