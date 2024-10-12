@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import { DETERMINISTIC_MIN_HEIGHT } from "./constants";
 
 describe("Generic merge contract", () => {
-	async function deployFixture(weweAmount: number = 1000, tokenAmount: number = 1000) {
+	async function deployFixture(weweAmount: number = 1000, tokenAmount: number = 1000, vestingPeriod: number = 0) {
 		const [owner, otherAccount] = await ethers.getSigners();
 		// Reset the blockchain to a deterministic state
 		await ethers.provider.send("hardhat_reset", [
@@ -26,7 +26,6 @@ describe("Generic merge contract", () => {
 		const tokenAddress = await token.getAddress();
 
 		const Merge = await ethers.getContractFactory("GenericMerge");
-		const vestingPeriod = 0;
 		const merge = await Merge.deploy(weweAddress, tokenAddress, vestingPeriod);
 
 		const mergeAddress = await merge.getAddress();
@@ -124,7 +123,6 @@ describe("Generic merge contract", () => {
 
 		});
 
-
 		it("should allow only the owner to call sweep", async () => {
 			const { wewe, merge, owner, otherAccount } = await deployFixture(1000, 1000);
 
@@ -140,6 +138,29 @@ describe("Generic merge contract", () => {
 			expect(ownerWeweBalanceAfter).to.equal(100000000000000000000000000000n);
 
 			await expect(merge.connect(owner).sweep()).to.be.revertedWith("Eater: No balance to sweep");
+		});
+
+		it("should not claim until vesting period is over", async () => {
+			const vestingPeriod = 1;
+			const { wewe, merge, token, owner, otherAccount } = await deployFixture(1000, 1000, vestingPeriod);
+
+			await merge.setRate(100);
+
+			const [weweBalanceBefore, tokenBalanceBefore] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
+
+			expect(weweBalanceBefore).to.equal(0);
+			expect(tokenBalanceBefore).to.equal(1000);
+
+			const mergeAddress = await merge.getAddress();
+			await token.connect(otherAccount).approve(mergeAddress, 1000);
+			await merge.connect(otherAccount).merge(10);
+
+			await expect(merge.connect(otherAccount).claim()).to.be.revertedWith("Eater: Vesting not ended");
+
+			// Fast forward time
+			await ethers.provider.send("evm_increaseTime", [86400]);
+
+			await merge.connect(otherAccount).claim();
 		});
 	});
 });
