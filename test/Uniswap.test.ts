@@ -115,8 +115,8 @@ describe("UniswapV3 Adaptor", () => {
 		// 	expect(wewe_holder_balance_after).to.be.gt(wewe_holder_balance_before);
 		// });
 
-		it("Should call uniswap router via eth", async () => {
-			const { uniswapAdaptor, holder } = await deployFixture("UniswapV3ViaRouterETH");
+		it("Should call uniswap router via intermediate token", async () => {
+			const { uniswapAdaptor, holder } = await deployFixture("UniswapV3ViaRouterIM");
 
 			// On fork at block 20820713, we will simulate the token to merge as USDC
 			const token = await ethers.getContractAt("IERC20", USDC_ADDRESS);
@@ -145,7 +145,7 @@ describe("UniswapV3 Adaptor", () => {
 
 	describe("Merge with market", () => {
 		it("Should merge Token and swap via uni to wewe", async () => {
-			const { uniswapAdaptor, mergeWithMarket, holder } = await deployFixture("UniswapV3ViaRouterETH");
+			const { uniswapAdaptor, mergeWithMarket, holder } = await deployFixture("UniswapV3ViaRouterIM");
 
 			// On fork at block 20820713, we will simulate the token to merge as USDC
 			const token = await ethers.getContractAt("IERC20", USDC_ADDRESS);

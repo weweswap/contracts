@@ -9,7 +9,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract UniswapV3ViaRouterETH is BaseUniRouter, IAMM {
+contract UniswapV3ViaRouterIM is BaseUniRouter, IAMM {
     // Router https://docs.uniswap.org/contracts/v3/reference/deployments/base-deployments
     address private constant wrappedETH = 0x4200000000000000000000000000000000000006;
     address private intermediateToken;
@@ -23,7 +23,6 @@ contract UniswapV3ViaRouterETH is BaseUniRouter, IAMM {
     }
 
     function setIntermidiateToken(address _intermidiateToken) external onlyOwner {
-        require(_intermidiateToken != wrappedETH, "UniswapV3ViaRouterETH: Invalid intermidiate token");
         intermediateToken = _intermidiateToken;
 
         // Approve the router to spend TOKEN.
