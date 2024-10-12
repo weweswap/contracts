@@ -20,7 +20,7 @@ contract UniswapV3ViaRouter is BaseUniRouter, IAMM {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        // Sell the token (tokenIn) for wewe (tokenOut)
+        // Buy the token (tokenOut) with wewe (tokenIn)
         uint256 amountOut = _buyWeWe(token, recipient, msg.sender, amount, 0);
 
         emit Bought(amount, amountOut, token, recipient);

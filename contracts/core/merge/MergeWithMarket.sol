@@ -25,7 +25,7 @@ contract MergeWithMarket is GenericMerge {
         IERC20(_token).approve(address(amm), amount);
 
         // Sell the tokens, can fund the contract with the token
-        address recipeient = treasury == address(0) ? address(this) : treasury;
-        amm.sell(amount, _token, recipeient, extraData);
+        address recipient = treasury == address(0) ? address(this) : treasury;
+        amm.sell(amount, _token, recipient, extraData);
     }
 }
