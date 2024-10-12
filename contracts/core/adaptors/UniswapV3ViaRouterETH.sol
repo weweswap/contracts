@@ -12,11 +12,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract UniswapV3ViaRouterETH is BaseUniRouter, IAMM {
     // Router https://docs.uniswap.org/contracts/v3/reference/deployments/base-deployments
     address private constant wrappedETH = 0x4200000000000000000000000000000000000006;
-    address private intermidiateToken;
+    address private intermediateToken;
 
     constructor() Ownable() {
         fee = 10000;
-        intermidiateToken = wrappedETH;
+        intermediateToken = wrappedETH;
 
         // Approve the router to spend TOKEN.
         TransferHelper.safeApprove(wrappedETH, router, type(uint256).max);
@@ -24,10 +24,10 @@ contract UniswapV3ViaRouterETH is BaseUniRouter, IAMM {
 
     function setIntermidiateToken(address _intermidiateToken) external onlyOwner {
         require(_intermidiateToken != wrappedETH, "UniswapV3ViaRouterETH: Invalid intermidiate token");
-        intermidiateToken = _intermidiateToken;
+        intermediateToken = _intermidiateToken;
 
         // Approve the router to spend TOKEN.
-        TransferHelper.safeApprove(intermidiateToken, router, type(uint256).max);
+        TransferHelper.safeApprove(intermediateToken, router, type(uint256).max);
     }
 
     function buy(
@@ -36,7 +36,7 @@ contract UniswapV3ViaRouterETH is BaseUniRouter, IAMM {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        uint256 amountOut = _swap(intermidiateToken, token, recipient, msg.sender, amount, 0);
+        uint256 amountOut = _swap(intermediateToken, token, recipient, msg.sender, amount, 0);
 
         emit Bought(amount, amountOut, token, recipient);
         return amountOut;
@@ -48,7 +48,7 @@ contract UniswapV3ViaRouterETH is BaseUniRouter, IAMM {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        uint256 amountOut = _swap(token, intermidiateToken, recipient, msg.sender, amount, 0);
+        uint256 amountOut = _swap(token, intermediateToken, recipient, msg.sender, amount, 0);
 
         emit Sold(amount, amountOut, token, recipient);
         return amountOut;
@@ -60,8 +60,8 @@ contract UniswapV3ViaRouterETH is BaseUniRouter, IAMM {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        uint256 amountOut = _swap(token, intermidiateToken, address(this), msg.sender, amount, 0);
-        amountOut = _swap(intermidiateToken, token, recipient, address(this), amountOut, 0);
+        uint256 amountOut = _swap(token, intermediateToken, address(this), msg.sender, amount, 0);
+        amountOut = _swap(intermediateToken, token, recipient, address(this), amountOut, 0);
 
         emit Sold(amount, amountOut, token, recipient);
         return amountOut;
