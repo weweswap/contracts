@@ -10,7 +10,7 @@ import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract UniswapV3ViaRouter is BaseUniRouter, IAMM {
-    constructor() Ownable() {
+    constructor() {
         fee = 10000;
     }
 
