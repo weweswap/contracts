@@ -26,7 +26,8 @@ describe("Generic merge contract", () => {
 		const tokenAddress = await token.getAddress();
 
 		const Merge = await ethers.getContractFactory("GenericMerge");
-		const merge = await Merge.deploy(weweAddress, tokenAddress);
+		const vestingPeriod = 0;
+		const merge = await Merge.deploy(weweAddress, tokenAddress, vestingPeriod);
 
 		const mergeAddress = await merge.getAddress();
 
