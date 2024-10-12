@@ -8,10 +8,18 @@ import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../../interfaces/IWeweReceiver.sol";
 
+struct Vesting {
+    uint256 amount;
+    uint256 end;
+}
+
 abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     uint256 internal _rate;
     address internal _token;
     address public wewe;
+
+    uint8 internal vestingDuration;
+    mapping(address => Vesting) public vestings;
 
     function _setRate(uint256 rate) internal {
         require(rate > 0, "Eater: Rate must be greater than 0");
@@ -22,15 +30,23 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         }
     }
 
-    function _merge(uint256 amount, address token, address from) internal whenNotPaused {
+    function _merge(uint256 amount, address token, address from) internal {
         uint256 weweToTransfer = (amount * _rate) / 100;
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
             "Eater: Insufficient token balance to transfer"
         );
 
+        // Merge tokens from sender
         IERC20(token).transferFrom(from, address(this), amount);
-        IERC20(wewe).transfer(from, weweToTransfer);
+
+        // If transfer, dont vest
+        if (vestingDuration != 0) {
+            vestings[msg.sender] = Vesting({amount: weweToTransfer, end: block.timestamp + vestingDuration * 1 days});
+        } else {
+            // Transfer Wewe tokens to sender
+            IERC20(wewe).transfer(from, weweToTransfer);
+        }
 
         emit Merged(amount, from);
     }
@@ -49,22 +65,28 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         bytes calldata
     ) external nonReentrant whenNotPaused {
         // After wewe approve and call, it will call this function
-        require(_token != address(0), "GenericEater: Token address not set");
+        require(_token != address(0), "Eater: Token address not set");
 
         // Eat the underlying token "_token" with the amount of "amount"
         _merge(amount, _token, from);
     }
 
     function togglePause() external onlyOwner {
-        if (paused()) {
-            _unpause();
-        } else {
-            _pause();
-        }
+        paused() ? _unpause() : _pause();
     }
 
     function _deposit(uint256 amount) internal {
         IERC20(wewe).transferFrom(msg.sender, address(this), amount);
+    }
+
+    modifier whenClaimable(address account) {
+        // Set to 0 to disable vesting
+        if (vestingDuration == 0) {
+            _;
+        }
+
+        require(vestings[account].end <= block.timestamp, "Eater: Vesting not ended");
+        _;
     }
 
     event Merged(uint256 amount, address indexed account);
