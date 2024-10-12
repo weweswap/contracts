@@ -28,12 +28,6 @@ describe("UniswapV3 Adaptor", () => {
 			params: [WETH_ADDRESS],
 		});
 
-		const weth_whale_address = "0x6446021f4e396da3df4235c62537431372195d38";
-		await hre.network.provider.request({
-			method: "hardhat_impersonateAccount",
-			params: [weth_whale_address],
-		});
-
 		const holder = await hre.ethers.getSigner(test_holder);
 		const bridge = await hre.ethers.getSigner(WETH_ADDRESS);
 
