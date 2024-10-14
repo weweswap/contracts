@@ -4,7 +4,7 @@ import hre, { ethers } from "hardhat";
 import { WEWE_ADDRESS, USDC_ADDRESS, WETH_ADDRESS } from "./constants";
 
 describe("UniswapV3 Adaptor", () => {
-	async function deployFixture(TYPE: string = "UniswapV3ViaRouter") {
+	async function deployFixture(TYPE: string = "UniswapV3ViaRouter", vestingPeriod: number = 0) {
 		// Reset the blockchain to a deterministic state
 		await ethers.provider.send("hardhat_reset", [
 			{
@@ -43,7 +43,7 @@ describe("UniswapV3 Adaptor", () => {
 		const MergeWithMarket = await ethers.getContractFactory("MergeWithMarket");
 
 		// Make USDC the token for this test as we're testing uni on a fork at block 20820713
-		const mergeWithMarket = await MergeWithMarket.deploy(WEWE_ADDRESS, USDC_ADDRESS);
+		const mergeWithMarket = await MergeWithMarket.deploy(WEWE_ADDRESS, USDC_ADDRESS, vestingPeriod);
 		const mergeWithMarketAddress = await mergeWithMarket.getAddress();
 
 		// Fund the merge contract with some wewe

@@ -16,7 +16,7 @@
 		"deploy:chaos:base": "npx hardhat ignition deploy ignition/modules/CHAOS.ts --network base --verify",
 		"deploy:farm:base": "npx hardhat ignition deploy ignition/modules/Farm.ts --network base --verify",
 		"deploy:bro:base": "npx hardhat ignition deploy ignition/modules/BroMerge.ts --network base --verify",
-		"deploy:bro:factory": "npx hardhat ignition deploy ignition/modules/MergeFactory.ts --network base --verify",
+		"deploy:factory": "npx hardhat ignition deploy ignition/modules/MergeFactory.ts --network base --verify",
 		"deploy:uni": "npx hardhat ignition deploy ignition/modules/UniAdaptor.ts --network base --verify",
 		"deploy:mergewithmarket": "npx hardhat ignition deploy ignition/modules/MergeWithMarket.ts --network base --verify"
 	},

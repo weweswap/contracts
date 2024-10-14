@@ -7,14 +7,23 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract GenericMerge is Eater, IMergeV2 {
-    function getToken() external view returns (address) {
-        return _token;
-    }
-
-    constructor(address _wewe, address token) {
+    constructor(address _wewe, address token, uint8 _vestingDuration) {
         _rate = 100;
         wewe = _wewe;
         _token = token;
+        vestingDuration = _vestingDuration;
+    }
+
+    function canClaim(address account) external view returns (bool) {
+        return vestings[account].end <= block.timestamp;
+    }
+
+    function balanceOf(address account) external view returns (uint256) {
+        return vestings[account].amount;
+    }
+
+    function getToken() external view returns (address) {
+        return _token;
     }
 
     function getRate() external view returns (uint256) {
@@ -25,16 +34,23 @@ contract GenericMerge is Eater, IMergeV2 {
         _setRate(rate);
     }
 
-    function mergeAll() external {
+    function mergeAll() external whenNotPaused {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         _merge(balance, _token, msg.sender);
     }
 
-    function merge(uint256 amount) external {
+    function merge(uint256 amount) external whenNotPaused {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         require(balance >= amount, "GenericMerge: Insufficient balance to eat");
 
         _merge(amount, _token, msg.sender);
+    }
+
+    function claim() external whenNotPaused whenClaimable(msg.sender) {
+        uint256 amount = vestings[msg.sender].amount;
+        vestings[msg.sender].amount = 0;
+
+        IERC20(wewe).transfer(msg.sender, amount);
     }
 
     // @notice Fund this contract with wewe token
