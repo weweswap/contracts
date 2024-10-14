@@ -31,8 +31,7 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function _merge(uint256 amount, address token, address from) internal {
-        uint256 vestedAmount = vestings[from].amount;
-        uint256 weweToTransfer = vestedAmount + (amount * _rate) / 100;
+        uint256 weweToTransfer = (amount * _rate) / 100;
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
             "Eater: Insufficient token balance to transfer"
@@ -41,9 +40,14 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         // Merge tokens from sender
         IERC20(token).transferFrom(from, address(this), amount);
 
+        uint256 vestedAmount = vestings[from].amount;
+
         // If transfer, dont vest
         if (vestingDuration != 0) {
-            vestings[msg.sender] = Vesting({amount: weweToTransfer, end: block.timestamp + vestingDuration * 1 days});
+            vestings[msg.sender] = Vesting({
+                amount: weweToTransfer + vestedAmount,
+                end: block.timestamp + vestingDuration * 1 days
+            });
         } else {
             // Transfer Wewe tokens to sender
             IERC20(wewe).transfer(from, weweToTransfer);
