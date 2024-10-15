@@ -35,7 +35,7 @@ contract UniswapV3ViaRouterIM is BaseUniRouter, IAMM {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        uint256 amountOut = _swap(intermediateToken, token, recipient, msg.sender, amount, 0);
+        uint256 amountOut = _swap(intermediateToken, token, msg.sender, recipient, amount, 0);
 
         emit Bought(amount, amountOut, token, recipient);
         return amountOut;
@@ -47,7 +47,7 @@ contract UniswapV3ViaRouterIM is BaseUniRouter, IAMM {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        uint256 amountOut = _swap(token, intermediateToken, recipient, msg.sender, amount, 0);
+        uint256 amountOut = _swap(token, intermediateToken, msg.sender, recipient, amount, 0);
 
         emit Sold(amount, amountOut, token, recipient);
         return amountOut;
@@ -59,8 +59,8 @@ contract UniswapV3ViaRouterIM is BaseUniRouter, IAMM {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        uint256 amountOut = _swap(token, intermediateToken, address(this), msg.sender, amount, 0);
-        amountOut = _swap(intermediateToken, token, recipient, address(this), amountOut, 0);
+        uint256 amountOut = _swap(token, intermediateToken, msg.sender, address(this), amount, 0);
+        amountOut = _swap(intermediateToken, token, address(this), recipient, amountOut, 0);
 
         emit Sold(amount, amountOut, token, recipient);
         return amountOut;
