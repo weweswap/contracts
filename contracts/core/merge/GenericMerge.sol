@@ -34,12 +34,12 @@ contract GenericMerge is Eater, IMergeV2 {
         _setRate(rate);
     }
 
-    function mergeAll() external whenNotPaused {
+    function mergeAll() external virtual whenNotPaused {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         _merge(balance, _token, msg.sender);
     }
 
-    function merge(uint256 amount) external whenNotPaused {
+    function merge(uint256 amount) external virtual whenNotPaused {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         require(balance >= amount, "GenericMerge: Insufficient balance to eat");
 
