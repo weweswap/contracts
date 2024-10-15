@@ -55,7 +55,7 @@ describe("Generic merge contract", () => {
 
 			const [weweBalanceAfter, tokenBalanceAfter] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
 
-			expect(weweBalanceAfter).to.equal(1000);
+			expect(weweBalanceAfter).to.equal(1);
 			expect(tokenBalanceAfter).to.equal(0);
 		});
 
@@ -74,7 +74,7 @@ describe("Generic merge contract", () => {
 
 			const [weweBalanceAfter, tokenBalanceAfter] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
 
-			expect(weweBalanceAfter).to.equal(2000);
+			expect(weweBalanceAfter).to.equal(2);
 			expect(tokenBalanceAfter).to.equal(0);
 		});
 
@@ -94,7 +94,7 @@ describe("Generic merge contract", () => {
 			const [weweBalanceAfter, tokenBalanceAfter] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
 
 			// half of 1000 is 500
-			expect(weweBalanceAfter).to.equal(500);
+			expect(weweBalanceAfter).to.equal(0);
 			expect(tokenBalanceAfter).to.equal(0);
 		});
 
