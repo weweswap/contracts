@@ -31,7 +31,7 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function _merge(uint256 amount, address token, address from) internal {
-        uint256 weweToTransfer = (amount * _rate) / 100;
+        uint256 weweToTransfer = (amount * _rate) / 100_000;
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
             "Eater: Insufficient token balance to transfer"
