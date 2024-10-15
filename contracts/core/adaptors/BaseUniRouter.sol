@@ -75,4 +75,28 @@ abstract contract BaseUniRouter is Ownable {
         // The call to `exactInputSingle` executes the swap.
         amountOut = swapRouter.exactInputSingle(params);
     }
+
+    function _swapMultihop(
+        address tokenIn,
+        uint256 amountIn,
+        bytes memory path,
+        address from,
+        address recipient,
+        uint256 amountOutMinimum
+    ) internal returns (uint256 amountOut) {
+        ISwapRouter swapRouter = ISwapRouter(router);
+
+        TransferHelper.safeTransferFrom(tokenIn, from, address(this), amountIn);
+
+        TransferHelper.safeApprove(tokenIn, address(swapRouter), amountIn);
+
+        ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
+            path: path,
+            recipient: recipient,
+            amountIn: amountIn,
+            amountOutMinimum: amountOutMinimum
+        });
+
+        amountOut = swapRouter.exactInput(params);
+    }
 }
