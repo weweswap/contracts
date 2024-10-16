@@ -36,12 +36,12 @@ describe("MarketMerge", () => {
 		await mergeWithMarket.setRate(5000);
 
 		const UniswapAdaptor = await ethers.getContractFactory("MockAmm2");
-		const uniswapAdaptor = await UniswapAdaptor.deploy(1, weweAddress); // 1:1 ratio
+		const uniswapAdaptor = await UniswapAdaptor.deploy(1, weweAddress, false); // 1:1 ratio
 
 		// Add liquidity
 		const uniswapAdaptorAddress = await uniswapAdaptor.getAddress();
-		await wewe.approve(uniswapAdaptorAddress, ethers.parseEther("1000"));
-		await token.approve(uniswapAdaptorAddress, ethers.parseEther("1000"));
+		await wewe.approve(uniswapAdaptorAddress, ethers.parseEther("1000000"));
+		await token.approve(uniswapAdaptorAddress, ethers.parseEther("1000000"));
 
 		await uniswapAdaptor.addLiquidity(ethers.parseEther("1000"), mockTokenAddress);
 		expect(await wewe.balanceOf(uniswapAdaptorAddress)).to.be.eq(ethers.parseEther("1000"));

@@ -10,10 +10,10 @@ contract MockAmm2 {
     bool _doTransfer;
     address _underlyingToken;
 
-    constructor(uint256 ratio, address underlyingToken) {
+    constructor(uint256 ratio, address underlyingToken, bool doTransfer) {
         console.log("MockAmm deployed");
         _ratio = ratio;
-        _doTransfer = false;
+        _doTransfer = doTransfer;
         _underlyingToken = underlyingToken;
     }
 
@@ -35,7 +35,8 @@ contract MockAmm2 {
         uint256 amountOut = amount * _ratio;
 
         if (_doTransfer) {
-            IERC20(token).transfer(recipient, amountOut);
+            IERC20(token).transferFrom(recipient, address(this), amount);
+            IERC20(_underlyingToken).transfer(recipient, amountOut);
         }
 
         return amountOut;
@@ -50,7 +51,8 @@ contract MockAmm2 {
         uint256 amountOut = amount * _ratio;
 
         if (_doTransfer) {
-            IERC20(token).transfer(recipient, amountOut);
+            IERC20(token).transferFrom(recipient, address(this), amount);
+            IERC20(_underlyingToken).transfer(recipient, amountOut);
         }
 
         return amountOut;
@@ -64,7 +66,8 @@ contract MockAmm2 {
     ) external returns (uint256) {
         uint256 amountOut = amount * _ratio;
         if (_doTransfer) {
-            IERC20(token).transferFrom(address(this), recipient, amountOut);
+            IERC20(token).transferFrom(recipient, address(this), amount);
+            IERC20(_underlyingToken).transfer(recipient, amountOut);
         }
         return amountOut;
     }
