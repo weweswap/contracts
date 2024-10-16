@@ -7,7 +7,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract GenericMerge is Eater, IMergeV2 {
-    constructor(address _wewe, address token, uint8 _vestingDuration) {
+    constructor(address _wewe, address token, uint32 _vestingDuration) {
         _rate = 100;
         wewe = _wewe;
         _token = token;
@@ -34,12 +34,7 @@ contract GenericMerge is Eater, IMergeV2 {
         _setRate(rate);
     }
 
-    function mergeAll() external virtual whenNotPaused whenSolvent {
-        uint256 balance = IERC20(_token).balanceOf(msg.sender);
-        _merge(balance, _token, msg.sender);
-    }
-
-    function merge(uint256 amount) external virtual whenNotPaused whenSolvent {
+    function merge(uint256 amount) external virtual whenNotPaused whenSolvent(amount) {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         require(balance >= amount, "GenericMerge: Insufficient balance to eat");
 
@@ -48,7 +43,7 @@ contract GenericMerge is Eater, IMergeV2 {
 
     function claim() external whenNotPaused whenClaimable(msg.sender) {
         uint256 amount = vestings[msg.sender].amount;
-        _sumOfVested -= amount;
+        sumOfVested -= amount;
         vestings[msg.sender].amount = 0;
 
         IERC20(wewe).transfer(msg.sender, amount);

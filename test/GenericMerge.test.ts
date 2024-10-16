@@ -5,7 +5,7 @@ import { DETERMINISTIC_MIN_HEIGHT } from "./constants";
 
 describe("Generic merge contract", () => {
 	async function deployFixture(weweAmount: number = 1000, tokenAmount: number = 1000, vestingPeriod: number = 0) {
-		const [owner, otherAccount] = await ethers.getSigners();
+		const [owner, otherAccount, otherAccount2] = await ethers.getSigners();
 		// Reset the blockchain to a deterministic state
 		await ethers.provider.send("hardhat_reset", [
 			{
@@ -36,13 +36,26 @@ describe("Generic merge contract", () => {
 		// Arrange for the otherAccount to have some tokens
 		await token.transfer(otherAccount.address, tokenAmount);
 
+		// Arrange for the otherAccount to have some tokens
+		await token.transfer(otherAccount2.address, tokenAmount);
+
 		// Approve the merge to spend the tokens
 		await token.connect(otherAccount).approve(mergeAddress, tokenAmount);
 
-		return { wewe, token, merge, owner, otherAccount };
+		return { wewe, token, merge, owner, otherAccount, otherAccount2 };
 	}
 
 	describe("Merge", () => {
+		it("Should set vesting duration", async () => {
+			const { merge, owner } = await deployFixture();
+
+			expect(await merge.vestingDuration()).to.equal(0);
+			
+			await merge.connect(owner).setVestingDuration(1440)
+
+			expect(await merge.vestingDuration()).to.equal(1440);
+		});
+
 		it("Should eat some tokens, nom nom nom", async () => {
 			const { wewe, merge, token, otherAccount } = await deployFixture();
 
@@ -141,7 +154,7 @@ describe("Generic merge contract", () => {
 		});
 
 		it("should not claim until vesting period is over", async () => {
-			const vestingPeriod = 1;
+			const vestingPeriod = 1440;
 			const { wewe, merge, token, owner, otherAccount } = await deployFixture(1000, 1000, vestingPeriod);
 
 			await merge.setRate(100);
@@ -161,6 +174,80 @@ describe("Generic merge contract", () => {
 			await ethers.provider.send("evm_increaseTime", [86400]);
 
 			await merge.connect(otherAccount).claim();
+		});
+
+		it("should not merge if exceed wewe balance", async () => {
+			const vestingPeriod = 1440;
+			const { wewe, merge, token, otherAccount } = await deployFixture(10, 1000, vestingPeriod);
+
+			await merge.setRate(100000);
+
+			const [weweBalanceBefore, tokenBalanceBefore] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
+
+			expect(weweBalanceBefore).to.equal(0);
+			expect(tokenBalanceBefore).to.equal(1000);
+
+			const mergeAddress = await merge.getAddress();
+			await token.connect(otherAccount).approve(mergeAddress, 1000);
+			await expect(merge.connect(otherAccount).merge(11)).to.be.revertedWith("Eater: Insufficient Wewe balance");
+		});
+
+		it("should not merge if exceed wewe balance two users", async () => {
+			const vestingPeriod = 1440;
+			const { wewe, merge, token, otherAccount, otherAccount2 } = await deployFixture(10, 1000, vestingPeriod);
+
+			await merge.setRate(100000);
+
+			const [weweBalanceBefore, tokenBalanceBefore, tokenBalance2Before] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address), token.balanceOf(otherAccount2.address)]);
+
+			expect(weweBalanceBefore).to.equal(0);
+			expect(tokenBalanceBefore).to.equal(1000);
+			expect(tokenBalance2Before).to.equal(1000);
+
+			const mergeAddress = await merge.getAddress();
+			await token.connect(otherAccount).approve(mergeAddress, 1000);
+			await token.connect(otherAccount2).approve(mergeAddress, 1000);
+			await merge.connect(otherAccount).merge(5);
+			await merge.connect(otherAccount2).merge(5);
+
+			const sumOfVested = await merge.sumOfVested();
+			expect(sumOfVested).to.equal(10);
+
+			await expect(merge.connect(otherAccount).merge(1)).to.be.revertedWith("Eater: Insufficient Wewe balance");
+		});
+
+		it("should reduce vesting amount once claim happens", async () => {
+			const vestingPeriod = 1440;
+			const { wewe, merge, token, otherAccount, otherAccount2 } = await deployFixture(10, 1000, vestingPeriod);
+
+			await merge.setRate(100000);
+
+			const [weweBalanceBefore, tokenBalanceBefore, tokenBalance2Before] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address), token.balanceOf(otherAccount2.address)]);
+
+			expect(weweBalanceBefore).to.equal(0);
+			expect(tokenBalanceBefore).to.equal(1000);
+			expect(tokenBalance2Before).to.equal(1000);
+
+			const mergeAddress = await merge.getAddress();
+			await token.connect(otherAccount).approve(mergeAddress, 1000);
+			await token.connect(otherAccount2).approve(mergeAddress, 1000);
+			await merge.connect(otherAccount).merge(5);
+			await merge.connect(otherAccount2).merge(5);
+
+			let sumOfVested = await merge.sumOfVested();
+			expect(sumOfVested).to.equal(10);
+
+			await ethers.provider.send("evm_increaseTime", [86400]);
+
+			await merge.connect(otherAccount).claim();
+			sumOfVested = await merge.sumOfVested();
+			expect(sumOfVested).to.equal(5);
+			await expect(merge.connect(otherAccount).merge(1)).to.be.revertedWith("Eater: Insufficient Wewe balance");
+
+			await merge.connect(otherAccount2).claim();
+			sumOfVested = await merge.sumOfVested();
+			expect(sumOfVested).to.equal(0);
+			await expect(merge.connect(otherAccount).merge(1)).to.be.revertedWith("Eater: Insufficient Wewe balance");
 		});
 	});
 });
