@@ -5,20 +5,25 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../interfaces/IAMM.sol";
 import "hardhat/console.sol";
 
-contract MockAmm is IAMM {
+contract MockAmm2 {
     uint256 _ratio;
+    bool _doTransfer;
+    address _underlyingToken;
 
-    constructor(uint256 ratio) {
+    constructor(uint256 ratio, address underlyingToken) {
         console.log("MockAmm deployed");
         _ratio = ratio;
+        _doTransfer = false;
+        _underlyingToken = underlyingToken;
     }
 
     function setRatio(uint256 ratio) external {
         _ratio = ratio;
     }
 
-    function deposit(uint256 amount, address token) external {
+    function addLiquidity(uint256 amount, address token) external {
         IERC20(token).transferFrom(msg.sender, address(this), amount);
+        IERC20(_underlyingToken).transferFrom(msg.sender, address(this), amount);
     }
 
     function buy(
@@ -28,7 +33,11 @@ contract MockAmm is IAMM {
         bytes calldata extraData
     ) external returns (uint256) {
         uint256 amountOut = amount * _ratio;
-        IERC20(token).transfer(recipient, amountOut);
+
+        if (_doTransfer) {
+            IERC20(token).transfer(recipient, amountOut);
+        }
+
         return amountOut;
     }
 
@@ -39,7 +48,11 @@ contract MockAmm is IAMM {
         bytes calldata extraData
     ) external returns (uint256) {
         uint256 amountOut = amount * _ratio;
-        IERC20(token).transfer(recipient, amountOut);
+
+        if (_doTransfer) {
+            IERC20(token).transfer(recipient, amountOut);
+        }
+
         return amountOut;
     }
 
@@ -50,7 +63,9 @@ contract MockAmm is IAMM {
         bytes calldata extraData
     ) external returns (uint256) {
         uint256 amountOut = amount * _ratio;
-        IERC20(token).transfer(recipient, amountOut);
+        if (_doTransfer) {
+            IERC20(token).transferFrom(address(this), recipient, amountOut);
+        }
         return amountOut;
     }
 }
