@@ -104,7 +104,7 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     modifier whenSolvent() {
         require(IERC20(wewe).balanceOf(address(this)) >= minAmount, "Eater: Insufficient Wewe balance");
-
+        require(IERC20(wewe).balanceOf(address(this)) >= _sumOfVested, "Eater: Insufficient token balance");
         _;
     }
 
