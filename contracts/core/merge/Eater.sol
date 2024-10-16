@@ -18,8 +18,9 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     address internal _token;
     address public wewe;
     uint256 public minAmount;
+    uint256 internal _sumOfVested;
 
-    uint8 internal vestingDuration;
+    uint8 public vestingDuration;
     mapping(address => Vesting) public vestings;
 
     function _setRate(uint256 rate) internal {
@@ -33,6 +34,8 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     function _merge(uint256 amount, address token, address from) internal {
         uint256 weweToTransfer = (amount * _rate) / 100000;
+        _sumOfVested += weweToTransfer;
+
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
             "Eater: Insufficient token balance to transfer"
@@ -101,6 +104,7 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     modifier whenSolvent() {
         require(IERC20(wewe).balanceOf(address(this)) >= minAmount, "Eater: Insufficient Wewe balance");
+
         _;
     }
 

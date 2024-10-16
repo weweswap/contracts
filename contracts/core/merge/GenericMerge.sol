@@ -48,6 +48,7 @@ contract GenericMerge is Eater, IMergeV2 {
 
     function claim() external whenNotPaused whenClaimable(msg.sender) {
         uint256 amount = vestings[msg.sender].amount;
+        _sumOfVested -= amount;
         vestings[msg.sender].amount = 0;
 
         IERC20(wewe).transfer(msg.sender, amount);
