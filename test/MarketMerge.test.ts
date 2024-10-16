@@ -1,8 +1,5 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
-
-import { WEWE_ADDRESS, USDC_ADDRESS, WETH_ADDRESS } from "./constants";
-import { merge } from "../typechain-types/contracts/core";
+import { ethers } from "hardhat";
 
 describe("MarketMerge", () => {
 	async function deployFixture() {
@@ -66,7 +63,7 @@ describe("MarketMerge", () => {
 	}
 
 	describe("Merge with market", () => {
-		it.only("Should merge Token mocks", async () => {
+		it("Should merge Token mocks", async () => {
 			const { token, uniswapAdaptor, mergeWithMarket, owner, otherAccount } = await deployFixture();
 
 			// Should have been setup with these values
