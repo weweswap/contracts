@@ -17,6 +17,7 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     uint256 internal _rate;
     address internal _token;
     address public wewe;
+    uint256 public minAmount;
 
     uint8 internal vestingDuration;
     mapping(address => Vesting) public vestings;
@@ -56,6 +57,10 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         emit Merged(amount, from);
     }
 
+    function setMinAmount(uint256 amount) external onlyOwner {
+        minAmount = amount;
+    }
+
     function sweep() external onlyOwner {
         uint256 balance = IERC20(wewe).balanceOf(address(this));
         require(balance > 0, "Eater: No balance to sweep");
@@ -91,6 +96,11 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         }
 
         require(vestings[account].end <= block.timestamp, "Eater: Vesting not ended");
+        _;
+    }
+
+    modifier whenSolvent() {
+        require(IERC20(wewe).balanceOf(address(this)) >= minAmount, "Eater: Insufficient Wewe balance");
         _;
     }
 

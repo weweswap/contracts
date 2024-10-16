@@ -22,7 +22,11 @@ contract MergeWithMarket is GenericMerge {
         revert("Function disabled");
     }
 
-    function mergeAndSell(uint256 amount, IAMM amm, bytes calldata extraData) external nonReentrant {
+    function mergeAndSell(
+        uint256 amount,
+        IAMM amm,
+        bytes calldata extraData
+    ) external nonReentrant whenNotPaused whenSolvent {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         require(balance >= amount, "MergeWithMarket: Insufficient balance to eat");
 
