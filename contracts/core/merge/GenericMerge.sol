@@ -8,7 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract GenericMerge is Eater, IMergeV2 {
     constructor(address _wewe, address token, uint32 _vestingDuration) {
-        _rate = 100;
+        _rate = 100000;
         wewe = _wewe;
         _token = token;
         vestingDuration = _vestingDuration;

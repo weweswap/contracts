@@ -68,7 +68,7 @@ describe("Generic merge contract", () => {
 
 			const [weweBalanceAfter, tokenBalanceAfter] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address)]);
 
-			expect(weweBalanceAfter).to.equal(1);
+			expect(weweBalanceAfter).to.equal(1000);
 			expect(tokenBalanceAfter).to.equal(0);
 		});
 
