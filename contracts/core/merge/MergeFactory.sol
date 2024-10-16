@@ -29,7 +29,7 @@ contract MergeFactory is Ownable {
         return tokens.length;
     }
 
-    function createMerge(address token, uint256 rate, uint8 vestingDuration) external onlyDeployer returns (address) {
+    function createMerge(address token, uint256 rate, uint32 vestingDuration) external onlyDeployer returns (address) {
         require(merges[token] == address(0), "MergeFactory: Merge already exists");
         address merge = address(new MergeWithMarket(token, wewe, vestingDuration));
         IMergeV2(merge).setRate(rate);
@@ -40,7 +40,7 @@ contract MergeFactory is Ownable {
     function createMergeWithType(
         address token,
         uint256 rate,
-        uint8 vestingDuration,
+        uint32 vestingDuration,
         MergeType mergeType
     ) external onlyDeployer returns (address) {
         require(merges[token] == address(0), "MergeFactory: Merge already exists");
