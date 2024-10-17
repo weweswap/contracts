@@ -1,7 +1,5 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
-
-import { WEWE_ADDRESS, USDC_ADDRESS, WETH_ADDRESS } from "./constants";
+import { ethers } from "hardhat";
 
 describe("MarketMerge", () => {
 	async function deployFixture() {
@@ -15,98 +13,68 @@ describe("MarketMerge", () => {
 			},
 		]);
 
-		// const Mock = await ethers.getContractFactory("MockToken", ["Mock", "Mock"]);
-		// const token = await Mock.deploy();
+		const [owner, otherAccount] = await ethers.getSigners();
 
-		// const test_holder = "0xEa36BDfaE0280831c1cC6Aca0E9e25C7D1ECbAf7";
+		const Mock = await ethers.getContractFactory("MockToken");
+		const token = await Mock.deploy("MockToken", "MOK");
 
-		// // impersonate this guy 0xEa36BDfaE0280831c1cC6Aca0E9e25C7D1ECbAf7
-		// await hre.network.provider.request({
-		// 	method: "hardhat_impersonateAccount",
-		// 	params: [test_holder],
-		// });
+		const WeWe = await ethers.getContractFactory("MockToken");
+		const wewe = await WeWe.deploy("WeWe", "WEWE");
 
-		// await hre.network.provider.request({
-		// 	method: "hardhat_impersonateAccount",
-		// 	params: [WETH_ADDRESS],
-		// });
+		const vestingPeriod = 1;
+		const mockTokenAddress = await token.getAddress();
+		const weweAddress = await wewe.getAddress();
 
-		// const holder = await hre.ethers.getSigner(test_holder);
-		// const bridge = await hre.ethers.getSigner(WETH_ADDRESS);
+		const MergeWithMarket = await ethers.getContractFactory("MergeWithMarket");
+		const mergeWithMarket = await MergeWithMarket.deploy(weweAddress, mockTokenAddress, vestingPeriod);
 
-		// // send some eth to the holder to be able to interact with the contract
-		// await bridge.sendTransaction({
-		// 	to: await holder.getAddress(),
-		// 	value: ethers.parseEther("10"),
-		// });
+		// Create random address for treasury
+		const treasury = ethers.Wallet.createRandom().address;
+		await mergeWithMarket.setTreasury(treasury);
 
-		// const UniswapAdaptor = await ethers.getContractFactory(TYPE);
-		// const uniswapAdaptor = await UniswapAdaptor.deploy();
+		// Set rate
+		await mergeWithMarket.setRate(5000);
 
-		// const MergeWithMarket = await ethers.getContractFactory("MergeWithMarket");
+		const UniswapAdaptor = await ethers.getContractFactory("MockAmm2");
+		const uniswapAdaptor = await UniswapAdaptor.deploy(1, weweAddress, false); // 1:1 ratio
 
-		// // Make USDC the token for this test as we're testing uni on a fork at block 20820713
-		// const mergeWithMarket = await MergeWithMarket.deploy(WEWE_ADDRESS, USDC_ADDRESS, vestingPeriod);
-		// const mergeWithMarketAddress = await mergeWithMarket.getAddress();
+		// Add liquidity
+		const uniswapAdaptorAddress = await uniswapAdaptor.getAddress();
+		await wewe.approve(uniswapAdaptorAddress, ethers.parseEther("1000000"));
+		await token.approve(uniswapAdaptorAddress, ethers.parseEther("1000000"));
 
-		// // Fund the merge contract with some wewe
-		// const wewe = await ethers.getContractAt("IERC20", WEWE_ADDRESS);
+		await uniswapAdaptor.addLiquidity(ethers.parseEther("1000"), mockTokenAddress);
+		expect(await wewe.balanceOf(uniswapAdaptorAddress)).to.be.eq(ethers.parseEther("1000"));
 
-		// // we we whale 0x5396c2D02e28603444cD17747234285C6702Be3c
-		// const wewe_whale = "0x5396c2D02e28603444cD17747234285C6702Be3c";
-		// await hre.network.provider.request({
-		// 	method: "hardhat_impersonateAccount",
-		// 	params: [wewe_whale],
-		// });
+		// Setup tokens
+		await token.transfer(otherAccount.address, ethers.parseEther("1000"));
 
-		// const whale = await hre.ethers.getSigner(wewe_whale);
-		// expect(await wewe.balanceOf(whale.address)).to.be.gt(ethers.parseUnits("1000", 18));
+		const marketAddress = await mergeWithMarket.getAddress();
 
-		// // Fund the merge contract with some wewe
-		// await wewe.connect(whale).transfer(mergeWithMarketAddress, ethers.parseUnits("1000", 18));
+		// Fund with wewe
+		await wewe.approve(marketAddress, ethers.parseUnits("1000", 18));
+		await mergeWithMarket.deposit(ethers.parseUnits("1000", 18));
 
-		// return { uniswapAdaptor, mergeWithMarket, holder };
+		expect(await wewe.balanceOf(marketAddress)).to.be.eq(ethers.parseUnits("1000", 18));
+
+		await token.connect(otherAccount).approve(marketAddress, ethers.parseEther("1000"));
+
+		return { token, uniswapAdaptor, mergeWithMarket, owner, otherAccount };
 	}
 
-
 	describe("Merge with market", () => {
-		it.only("Should merge Token mocks", async () => {
-			// const { uniswapAdaptor, mergeWithMarket, holder } = await deployFixture();
+		it("Should merge Token mocks", async () => {
+			const { token, uniswapAdaptor, mergeWithMarket, owner, otherAccount } = await deployFixture();
 
-			// // On fork at block 20820713, we will simulate the token to merge as USDC
-			// const token = await ethers.getContractAt("IERC20", USDC_ADDRESS);
-			// const wewe = await ethers.getContractAt("IERC20", WEWE_ADDRESS);
+			// Should have been setup with these values
+			expect(await token.balanceOf(otherAccount.address)).to.be.eq(ethers.parseEther("1000"));
+			expect(await mergeWithMarket.getRate()).to.be.eq(5000);
 
-			// const token_balance = await token.balanceOf(holder.address);
-			// const wewe_balance = await wewe.balanceOf(holder.address);
+			const ammAddress = await uniswapAdaptor.getAddress();
 
-			// // holder account should have 5800 usdc at block 20820713
-			// expect(token_balance).to.be.eq(5800000000);
-
-			// // holder account should have 139 or so wewe at block 20820713
-			// expect(wewe_balance).to.approximately(1393889258709920656678738n, 10000n);
-
-			// // approve the merge contract to swap usdc
-			// const uniswapAdaptorAddress = await uniswapAdaptor.getAddress();
-			// const mergeWithMarketAddress = await mergeWithMarket.getAddress();
-
-			// await token.connect(holder).approve(uniswapAdaptorAddress, ethers.MaxUint256);
-			// await token.connect(holder).approve(mergeWithMarketAddress, ethers.MaxUint256);
-
-			// const token_amount = ethers.parseUnits("100", 6);
-
-			// await mergeWithMarket.connect(holder).mergeAndSell(token_amount, uniswapAdaptorAddress, "0x");
-
-			// // Check the token balance after the swap.  Should be 0 as they were all swapped
-			// const merge_balance_after = await token.balanceOf(mergeWithMarketAddress);
-			// expect(merge_balance_after).to.be.eq(0);
-
-			// // Check the wewe balance after the swap
-			// const wewe_merge_balance_after = await wewe.balanceOf(mergeWithMarketAddress);
-			// expect(wewe_merge_balance_after).to.be.gt(0);
-
-			// const holder_balance = await token.balanceOf(holder.address);
-			// expect(holder_balance).to.be.gt(0);
+			// arrange
+			const amount = ethers.parseUnits("1", 6);
+			await mergeWithMarket.connect(otherAccount).mergeAndSell(amount, ammAddress, "0x");
 		});
 	});
 });

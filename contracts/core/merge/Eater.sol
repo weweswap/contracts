@@ -14,11 +14,13 @@ struct Vesting {
 }
 
 abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
+    uint256 internal immutable _ratePrecision = 100000;
     uint256 internal _rate;
     address internal _token;
     address public wewe;
+    uint256 public sumOfVested;
 
-    uint8 internal vestingDuration;
+    uint32 public vestingDuration;
     mapping(address => Vesting) public vestings;
 
     function _setRate(uint256 rate) internal {
@@ -31,7 +33,9 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function _merge(uint256 amount, address token, address from) internal {
-        uint256 weweToTransfer = (amount * _rate) / 100000;
+        uint256 weweToTransfer = (amount * _rate) / _ratePrecision;
+        sumOfVested += weweToTransfer;
+
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
             "Eater: Insufficient token balance to transfer"
@@ -46,7 +50,7 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         if (vestingDuration != 0) {
             vestings[msg.sender] = Vesting({
                 amount: weweToTransfer + vestedAmount,
-                end: block.timestamp + vestingDuration * 1 days
+                end: block.timestamp + vestingDuration * 1 minutes
             });
         } else {
             // Transfer Wewe tokens to sender
@@ -80,6 +84,10 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         paused() ? _unpause() : _pause();
     }
 
+    function setVestingDuration(uint32 duration) external onlyOwner {
+        vestingDuration = duration;
+    }
+
     function _deposit(uint256 amount) internal {
         IERC20(wewe).transferFrom(msg.sender, address(this), amount);
     }
@@ -91,6 +99,15 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         }
 
         require(vestings[account].end <= block.timestamp, "Eater: Vesting not ended");
+        _;
+    }
+
+    modifier whenSolvent(uint256 amountToMerge) {
+        uint256 newAmountToVest = (amountToMerge * _rate) / _ratePrecision;
+        require(
+            IERC20(wewe).balanceOf(address(this)) >= sumOfVested + newAmountToVest,
+            "Eater: Insufficient Wewe balance"
+        );
         _;
     }
 
