@@ -15,9 +15,8 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
     using SafeERC20 for IERC20;
 
     address public treasury;
-    IERC20 public immutable vult;
 
-    uint256 public virtualWeweBalance;
+    // uint256 public virtualWeweBalance;
     uint256 public weweBalance;
     // uint256 public vultBalance;
 
@@ -45,7 +44,7 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
 
     constructor(address _wewe, address _vult, uint32 _vestingDuration, uint256 _maxSupply) {
         wewe = _wewe;
-        vult = IERC20(_vult);
+        _token = _vult;
         vestingDuration = _vestingDuration;
         maxSupply = _maxSupply;
     }
@@ -59,7 +58,7 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
         uint256 amount,
         bytes calldata data
     ) external nonReentrant returns (bytes4) {
-        if (msg.sender != address(vult)) {
+        if (msg.sender != _token) {
             revert InvalidTokenReceived();
         }
         if (lockedStatus != LockedStatus.TwoWay) {
@@ -69,7 +68,7 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
             revert ZeroAmount();
         }
 
-        _merge(amount, address(vult), from);
+        _merge(amount, _token, from);
 
         return this.onApprovalReceived.selector;
     }
@@ -79,14 +78,10 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
     }
 
     function setVirtualWeweBalance(uint256 newVirtualBalance) external onlyOwner {
-        virtualWeweBalance = newVirtualBalance;
+        maxSupply = newVirtualBalance;
     }
 
-    function mergeAndSell(
-        uint256 amount,
-        IAMM amm,
-        bytes calldata extraData
-    ) external nonReentrant whenNotPaused whenSolvent(amount) {
+    function mergeAndSell(uint256 amount, IAMM amm, bytes calldata extraData) external nonReentrant whenNotPaused {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         require(balance >= amount, "VultMerge: Insufficient balance to eat");
 
@@ -100,7 +95,7 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
         amm.sell(amount, _token, recipient, extraData);
     }
 
-    function merge(uint256 amount) external virtual whenNotPaused whenSolvent(amount) {
+    function merge(uint256 amount) external virtual whenNotPaused {
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         require(balance >= amount, "VultMerge: Insufficient balance to eat");
 
@@ -109,7 +104,7 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
 
     function claim() external whenNotPaused whenClaimable(msg.sender) {
         uint256 amount = vestings[msg.sender].amount;
-        _currentHeld -= amount;
+        // _currentHeld -= amount;
         vestings[msg.sender].amount = 0;
 
         IERC20(wewe).transfer(msg.sender, amount);
@@ -117,6 +112,11 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
 
     // @notice Fund this contract with wewe token
     function deposit(uint256 amount) external onlyOwner {
+        _deposit(amount);
+    }
+
+    function depositRequired() external onlyOwner {
+        uint256 amount = _getCurrentRate(maxSupply - _totalVested);
         _deposit(amount);
     }
 }

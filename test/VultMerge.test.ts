@@ -21,6 +21,9 @@ describe.only("Vult Merge Contract", function () {
 		const Merge = await ethers.getContractFactory("VultMerge");
 		const merge = await Merge.deploy(await wewe.getAddress(), await vult.getAddress(), vestingPeriod, maxSupply);
 
+		const isPaused = await merge.paused();
+		expect(isPaused).to.be.false;
+
 		await vult.transfer(otherAccount, ethers.parseEther("1000"));
 
 		const mergeAddress = await merge.getAddress();
@@ -38,7 +41,6 @@ describe.only("Vult Merge Contract", function () {
 			expect(await merge.wewe()).to.equal(await wewe.getAddress());
 			expect(await merge.vult()).to.equal(await vult.getAddress());
 			expect(await merge.weweBalance()).to.equal(0);
-			expect(await merge.vultBalance()).to.equal(0);
 			expect(await merge.lockedStatus()).to.equal(0);
 		});
 	});
@@ -50,9 +52,9 @@ describe.only("Vult Merge Contract", function () {
 			const mergeAddress = await merge.getAddress();
 
 			let rate = await merge.getRate();
-			expect(rate).to.be.eq(0);
+			expect(rate).to.be.eq(12000000n); // Starting rate should be 120%
 
-			// Deposit 1000 wewe to setup the merge
+			// Deposit 1200 wewe to setup the merge
 			await merge.deposit(ethers.parseEther("1000"));
 
 			expect(await wewe.balanceOf(mergeAddress)).to.be.eq(ethers.parseEther("1000"));
@@ -60,11 +62,22 @@ describe.only("Vult Merge Contract", function () {
 			// Other account should have 1000 vult
 			expect(await vult.balanceOf(otherAccount.address)).to.be.eq(ethers.parseEther("1000"));
 
-			rate = await merge.getRate();
-			expect(rate).to.be.eq(12000000n); // Starting rate should be 120%
+			let totalVested = await merge.totalVested();
+			expect(totalVested).to.be.eq(0);
 
-			// Merge 100 vult to wewe
-			// await merge.connect(otherAccount).merge(ethers.parseEther("100"));
+			const slope = await merge.slope();
+			expect(slope).to.be.eq(-70);
+
+			// rate = await merge.getRate();
+			// expect(rate).to.be.eq(10000000n);
+
+			// // Merge 100 vult to wewe
+			await merge.connect(otherAccount).merge(ethers.parseEther("100"));
+			const vested = await merge.vestings(otherAccount.address);
+
+			console.log(vested);
+
+			// expect(vested.amount).to.be.eq(ethers.parseEther("850"));
 		});
 	});
 });

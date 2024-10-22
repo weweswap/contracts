@@ -8,6 +8,8 @@ import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../../interfaces/IWeweReceiver.sol";
 
+import "hardhat/console.sol";
+
 struct Vesting {
     uint256 amount;
     uint256 end;
@@ -22,8 +24,8 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     uint256 internal _currentHeld;
     uint256 public maxSupply; // Max supply of tokens to eat
 
-    int256 public constant minRate = 50; // -50% represented as 0
-    int256 public constant maxRate = 120; // 20% represented as 100,000
+    int256 public constant minRate = 50; // -50%
+    int256 public constant maxRate = 120; // 120%
 
     uint32 public vestingDuration;
 
@@ -33,31 +35,40 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
         return _totalVested;
     }
 
+    function slope() public pure returns (int256) {
+        int256 dxdy = minRate - maxRate;
+        return dxdy;
+    }
+
     // Calculate the instantaneous rate
     function _getInstantaneousRate() internal view returns (uint256) {
-        uint256 x1 = IERC20(wewe).balanceOf(address(this)) - _totalVested;
+        uint256 x1 = _totalVested;
         return _getRate(x1, x1 + 1);
     }
 
     // Calculate the amount of Wewe to transfer based on the current rate
     function _getCurrentRate(uint256 amount) internal view returns (uint256) {
-        uint256 x1 = IERC20(wewe).balanceOf(address(this)) - _totalVested;
+        uint256 x1 = _totalVested;
         return _getRate(x1, x1 + amount);
+    }
+
+    function _getTotalWeWe(uint256 amount) internal view returns (uint256) {
+        // Slope is a constant, from max rate at 0 tokens, to min rate at max supply
+        int256 x = slope();
+        x = x * 100_000;
+        int256 intercept = maxRate * 100_000;
+        int256 reward = (x * int256(amount)) / 100_000 + intercept / 100_000;
+        return reward > 0 ? uint256(reward) : 0;
     }
 
     // x1 Lower bounds of the integral
     // x2 Upper bounds of the integral
     function _getRate(uint256 x1, uint256 x2) internal view returns (uint256) {
-        uint256 currentWeWeHeld = IERC20(wewe).balanceOf(address(this));
-        if (currentWeWeHeld == 0) {
-            return 0;
-        }
-
-        // Slope
-        int256 dxdy = (minRate - maxRate) / int256(currentWeWeHeld);
+        // Slope is a constant, from max rate at 0 tokens, to min rate at max supply
+        int256 dxdy = (minRate - maxRate) / int256(maxSupply);
         int256 intercept = maxRate * 100_000;
 
-        // Calculate area using definite integration formula
+        // Calculate area using definite integration formula (y = mx + c) multiplied by 100_000 to keep precision
         int256 area1 = ((dxdy * int256(x2 ** 2)) / 2) * 100_000 + intercept * int256(x2);
         int256 area2 = ((dxdy * int256(x1 ** 2)) / 2) * 100_000 + intercept * int256(x1);
         int256 area = area1 - area2;
@@ -68,30 +79,31 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     }
 
     function _merge(uint256 amount, address token, address from) internal {
-        // uint256 weweToTransfer = (amount * _getCurrentRate(amount)) / _ratePrecision;
-        uint256 weweToTransfer = (_getCurrentRate(amount)) / _ratePrecision;
+        uint256 weweToTransfer = _getTotalWeWe(amount);
+        console.log("weweToTransfer: %s", weweToTransfer);
         _totalVested += weweToTransfer;
+        console.log("_totalVested: %s", _totalVested);
 
-        require(
-            weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
-            "DynamicEater: Insufficient token balance to transfer"
-        );
+        // require(
+        //     weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
+        //     "DynamicEater: Insufficient token balance to transfer"
+        // );
 
-        // Merge tokens from sender
-        IERC20(token).transferFrom(from, address(this), amount);
+        // // Merge tokens from sender
+        // IERC20(token).transferFrom(from, address(this), amount);
 
-        // If transfer, dont vest
-        if (vestingDuration != 0) {
-            // Curent vested
-            uint256 vestedAmount = vestings[from].amount;
-            vestings[msg.sender] = Vesting({
-                amount: weweToTransfer + vestedAmount,
-                end: block.timestamp + vestingDuration * 1 minutes
-            });
-        } else {
-            // Transfer Wewe tokens to sender
-            IERC20(wewe).transfer(from, weweToTransfer);
-        }
+        // // If transfer, dont vest
+        // if (vestingDuration != 0) {
+        //     // Curent vested
+        //     uint256 vestedAmount = vestings[from].amount;
+        //     vestings[msg.sender] = Vesting({
+        //         amount: weweToTransfer + vestedAmount,
+        //         end: block.timestamp + vestingDuration * 1 minutes
+        //     });
+        // } else {
+        //     // Transfer Wewe tokens to sender
+        //     IERC20(wewe).transfer(from, weweToTransfer);
+        // }
 
         emit Merged(amount, from);
     }
@@ -142,7 +154,7 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
         uint256 newAmountToVest = (amountToMerge * _getCurrentRate(amountToMerge)) / _ratePrecision;
         require(
             IERC20(wewe).balanceOf(address(this)) >= _totalVested + newAmountToVest,
-            "Eater: Insufficient Wewe balance"
+            "DynamicEater: Insufficient Wewe balance"
         );
         _;
     }
