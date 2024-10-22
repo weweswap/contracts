@@ -20,6 +20,12 @@ describe.only("Vult Merge Contract", function () {
 
 		await vult.transfer(otherAccount, ethers.parseEther("1000"));
 
+		const mergeAddress = await merge.getAddress();
+
+		// Arrange
+		await wewe.approve(mergeAddress, ethers.parseEther("1000"));
+		await vult.connect(otherAccount).approve(mergeAddress, ethers.parseEther("1000"));
+
 		return { owner, otherAccount, vult, wewe, merge, mockWewe, mockVult };
 	}
 
@@ -39,7 +45,6 @@ describe.only("Vult Merge Contract", function () {
 			const { merge, vult, wewe, otherAccount } = await loadFixture(deployFixture);
 
 			const mergeAddress = await merge.getAddress();
-			await wewe.approve(mergeAddress, ethers.parseEther("1000"));
 
 			let rate = await merge.getRate();
 			expect(rate).to.be.eq(0);
@@ -51,6 +56,10 @@ describe.only("Vult Merge Contract", function () {
 
 			// Other account should have 1000 vult
 			expect(await vult.balanceOf(otherAccount.address)).to.be.eq(ethers.parseEther("1000"));
+
+			//await merge.connect(otherAccount).merge(ethers.parseEther("100"));
+			rate = await merge.getRate();
+			expect(rate).to.be.eq(12000000n); // 120%
 		});
 	});
 });
