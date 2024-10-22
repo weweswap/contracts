@@ -19,7 +19,7 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
 
     uint256 public virtualWeweBalance;
     uint256 public weweBalance;
-    uint256 public vultBalance;
+    // uint256 public vultBalance;
 
     LockedStatus public lockedStatus;
 
@@ -43,10 +43,11 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
         treasury = _treasury;
     }
 
-    constructor(address _wewe, address _vult, uint32 _vestingDuration) {
+    constructor(address _wewe, address _vult, uint32 _vestingDuration, uint256 _maxSupply) {
         wewe = _wewe;
         vult = IERC20(_vult);
         vestingDuration = _vestingDuration;
+        maxSupply = _maxSupply;
     }
 
     /*
@@ -68,12 +69,7 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
             revert ZeroAmount();
         }
 
-        // vult in, wewe out
-        uint256 weweOut = _getCurrentRate(amount) * _ratePrecision;
-        vult.safeTransferFrom(from, address(this), amount);
-        IERC20(wewe).safeTransfer(from, weweOut);
-        vultBalance += amount;
-        weweBalance -= weweOut;
+        _merge(amount, address(vult), from);
 
         return this.onApprovalReceived.selector;
     }

@@ -17,23 +17,29 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     uint256 internal constant _ratePrecision = 100_000;
     address internal _token;
     address public wewe;
+
     uint256 internal _totalVested;
     uint256 internal _currentHeld;
+    uint256 public maxSupply; // Max supply of tokens to eat
+
     int256 public constant minRate = 50; // -50% represented as 0
     int256 public constant maxRate = 120; // 20% represented as 100,000
 
     uint32 public vestingDuration;
+
     mapping(address => Vesting) public vestings;
 
     function totalVested() external view returns (uint256) {
         return _totalVested;
     }
 
+    // Calculate the instantaneous rate
     function _getInstantaneousRate() internal view returns (uint256) {
         uint256 x1 = IERC20(wewe).balanceOf(address(this)) - _totalVested;
         return _getRate(x1, x1 + 1);
     }
 
+    // Calculate the amount of Wewe to transfer based on the current rate
     function _getCurrentRate(uint256 amount) internal view returns (uint256) {
         uint256 x1 = IERC20(wewe).balanceOf(address(this)) - _totalVested;
         return _getRate(x1, x1 + amount);
@@ -62,12 +68,13 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     }
 
     function _merge(uint256 amount, address token, address from) internal {
-        uint256 weweToTransfer = (amount * _getCurrentRate(amount)) / _ratePrecision;
+        // uint256 weweToTransfer = (amount * _getCurrentRate(amount)) / _ratePrecision;
+        uint256 weweToTransfer = (_getCurrentRate(amount)) / _ratePrecision;
         _totalVested += weweToTransfer;
 
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
-            "Eater: Insufficient token balance to transfer"
+            "DynamicEater: Insufficient token balance to transfer"
         );
 
         // Merge tokens from sender

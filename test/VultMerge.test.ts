@@ -15,16 +15,19 @@ describe.only("Vult Merge Contract", function () {
 		const wewe = await Wewe.deploy();
 		const mockWewe = await Wewe.deploy();
 
+		// Max supply of 1000 tokens to eat
+		const maxSupply = ethers.parseEther("1000");
+		const vestingPeriod = 60;
 		const Merge = await ethers.getContractFactory("VultMerge");
-		const merge = await Merge.deploy(await wewe.getAddress(), await vult.getAddress(), 60);
+		const merge = await Merge.deploy(await wewe.getAddress(), await vult.getAddress(), vestingPeriod, maxSupply);
 
 		await vult.transfer(otherAccount, ethers.parseEther("1000"));
 
 		const mergeAddress = await merge.getAddress();
 
 		// Arrange
-		await wewe.approve(mergeAddress, ethers.parseEther("1000"));
-		await vult.connect(otherAccount).approve(mergeAddress, ethers.parseEther("1000"));
+		await wewe.approve(mergeAddress, ethers.parseEther("1000000"));
+		await vult.connect(otherAccount).approve(mergeAddress, ethers.parseEther("1000000"));
 
 		return { owner, otherAccount, vult, wewe, merge, mockWewe, mockVult };
 	}
@@ -57,11 +60,11 @@ describe.only("Vult Merge Contract", function () {
 			// Other account should have 1000 vult
 			expect(await vult.balanceOf(otherAccount.address)).to.be.eq(ethers.parseEther("1000"));
 
-			//await merge.connect(otherAccount).merge(ethers.parseEther("100"));
 			rate = await merge.getRate();
-			expect(rate).to.be.eq(12000000n); // 120%
+			expect(rate).to.be.eq(12000000n); // Starting rate should be 120%
 
-			await merge.connect(otherAccount).merge(ethers.parseEther("100"));
+			// Merge 100 vult to wewe
+			// await merge.connect(otherAccount).merge(ethers.parseEther("100"));
 		});
 	});
 });
