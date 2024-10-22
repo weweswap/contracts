@@ -51,16 +51,16 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
         return _getRate(x1, x1 + amount);
     }
 
-    function _getTotalWeWe(uint256 amount) internal view returns (uint256) {
-        // Slope is a constant, from max rate at 0 tokens, to min rate at max supply
-        int256 x = slope();
-        // -70
+    // function _getTotalWeWe(uint256 amount) internal view returns (uint256) {
+    //     // Slope is a constant, from max rate at 0 tokens, to min rate at max supply
+    //     int256 x = slope();
+    //     // -70
 
-        x = 70 * 100_000;
-        int256 intercept = maxRate * 100_000;
-        int256 reward = (x * int256(amount)) / 100_000 + intercept / 100_000;
-        return reward > 0 ? uint256(reward) : 0;
-    }
+    //     x = 70 * 100_000;
+    //     int256 intercept = maxRate * 100_000;
+    //     int256 reward = (x * int256(amount)) / 100_000 + intercept / 100_000;
+    //     return reward > 0 ? uint256(reward) : 0;
+    // }
 
     // Function to calculate rewards based on spending amount using a linear decay model
     function getTotalWeWe(uint256 spendAmount) public pure returns (uint256) {
@@ -78,15 +78,6 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
 
         return uint256(reward);
     }
-
-    // function _getTotalWeWe(uint256 amount) internal view returns (uint256) {
-    //     // Slope is a constant, from max rate at 0 tokens, to min rate at max supply
-    //     int256 x = slope();
-    //     x = 70 * 100_000;
-    //     int256 intercept = maxRate * 100_000;
-    //     int256 reward = (x * int256(amount)) / 100_000 + intercept / 100_000;
-    //     return reward > 0 ? uint256(reward) : 0;
-    // }
 
     // x1 Lower bounds of the integral
     // x2 Upper bounds of the integral
@@ -106,14 +97,8 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     }
 
     function _merge(uint256 amount, address token, address from) internal {
-        // uint256 x1 = calculateReward(_totalVested);
-        uint256 x2 = getTotalWeWe(_totalVested + amount);
-
-        uint256 weweToTransfer = x2;
-
-        console.log("weweToTransfer: %s", weweToTransfer);
+        uint256 weweToTransfer = getTotalWeWe(_totalVested + amount);
         _totalVested += weweToTransfer;
-        console.log("_totalVested: %s", _totalVested);
 
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
