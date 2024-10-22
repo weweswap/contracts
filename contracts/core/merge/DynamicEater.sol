@@ -24,9 +24,8 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     uint256 internal _currentHeld;
     uint256 public maxSupply; // Max supply of tokens to eat
 
-    int256 public constant minRate = 50; // -50%
     int256 public constant maxRate = 120; // 120%
-
+    int256 public constant minRate = 50; // -50%
     uint32 public vestingDuration;
 
     mapping(address => Vesting) public vestings;
@@ -55,11 +54,39 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     function _getTotalWeWe(uint256 amount) internal view returns (uint256) {
         // Slope is a constant, from max rate at 0 tokens, to min rate at max supply
         int256 x = slope();
-        x = x * 100_000;
+        // -70
+
+        x = 70 * 100_000;
         int256 intercept = maxRate * 100_000;
         int256 reward = (x * int256(amount)) / 100_000 + intercept / 100_000;
         return reward > 0 ? uint256(reward) : 0;
     }
+
+    // Function to calculate rewards based on spending amount using a linear decay model
+    function getTotalWeWe(uint256 spendAmount) public pure returns (uint256) {
+        // Parameters for the linear equation: y = -0.7 * x + 120, using a scaling factor of 100,000
+        int256 dxdy = -70000; // Representing -0.7 with a scaling factor of 100,000
+        int256 intercept = 12000000; // Representing 120 with a scaling factor of 100,000
+
+        // Calculate reward based on the linear equation
+        int256 reward = (dxdy * int256(spendAmount) + intercept) / 100000;
+
+        // Ensure reward is not negative
+        if (reward < 0) {
+            reward = 0;
+        }
+
+        return uint256(reward);
+    }
+
+    // function _getTotalWeWe(uint256 amount) internal view returns (uint256) {
+    //     // Slope is a constant, from max rate at 0 tokens, to min rate at max supply
+    //     int256 x = slope();
+    //     x = 70 * 100_000;
+    //     int256 intercept = maxRate * 100_000;
+    //     int256 reward = (x * int256(amount)) / 100_000 + intercept / 100_000;
+    //     return reward > 0 ? uint256(reward) : 0;
+    // }
 
     // x1 Lower bounds of the integral
     // x2 Upper bounds of the integral
@@ -79,35 +106,35 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     }
 
     function _merge(uint256 amount, address token, address from) internal {
-        uint256 x1 = _getTotalWeWe(_totalVested);
-        uint256 x2 = _getTotalWeWe(_totalVested + amount);
+        // uint256 x1 = calculateReward(_totalVested);
+        uint256 x2 = getTotalWeWe(_totalVested + amount);
 
-        uint256 weweToTransfer = x2 - x1;
+        uint256 weweToTransfer = x2;
 
         console.log("weweToTransfer: %s", weweToTransfer);
         _totalVested += weweToTransfer;
         console.log("_totalVested: %s", _totalVested);
 
-        // require(
-        //     weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
-        //     "DynamicEater: Insufficient token balance to transfer"
-        // );
+        require(
+            weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
+            "DynamicEater: Insufficient token balance to transfer"
+        );
 
-        // // Merge tokens from sender
-        // IERC20(token).transferFrom(from, address(this), amount);
+        // Merge tokens from sender
+        IERC20(token).transferFrom(from, address(this), amount);
 
-        // // If transfer, dont vest
-        // if (vestingDuration != 0) {
-        //     // Curent vested
-        //     uint256 vestedAmount = vestings[from].amount;
-        //     vestings[msg.sender] = Vesting({
-        //         amount: weweToTransfer + vestedAmount,
-        //         end: block.timestamp + vestingDuration * 1 minutes
-        //     });
-        // } else {
-        //     // Transfer Wewe tokens to sender
-        //     IERC20(wewe).transfer(from, weweToTransfer);
-        // }
+        // If transfer, dont vest
+        if (vestingDuration != 0) {
+            // Curent vested
+            uint256 vestedAmount = vestings[from].amount;
+            vestings[msg.sender] = Vesting({
+                amount: weweToTransfer + vestedAmount,
+                end: block.timestamp + vestingDuration * 1 minutes
+            });
+        } else {
+            // Transfer Wewe tokens to sender
+            IERC20(wewe).transfer(from, weweToTransfer);
+        }
 
         emit Merged(amount, from);
     }
