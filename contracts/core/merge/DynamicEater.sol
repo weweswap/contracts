@@ -72,10 +72,11 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
 
         // Merge tokens from sender
         IERC20(token).transferFrom(from, address(this), amount);
-        uint256 vestedAmount = vestings[from].amount;
 
         // If transfer, dont vest
         if (vestingDuration != 0) {
+            // Curent vested
+            uint256 vestedAmount = vestings[from].amount;
             vestings[msg.sender] = Vesting({
                 amount: weweToTransfer + vestedAmount,
                 end: block.timestamp + vestingDuration * 1 minutes

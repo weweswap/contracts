@@ -60,6 +60,8 @@ describe.only("Vult Merge Contract", function () {
 			//await merge.connect(otherAccount).merge(ethers.parseEther("100"));
 			rate = await merge.getRate();
 			expect(rate).to.be.eq(12000000n); // 120%
+
+			await merge.connect(otherAccount).merge(ethers.parseEther("100"));
 		});
 	});
 });
