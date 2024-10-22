@@ -14,13 +14,13 @@ struct Vesting {
 }
 
 abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
-    uint256 internal constant _ratePrecision = 100000;
+    uint256 internal constant _ratePrecision = 100_000;
     address internal _token;
     address public wewe;
     uint256 internal _totalVested;
     uint256 internal _currentHeld;
-    uint256 public minRate = 0; // -50% represented as 0
-    uint256 public maxRate = 100000; // 20% represented as 100,000
+    int256 public constant minRate = 50; // -50% represented as 0
+    int256 public constant maxRate = 120; // 20% represented as 100,000
 
     uint32 public vestingDuration;
     mapping(address => Vesting) public vestings;
@@ -29,13 +29,40 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
         return _totalVested;
     }
 
-    function _getRate() internal view returns (uint256) {
-        uint256 rate = minRate + ((maxRate - minRate) * _currentHeld) / _totalVested;
-        return rate;
+    function _getInstantaneousRate() internal view returns (uint256) {
+        uint256 x1 = IERC20(wewe).balanceOf(address(this)) - _totalVested;
+        return _getRate(x1, x1 + 1);
+    }
+
+    function _getCurrentRate(uint256 amount) internal view returns (uint256) {
+        uint256 x1 = IERC20(wewe).balanceOf(address(this)) - _totalVested;
+        return _getRate(x1, x1 + amount);
+    }
+
+    // x1 Lower bounds of the integral
+    // x2 Upper bounds of the integral
+    function _getRate(uint256 x1, uint256 x2) internal view returns (uint256) {
+        uint256 currentWeWeHeld = IERC20(wewe).balanceOf(address(this));
+        if (currentWeWeHeld == 0) {
+            return 0;
+        }
+
+        // Slope
+        int256 dxdy = (minRate - maxRate) / int256(currentWeWeHeld);
+        int256 intercept = maxRate * 100_000;
+
+        // Calculate area using definite integration formula
+        int256 area1 = ((dxdy * int256(x2 ** 2)) / 2) * 100_000 + intercept * int256(x2);
+        int256 area2 = ((dxdy * int256(x1 ** 2)) / 2) * 100_000 + intercept * int256(x1);
+        int256 area = area1 - area2;
+
+        // Adjust for the decimal factor used (divide by 100_000)
+        require(area >= 0, "Area calculation resulted in a negative value");
+        return uint256(area);
     }
 
     function _merge(uint256 amount, address token, address from) internal {
-        uint256 weweToTransfer = (amount * _getRate()) / _ratePrecision;
+        uint256 weweToTransfer = (amount * _getCurrentRate(amount)) / _ratePrecision;
         _totalVested += weweToTransfer;
 
         require(
@@ -104,7 +131,7 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     }
 
     modifier whenSolvent(uint256 amountToMerge) {
-        uint256 newAmountToVest = (amountToMerge * _getRate()) / _ratePrecision;
+        uint256 newAmountToVest = (amountToMerge * _getCurrentRate(amountToMerge)) / _ratePrecision;
         require(
             IERC20(wewe).balanceOf(address(this)) >= _totalVested + newAmountToVest,
             "Eater: Insufficient Wewe balance"

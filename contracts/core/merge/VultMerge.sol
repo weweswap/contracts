@@ -36,7 +36,7 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
     }
 
     function getRate() external view returns (uint256) {
-        return _getRate();
+        return _getInstantaneousRate();
     }
 
     function setTreasury(address _treasury) external onlyOwner {
@@ -69,7 +69,7 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
         }
 
         // vult in, wewe out
-        uint256 weweOut = _getRate() * amount * _ratePrecision;
+        uint256 weweOut = _getCurrentRate(amount) * _ratePrecision;
         vult.safeTransferFrom(from, address(this), amount);
         IERC20(wewe).safeTransfer(from, weweOut);
         vultBalance += amount;
