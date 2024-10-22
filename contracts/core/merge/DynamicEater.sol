@@ -79,7 +79,11 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     }
 
     function _merge(uint256 amount, address token, address from) internal {
-        uint256 weweToTransfer = _getTotalWeWe(amount);
+        uint256 x1 = _getTotalWeWe(_totalVested);
+        uint256 x2 = _getTotalWeWe(_totalVested + amount);
+
+        uint256 weweToTransfer = x2 - x1;
+
         console.log("weweToTransfer: %s", weweToTransfer);
         _totalVested += weweToTransfer;
         console.log("_totalVested: %s", _totalVested);

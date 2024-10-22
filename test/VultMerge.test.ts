@@ -16,7 +16,7 @@ describe.only("Vult Merge Contract", function () {
 		const mockWewe = await Wewe.deploy();
 
 		// Max supply of 1000 tokens to eat
-		const maxSupply = ethers.parseEther("1000");
+		const maxSupply = 1000n // ethers.parseEther("1000");
 		const vestingPeriod = 60;
 		const Merge = await ethers.getContractFactory("VultMerge");
 		const merge = await Merge.deploy(await wewe.getAddress(), await vult.getAddress(), vestingPeriod, maxSupply);
@@ -24,13 +24,13 @@ describe.only("Vult Merge Contract", function () {
 		const isPaused = await merge.paused();
 		expect(isPaused).to.be.false;
 
-		await vult.transfer(otherAccount, ethers.parseEther("1000"));
+		await vult.transfer(otherAccount, 1000n); // ethers.parseEther("1000")
 
 		const mergeAddress = await merge.getAddress();
 
 		// Arrange
-		await wewe.approve(mergeAddress, ethers.parseEther("1000000"));
-		await vult.connect(otherAccount).approve(mergeAddress, ethers.parseEther("1000000"));
+		await wewe.approve(mergeAddress, 10000n);
+		await vult.connect(otherAccount).approve(mergeAddress, 10000n);
 
 		return { owner, otherAccount, vult, wewe, merge, mockWewe, mockVult };
 	}
@@ -52,15 +52,15 @@ describe.only("Vult Merge Contract", function () {
 			const mergeAddress = await merge.getAddress();
 
 			let rate = await merge.getRate();
-			expect(rate).to.be.eq(12000000n); // Starting rate should be 120%
+			expect(rate).to.be.eq(120000n); // Starting rate should be 120%
 
 			// Deposit 1200 wewe to setup the merge
-			await merge.deposit(ethers.parseEther("1000"));
+			await merge.deposit(1000n);
 
-			expect(await wewe.balanceOf(mergeAddress)).to.be.eq(ethers.parseEther("1000"));
+			expect(await wewe.balanceOf(mergeAddress)).to.be.eq(1000n);
 
 			// Other account should have 1000 vult
-			expect(await vult.balanceOf(otherAccount.address)).to.be.eq(ethers.parseEther("1000"));
+			expect(await vult.balanceOf(otherAccount.address)).to.be.eq(1000n);
 
 			let totalVested = await merge.totalVested();
 			expect(totalVested).to.be.eq(0);
@@ -72,12 +72,12 @@ describe.only("Vult Merge Contract", function () {
 			// expect(rate).to.be.eq(10000000n);
 
 			// // Merge 100 vult to wewe
-			await merge.connect(otherAccount).merge(ethers.parseEther("100"));
+			await merge.connect(otherAccount).merge(100n);
 			const vested = await merge.vestings(otherAccount.address);
 
 			console.log(vested);
 
-			// expect(vested.amount).to.be.eq(ethers.parseEther("850"));
+			expect(vested.amount).to.be.eq(50n);
 		});
 	});
 });
