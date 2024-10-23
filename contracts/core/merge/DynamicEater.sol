@@ -86,7 +86,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     function getScalar(uint256 mergeAmount) public pure returns (uint256) {
         uint256 SCALE_FACTOR = 100;
         mergeAmount = mergeAmount * SCALE_FACTOR;
-        uint256 y_percents = (120 * SCALE_FACTOR) - mergeAmount / 8571;
+        uint256 intercept = 120 * SCALE_FACTOR;
+        uint256 y_percents = intercept - mergeAmount / 8571;
         return y_percents;
     }
 
@@ -94,9 +95,9 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     function getTotalWeWe(uint256 mergeAmount) public view returns (uint256) {
         uint256 SCALE_FACTOR = 100;
         uint256 scalar = getScalar(mergeAmount);
-        uint256 reward = (mergeAmount * ratio * scalar) / 100;
+        uint256 reward = (mergeAmount * ratio * scalar) / SCALE_FACTOR;
 
-        return reward / (SCALE_FACTOR * 100);
+        return reward / (SCALE_FACTOR * SCALE_FACTOR);
     }
 
     // x1 Lower bounds of the integral

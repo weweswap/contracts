@@ -86,8 +86,11 @@ describe("Dynamic Merge Contract", function () {
 			scalar = await merge.getScalar(500000);
 			expect(scalar).to.be.approximately(6200, 100);
 
-			const weweRecieved = await merge.getTotalWeWe(1000);
+			let weweRecieved = await merge.getTotalWeWe(1000);
 			expect(weweRecieved).to.be.approximately(1570, 10);
+
+			weweRecieved = await merge.getTotalWeWe(500000);
+			expect(weweRecieved).to.be.approximately(403938, 10);
 
 			console.log("wewe", weweRecieved.toString());
 		});
