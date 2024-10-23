@@ -23,7 +23,7 @@ describe("Dynamic Merge Contract", function () {
 		const isPaused = await merge.paused();
 		expect(isPaused).to.be.false;
 
-		await token.transfer(otherAccount, WE_WE_TO_DEPOSIT);
+		await token.transfer(otherAccount, 100000);
 
 		const mergeAddress = await merge.getAddress();
 
@@ -93,6 +93,15 @@ describe("Dynamic Merge Contract", function () {
 			expect(weweRecieved).to.be.approximately(403938, 10);
 
 			console.log("wewe", weweRecieved.toString());
+
+			let totalVested = await merge.totalVested();
+			expect(totalVested).to.be.eq(0);
+
+			let otherAccountBalance = await wewe.balanceOf(otherAccount.address);
+			expect(otherAccountBalance).to.be.eq(0);
+
+			let tokenBalance = await token.balanceOf(otherAccount.address);
+			expect(tokenBalance).to.be.eq(100000);
 		});
 	});
 });
