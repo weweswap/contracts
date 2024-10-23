@@ -13,7 +13,7 @@ struct Vesting {
     uint256 end;
 }
 
-abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
+contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     int256 internal constant RATE_PRECISION = 100_000;
     address internal _token;
     address public wewe;
@@ -23,9 +23,10 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     uint256 internal _currentHeld;
     uint256 public maxSupply; // Max supply of tokens to eat
 
-    int256 public constant maxRate = 120; // 120%
-    int256 public constant minRate = 50; // -50%
+    int256 public constant maxRate = 12 * 10 ** 4; // 120% or 1.2
+    int256 public constant minRate = 5 * 10 ** 4; // 50% or 0.5
     uint32 public vestingDuration;
+    uint256 public ratio = 131; // scaled from 1.31
 
     mapping(address => Vesting) public vestings;
 
@@ -60,9 +61,14 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
         maxSupply = _maxSupply;
     }
 
-    function slope() public pure returns (int256) {
-        int256 dxdy = minRate - maxRate;
-        return dxdy;
+    function setMaxSupply(uint256 _maxSupply) external onlyOwner {
+        maxSupply = _maxSupply;
+    }
+
+    function slope() public view returns (int256) {
+        int256 delta_x = int256(maxSupply) / 10 ** 18; // Scaling factor to 1
+        int256 _slope = (maxRate - minRate) / delta_x; // Calculating slope from max and min values
+        return _slope * 10 ** 4; // Scaling factor to 1_000
     }
 
     // Calculate the instantaneous rate
@@ -77,21 +83,20 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
         return _getRate(x1, x1 + amount);
     }
 
+    function getScalar(uint256 mergeAmount) public pure returns (uint256) {
+        uint256 SCALE_FACTOR = 100;
+        mergeAmount = mergeAmount * SCALE_FACTOR;
+        uint256 y_percents = (120 * SCALE_FACTOR) - mergeAmount / 8571;
+        return y_percents;
+    }
+
     // Function to calculate rewards based on spending amount using a linear decay model
-    function getTotalWeWe(uint256 spendAmount) public pure returns (uint256) {
-        // Parameters for the linear equation: y = -0.7 * x + 120, using a scaling factor of 100,000
-        int256 dxdy = slope() * 1_000; // Representing -0.7 with a scaling factor of 1,000
-        int256 intercept = maxRate * RATE_PRECISION; // Representing 120 with a scaling factor of 100,000 "rate precission" (y-intercept)
+    function getTotalWeWe(uint256 mergeAmount) public view returns (uint256) {
+        uint256 SCALE_FACTOR = 100;
+        uint256 scalar = getScalar(mergeAmount);
+        uint256 reward = (mergeAmount * ratio * scalar) / 100;
 
-        // Calculate reward based on the linear equation
-        int256 reward = (dxdy * int256(spendAmount) + intercept) / RATE_PRECISION;
-
-        // Ensure reward is not negative
-        if (reward < 0) {
-            reward = 0;
-        }
-
-        return uint256(reward);
+        return reward / (SCALE_FACTOR * 100);
     }
 
     // x1 Lower bounds of the integral
