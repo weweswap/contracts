@@ -89,6 +89,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function getScalar(uint256 mergeAmount) public pure returns (uint256) {
+        mergeAmount = mergeAmount / 10 ** 18;
+
         uint256 SCALE_FACTOR = 100;
         mergeAmount = mergeAmount * SCALE_FACTOR;
         uint256 intercept = 120 * SCALE_FACTOR;

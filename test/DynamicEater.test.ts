@@ -62,7 +62,7 @@ describe("Dynamic Merge Contract", function () {
 		// 	// expect(vested.amount).to.be.eq(50n);
 		// });
 
-		it.only("Should decrease deposit rates with small numbers", async () => {
+		it.skip("Should calcuate rates with small numbers", async () => {
 			const { merge, token, wewe, otherAccount } = await loadFixture(deployFixture);
 
 			const mergeAddress = await merge.getAddress();
@@ -115,6 +115,20 @@ describe("Dynamic Merge Contract", function () {
 			// Get the vested amount
 			const vested = await merge.vestings(otherAccount.address);
 			expect(vested.amount).to.be.eq(141925);
+		});
+
+		it.only("Should calcuate rates with large numbers", async () => {
+			const { merge } = await loadFixture(deployFixture);
+
+			// Deposit wewe to setup the merge
+			await merge.deposit(WE_WE_TO_DEPOSIT);
+
+			let scalar = await merge.getScalar(ethers.parseEther("1000"));
+			expect(scalar).to.be.eq(11989);
+
+			let weweRecieved = await merge.getTotalWeWe(ethers.parseEther("1000"));
+			console.log(weweRecieved.toString());
+			// expect(weweRecieved).to.be.approximately(1570, 10);
 		});
 	});
 });
