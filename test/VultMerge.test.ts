@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe.only("Vult Merge Contract", function () {
+describe("Vult Merge Contract", function () {
 	async function deployFixture() {
 		const [owner, otherAccount] = await ethers.getSigners();
 
@@ -16,7 +16,7 @@ describe.only("Vult Merge Contract", function () {
 		const mockWewe = await Wewe.deploy();
 
 		// Max supply of 1000 tokens to eat
-		const maxSupply = 1000n // ethers.parseEther("1000");
+		const maxSupply = 1000n;
 		const vestingPeriod = 60;
 		const Merge = await ethers.getContractFactory("VultMerge");
 		const merge = await Merge.deploy(await wewe.getAddress(), await vult.getAddress(), vestingPeriod, maxSupply);
@@ -24,7 +24,7 @@ describe.only("Vult Merge Contract", function () {
 		const isPaused = await merge.paused();
 		expect(isPaused).to.be.false;
 
-		await vult.transfer(otherAccount, 1000n); // ethers.parseEther("1000")
+		await vult.transfer(otherAccount, 1000n);
 
 		const mergeAddress = await merge.getAddress();
 
