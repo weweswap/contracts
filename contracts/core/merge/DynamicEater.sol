@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -7,8 +6,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../../interfaces/IWeweReceiver.sol";
-
-import "hardhat/console.sol";
+import "../../interfaces/IAMM.sol";
 
 struct Vesting {
     uint256 amount;
@@ -19,6 +17,7 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     int256 internal constant RATE_PRECISION = 100_000;
     address internal _token;
     address public wewe;
+    address public treasury;
 
     uint256 internal _totalVested;
     uint256 internal _currentHeld;
@@ -30,8 +29,35 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
 
     mapping(address => Vesting) public vestings;
 
+    function canClaim(address account) external view returns (bool) {
+        return vestings[account].end <= block.timestamp;
+    }
+
+    function balanceOf(address account) external view returns (uint256) {
+        return vestings[account].amount;
+    }
+
+    function getToken() external view returns (address) {
+        return _token;
+    }
+
+    function getRate() external view returns (uint256) {
+        return _getInstantaneousRate();
+    }
+
+    function setTreasury(address _treasury) external onlyOwner {
+        treasury = _treasury;
+    }
+
     function totalVested() external view returns (uint256) {
         return _totalVested;
+    }
+
+    constructor(address _wewe, address _vult, uint32 _vestingDuration, uint256 _maxSupply) {
+        wewe = _wewe;
+        _token = _vult;
+        vestingDuration = _vestingDuration;
+        maxSupply = _maxSupply;
     }
 
     function slope() public pure returns (int256) {
@@ -115,6 +141,44 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
         }
 
         emit Merged(amount, from);
+    }
+
+    function mergeAndSell(uint256 amount, IAMM amm, bytes calldata extraData) external nonReentrant whenNotPaused {
+        uint256 balance = IERC20(_token).balanceOf(msg.sender);
+        require(balance >= amount, "DynamicEater: Insufficient balance to eat");
+
+        _merge(amount, _token, msg.sender);
+
+        // Approve the AMM to use the tokens now in this contract
+        IERC20(_token).approve(address(amm), amount);
+
+        // Sell the tokens, can fund the contract with the token
+        address recipient = treasury == address(0) ? address(this) : treasury;
+        amm.sell(amount, _token, recipient, extraData);
+    }
+
+    function merge(uint256 amount) external virtual whenNotPaused {
+        uint256 balance = IERC20(_token).balanceOf(msg.sender);
+        require(balance >= amount, "DynamicEater: Insufficient balance to eat");
+
+        _merge(amount, _token, msg.sender);
+    }
+
+    function claim() external whenNotPaused whenClaimable(msg.sender) {
+        uint256 amount = vestings[msg.sender].amount;
+        vestings[msg.sender].amount = 0;
+
+        IERC20(wewe).transfer(msg.sender, amount);
+    }
+
+    // @notice Fund this contract with wewe token
+    function deposit(uint256 amount) external onlyOwner {
+        _deposit(amount);
+    }
+
+    function depositRequired() external onlyOwner {
+        uint256 amount = _getCurrentRate(maxSupply - _totalVested);
+        _deposit(amount);
     }
 
     function sweep() external onlyOwner {

@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("Vult Merge Contract", function () {
+describe("Dynamic Merge Contract", function () {
 	async function deployFixture() {
 		const [owner, otherAccount] = await ethers.getSigners();
 
@@ -18,7 +18,7 @@ describe("Vult Merge Contract", function () {
 		// Max supply of 1000 tokens to eat
 		const maxSupply = 1000n;
 		const vestingPeriod = 60;
-		const Merge = await ethers.getContractFactory("VultMerge");
+		const Merge = await ethers.getContractFactory("DynamicEater");
 		const merge = await Merge.deploy(await wewe.getAddress(), await vult.getAddress(), vestingPeriod, maxSupply);
 
 		const isPaused = await merge.paused();
