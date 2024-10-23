@@ -15,11 +15,7 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
     using SafeERC20 for IERC20;
 
     address public treasury;
-
-    // uint256 public virtualWeweBalance;
     uint256 public weweBalance;
-    // uint256 public vultBalance;
-
     LockedStatus public lockedStatus;
 
     function canClaim(address account) external view returns (bool) {
@@ -104,7 +100,6 @@ contract VultMerge is DynamicEater, IMerge, IERC1363Spender {
 
     function claim() external whenNotPaused whenClaimable(msg.sender) {
         uint256 amount = vestings[msg.sender].amount;
-        // _currentHeld -= amount;
         vestings[msg.sender].amount = 0;
 
         IERC20(wewe).transfer(msg.sender, amount);
