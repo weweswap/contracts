@@ -71,6 +71,10 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     // x1 Lower bounds of the integral
     // x2 Upper bounds of the integral
     function _getRate(uint256 x1, uint256 x2) internal view returns (uint256) {
+        if (maxSupply == 0) {
+            return 0;
+        }
+
         // Slope is a constant, from max rate at 0 tokens, to min rate at max supply
         int256 dxdy = (minRate - maxRate) / int256(maxSupply);
         int256 intercept = maxRate * RATE_PRECISION;
