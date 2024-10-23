@@ -151,7 +151,7 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
             _;
         }
 
-        require(vestings[account].end <= block.timestamp, "Eater: Vesting not ended");
+        require(vestings[account].end <= block.timestamp, "DynamicEater: Vesting not ended");
         _;
     }
 
