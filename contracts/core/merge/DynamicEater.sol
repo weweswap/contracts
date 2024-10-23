@@ -105,7 +105,7 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
         if (vestingDuration != 0) {
             // Curent vested
             uint256 vestedAmount = vestings[from].amount;
-            vestings[msg.sender] = Vesting({
+            vestings[from] = Vesting({
                 amount: weweToTransfer + vestedAmount,
                 end: block.timestamp + vestingDuration * 1 minutes
             });
