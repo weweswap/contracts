@@ -123,7 +123,6 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     function _merge(uint256 amount, address token, address from) internal {
         uint256 weweToTransfer = getTotalWeWe(_totalVested + amount);
-        _totalVested += weweToTransfer;
 
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
@@ -141,6 +140,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
                 amount: weweToTransfer + vestedAmount,
                 end: block.timestamp + vestingDuration * 1 minutes
             });
+
+            _totalVested += weweToTransfer;
         } else {
             // Transfer Wewe tokens to sender
             IERC20(wewe).transfer(from, weweToTransfer);

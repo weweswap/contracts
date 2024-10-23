@@ -62,7 +62,7 @@ describe("Dynamic Merge Contract", function () {
 		// 	// expect(vested.amount).to.be.eq(50n);
 		// });
 
-		it.only("Should decrease deposit rates with large numbers", async () => {
+		it.only("Should decrease deposit rates with small numbers", async () => {
 			const { merge, token, wewe, otherAccount } = await loadFixture(deployFixture);
 
 			const mergeAddress = await merge.getAddress();
@@ -92,16 +92,29 @@ describe("Dynamic Merge Contract", function () {
 			weweRecieved = await merge.getTotalWeWe(500000);
 			expect(weweRecieved).to.be.approximately(403938, 10);
 
-			console.log("wewe", weweRecieved.toString());
-
 			let totalVested = await merge.totalVested();
 			expect(totalVested).to.be.eq(0);
 
-			let otherAccountBalance = await wewe.balanceOf(otherAccount.address);
-			expect(otherAccountBalance).to.be.eq(0);
+			let weweBalance = await wewe.balanceOf(otherAccount.address);
+			expect(weweBalance).to.be.eq(0);
 
 			let tokenBalance = await token.balanceOf(otherAccount.address);
 			expect(tokenBalance).to.be.eq(100000);
+
+			// Merge 100,000 vult to wewe
+			await merge.connect(otherAccount).merge(100000);
+			// expect(await merge.totalVested()).to.be.eq(100000);
+
+			// not yet sent
+			weweBalance = await wewe.balanceOf(otherAccount.address);
+			expect(weweBalance).to.be.eq(0);
+
+			tokenBalance = await token.balanceOf(otherAccount.address);
+			expect(tokenBalance).to.be.eq(0);
+
+			// Get the vested amount
+			const vested = await merge.vestings(otherAccount.address);
+			expect(vested.amount).to.be.eq(141925);
 		});
 	});
 });
