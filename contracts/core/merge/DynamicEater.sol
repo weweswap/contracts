@@ -16,7 +16,7 @@ struct Vesting {
 }
 
 abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
-    int256 internal constant RATE_PRECISSION = 100_000;
+    int256 internal constant RATE_PRECISION = 100_000;
     address internal _token;
     address public wewe;
 
