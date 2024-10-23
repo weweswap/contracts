@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -88,20 +89,22 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         return _getRate(x1, x1 + amount);
     }
 
-    function getScalar(uint256 mergeAmount) public pure returns (uint256) {
-        mergeAmount = mergeAmount / 10 ** 18;
+    function getScalar(uint256 mergeAmount, uint256 y1) public view returns (uint256) {
+        uint8 decimals = IERC20Metadata(_token).decimals();
+        mergeAmount = mergeAmount / 10 ** decimals;
 
         uint256 SCALE_FACTOR = 100;
         mergeAmount = mergeAmount * SCALE_FACTOR;
         uint256 intercept = 120 * SCALE_FACTOR;
+        // uint256 intercept = (120 - y1) * SCALE_FACTOR;
         uint256 y_percents = intercept - mergeAmount / 8571;
         return y_percents;
     }
 
     // Function to calculate rewards based on spending amount using a linear decay model
-    function getTotalWeWe(uint256 mergeAmount) public view returns (uint256) {
+    function getTotalWeWe(uint256 mergeAmount, uint256 y1) public view returns (uint256) {
         uint256 SCALE_FACTOR = 100;
-        uint256 scalar = getScalar(mergeAmount);
+        uint256 scalar = getScalar(mergeAmount, y1);
         uint256 reward = (mergeAmount * ratio * scalar) / SCALE_FACTOR;
 
         return reward / (SCALE_FACTOR * SCALE_FACTOR);
@@ -129,7 +132,11 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function _merge(uint256 amount, address token, address from) internal {
-        uint256 weweToTransfer = getTotalWeWe(_totalVested + amount);
+        // uint256 weweToTransfer = getTotalWeWe(_totalVested + amount, 0);
+        uint256 y1 = 0;
+        if (_totalVested > 0) y1 = (_totalVested / 8571) * 10 ** 9; // come down the pervious value to the y axis intercept
+
+        uint256 weweToTransfer = getTotalWeWe(amount, y1);
 
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),

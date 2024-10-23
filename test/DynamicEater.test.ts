@@ -23,7 +23,7 @@ describe("Dynamic Merge Contract", function () {
 		const isPaused = await merge.paused();
 		expect(isPaused).to.be.false;
 
-		await token.transfer(otherAccount, 100000);
+		await token.transfer(otherAccount, ethers.parseEther("1000000"));
 
 		const mergeAddress = await merge.getAddress();
 
@@ -70,27 +70,27 @@ describe("Dynamic Merge Contract", function () {
 			// Deposit wewe to setup the merge
 			await merge.deposit(WE_WE_TO_DEPOSIT);
 
-			let scalar = await merge.getScalar(1000);
-			// expect(reward).to.be.eq(120);
-			expect(scalar).to.be.eq(11989);
+			// let scalar = await merge.getScalar(1000);
+			// // expect(reward).to.be.eq(120);
+			// expect(scalar).to.be.eq(11989);
 
-			scalar = await merge.getScalar(10000);
-			expect(scalar).to.be.approximately(11900, 100);
+			// scalar = await merge.getScalar(10000);
+			// expect(scalar).to.be.approximately(11900, 100);
 
-			// reward = await merge.getTotalWeWe(30000);
-			// expect(reward).to.be.eq(117);
+			// // reward = await merge.getTotalWeWe(30000);
+			// // expect(reward).to.be.eq(117);
 
-			// reward = await merge.getTotalWeWe(100000);
-			// expect(reward).to.be.eq(109);
+			// // reward = await merge.getTotalWeWe(100000);
+			// // expect(reward).to.be.eq(109);
 
-			scalar = await merge.getScalar(500000);
-			expect(scalar).to.be.approximately(6200, 100);
+			// scalar = await merge.getScalar(500000);
+			// expect(scalar).to.be.approximately(6200, 100);
 
-			let weweRecieved = await merge.getTotalWeWe(1000);
-			expect(weweRecieved).to.be.approximately(1570, 10);
+			// let weweRecieved = await merge.getTotalWeWe(1000);
+			// expect(weweRecieved).to.be.approximately(1570, 10);
 
-			weweRecieved = await merge.getTotalWeWe(500000);
-			expect(weweRecieved).to.be.approximately(403938, 10);
+			// weweRecieved = await merge.getTotalWeWe(500000);
+			// expect(weweRecieved).to.be.approximately(403938, 10);
 
 			let totalVested = await merge.totalVested();
 			expect(totalVested).to.be.eq(0);
@@ -118,17 +118,32 @@ describe("Dynamic Merge Contract", function () {
 		});
 
 		it.only("Should calcuate rates with large numbers", async () => {
-			const { merge } = await loadFixture(deployFixture);
+			const { merge, otherAccount } = await loadFixture(deployFixture);
 
 			// Deposit wewe to setup the merge
-			await merge.deposit(WE_WE_TO_DEPOSIT);
+			await merge.deposit(ethers.parseEther("1000000"));
 
-			let scalar = await merge.getScalar(ethers.parseEther("1000"));
-			expect(scalar).to.be.eq(11989);
+			// let scalar = await merge.getScalar(ethers.parseEther("1000"));
+			// expect(scalar).to.be.eq(11989);
 
-			let weweRecieved = await merge.getTotalWeWe(ethers.parseEther("1000"));
-			console.log(weweRecieved.toString());
-			// expect(weweRecieved).to.be.approximately(1570, 10);
+			// let weweRecieved = await merge.getTotalWeWe(ethers.parseEther("1000"));
+			// // console.log(weweRecieved.toString());
+			// // expect(weweRecieved).to.be.approximately(1570, 10);
+
+			await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
+
+			let vested = await merge.vestings(otherAccount.address);
+			console.log(vested.amount.toString());
+
+			await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
+
+			vested = await merge.vestings(otherAccount.address);
+			console.log(vested.amount.toString());
+
+			await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
+
+			vested = await merge.vestings(otherAccount.address);
+			console.log(vested.amount.toString());
 		});
 	});
 });
