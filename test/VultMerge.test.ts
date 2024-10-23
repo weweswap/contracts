@@ -36,7 +36,7 @@ describe.only("Vult Merge Contract", function () {
 	}
 
 	describe("Initial Setup", function () {
-		it.skip("Should set the correct initial values", async function () {
+		it("Should set the correct initial values", async function () {
 			const { merge, vult, wewe } = await loadFixture(deployFixture);
 			expect(await merge.wewe()).to.equal(await wewe.getAddress());
 			expect(await merge.getToken()).to.equal(await vult.getAddress());
