@@ -29,6 +29,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     uint256 public ratio = 131; // scaled from 1.31
 
     mapping(address => Vesting) public vestings;
+    mapping(address => bool) public whiteList;
 
     function canClaim(address account) external view returns (bool) {
         return vestings[account].end <= block.timestamp;
@@ -59,6 +60,10 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         _token = _vult;
         vestingDuration = _vestingDuration;
         maxSupply = _maxSupply;
+    }
+
+    function setWhiteList(address account) external onlyOwner {
+        whiteList[account] = true;
     }
 
     function setMaxSupply(uint256 _maxSupply) external onlyOwner {
@@ -218,6 +223,11 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     function _deposit(uint256 amount) internal {
         IERC20(wewe).transferFrom(msg.sender, address(this), amount);
+    }
+
+    modifier onlyWhiteListed(address account) {
+        require(!paused(), "DynamicEater: Contract is paused");
+        _;
     }
 
     modifier whenClaimable(address account) {
