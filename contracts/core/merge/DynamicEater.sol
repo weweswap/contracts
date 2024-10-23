@@ -16,7 +16,7 @@ struct Vesting {
 }
 
 abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
-    uint256 internal constant _ratePrecision = 100_000;
+    int256 internal constant RATE_PRECISSION = 100_000;
     address internal _token;
     address public wewe;
 
@@ -51,25 +51,14 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
         return _getRate(x1, x1 + amount);
     }
 
-    // function _getTotalWeWe(uint256 amount) internal view returns (uint256) {
-    //     // Slope is a constant, from max rate at 0 tokens, to min rate at max supply
-    //     int256 x = slope();
-    //     // -70
-
-    //     x = 70 * 100_000;
-    //     int256 intercept = maxRate * 100_000;
-    //     int256 reward = (x * int256(amount)) / 100_000 + intercept / 100_000;
-    //     return reward > 0 ? uint256(reward) : 0;
-    // }
-
     // Function to calculate rewards based on spending amount using a linear decay model
     function getTotalWeWe(uint256 spendAmount) public pure returns (uint256) {
         // Parameters for the linear equation: y = -0.7 * x + 120, using a scaling factor of 100,000
-        int256 dxdy = -70000; // Representing -0.7 with a scaling factor of 100,000
-        int256 intercept = 12000000; // Representing 120 with a scaling factor of 100,000
+        int256 dxdy = slope() * 1_000; // Representing -0.7 with a scaling factor of 1,000
+        int256 intercept = maxRate * RATE_PRECISSION; // Representing 120 with a scaling factor of 100,000 "rate precission" (y-intercept)
 
         // Calculate reward based on the linear equation
-        int256 reward = (dxdy * int256(spendAmount) + intercept) / 100000;
+        int256 reward = (dxdy * int256(spendAmount) + intercept) / RATE_PRECISSION;
 
         // Ensure reward is not negative
         if (reward < 0) {
@@ -84,11 +73,11 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     function _getRate(uint256 x1, uint256 x2) internal view returns (uint256) {
         // Slope is a constant, from max rate at 0 tokens, to min rate at max supply
         int256 dxdy = (minRate - maxRate) / int256(maxSupply);
-        int256 intercept = maxRate * 100_000;
+        int256 intercept = maxRate * RATE_PRECISSION;
 
         // Calculate area using definite integration formula (y = mx + c) multiplied by 100_000 to keep precision
-        int256 area1 = ((dxdy * int256(x2 ** 2)) / 2) * 100_000 + intercept * int256(x2);
-        int256 area2 = ((dxdy * int256(x1 ** 2)) / 2) * 100_000 + intercept * int256(x1);
+        int256 area1 = ((dxdy * int256(x2 ** 2)) / 2) * RATE_PRECISSION + intercept * int256(x2);
+        int256 area2 = ((dxdy * int256(x1 ** 2)) / 2) * RATE_PRECISSION + intercept * int256(x1);
         int256 area = area1 - area2;
 
         // Adjust for the decimal factor used (divide by 100_000)
@@ -167,7 +156,7 @@ abstract contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Owna
     }
 
     modifier whenSolvent(uint256 amountToMerge) {
-        uint256 newAmountToVest = (amountToMerge * _getCurrentRate(amountToMerge)) / _ratePrecision;
+        uint256 newAmountToVest = (amountToMerge * _getCurrentRate(amountToMerge)) / 100_000;
         require(
             IERC20(wewe).balanceOf(address(this)) >= _totalVested + newAmountToVest,
             "DynamicEater: Insufficient Wewe balance"
