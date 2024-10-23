@@ -70,18 +70,12 @@ describe.only("Vult Merge Contract", function () {
 
 			const reward = await merge.getTotalWeWe(100n);
 			expect(reward).to.be.eq(50n);
-			console.log(reward);
 
-			// rate = await merge.getRate();
-			// expect(rate).to.be.eq(10000000n);
+			// Merge 100 vult to wewe
+			await merge.connect(otherAccount).merge(100n);
+			const vested = await merge.vestings(otherAccount.address);
 
-			// // // Merge 100 vult to wewe
-			// await merge.connect(otherAccount).merge(100n);
-			// const vested = await merge.vestings(otherAccount.address);
-
-			// console.log(vested);
-
-			// expect(vested.amount).to.be.eq(50n);
+			expect(vested.amount).to.be.eq(50n);
 		});
 	});
 });
