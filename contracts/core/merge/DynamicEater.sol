@@ -36,6 +36,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     function _getWeweBalance() internal view returns (uint256) {
         // Virtual WEWE balance in 10^18 and total vested in 10^18
+        require(virtualWEWE >= _totalVested, "DynamicEater: virtualWEWE less than total vested");
         return virtualWEWE - _totalVested;
     }
 
