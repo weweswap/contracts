@@ -16,7 +16,7 @@ struct Vesting {
 
 contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     int256 internal constant RATE_PRECISION = 100_000;
-    address internal _token;
+    address internal token;
     address public wewe;
     address public treasury;
 
@@ -35,14 +35,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     uint256 constant SCALING_FACTOR = 1_000;
 
     function _getWeweBalance() internal view returns (uint256) {
-        // uint256 amount = IERC20(wewe).balanceOf(address(this));
-
-        // if (amount == 0) {
-        //     return virtualWEWE;
-        // }
-
-        // return amount;
-        return virtualWEWE; /// - _totalVested;
+        return virtualWEWE - _totalVested;
     }
 
     function getCurrentPrice() public view returns (uint256) {
@@ -61,7 +54,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function getToken() external view returns (address) {
-        return _token;
+        return token;
     }
 
     function getRate() external view returns (uint256) {
@@ -76,14 +69,14 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         return _totalVested;
     }
 
-    constructor(address _wewe, address _vult, uint32 _vestingDuration) {
+    constructor(address _wewe, address _token, uint32 _vestingDuration, uint256 _virtualFOMO, uint256 _virtualWEWE) {
         wewe = _wewe;
-        _token = _vult;
+        token = _token;
         vestingDuration = _vestingDuration;
 
         // Initial virtual balances
-        virtualFOMO = 800 * 1e18;
-        virtualWEWE = 1000 * 1e18;
+        virtualFOMO = _virtualFOMO;
+        virtualWEWE = _virtualWEWE;
     }
 
     function setWhiteList(address account) external onlyOwner {
@@ -142,24 +135,29 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function mergeAndSell(uint256 amount, IAMM amm, bytes calldata extraData) external nonReentrant whenNotPaused {
-        uint256 balance = IERC20(_token).balanceOf(msg.sender);
+        uint256 balance = IERC20(token).balanceOf(msg.sender);
         require(balance >= amount, "DynamicEater: Insufficient balance to eat");
 
-        _merge(amount, _token, msg.sender);
+        _merge(amount, token, msg.sender);
 
         // Approve the AMM to use the tokens now in this contract
-        IERC20(_token).approve(address(amm), amount);
+        IERC20(token).approve(address(amm), amount);
 
         // Sell the tokens, can fund the contract with the token
         address recipient = treasury == address(0) ? address(this) : treasury;
-        amm.sell(amount, _token, recipient, extraData);
+        amm.sell(amount, token, recipient, extraData);
     }
 
     function merge(uint256 amount) external virtual whenNotPaused returns (uint256) {
-        uint256 balance = IERC20(_token).balanceOf(msg.sender);
+        uint256 balance = IERC20(token).balanceOf(msg.sender);
         require(balance >= amount, "DynamicEater: Insufficient balance to eat");
 
-        return _merge(amount, _token, msg.sender);
+        return _merge(amount, token, msg.sender);
+    }
+
+    function mergeAll() external virtual whenNotPaused returns (uint256) {
+        uint256 balance = IERC20(token).balanceOf(msg.sender);
+        return _merge(balance, token, msg.sender);
     }
 
     function claim() external whenNotPaused whenClaimable(msg.sender) {
@@ -188,10 +186,10 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         bytes calldata
     ) external nonReentrant whenNotPaused {
         // After wewe approve and call, it will call this function
-        require(_token != address(0), "DynamicEater: Token address not set");
+        require(token != address(0), "DynamicEater: Token address not set");
 
-        // Eat the underlying token "_token" with the amount of "amount"
-        _merge(amount, _token, from);
+        // Eat the underlying token "token" with the amount of "amount"
+        _merge(amount, token, from);
     }
 
     function togglePause() external onlyOwner {
