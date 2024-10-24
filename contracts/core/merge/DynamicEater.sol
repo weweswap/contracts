@@ -94,13 +94,15 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         maxSupply = _maxSupply;
     }
 
-    function calculateTokensOut(uint256 additionalFomo) public view returns (uint256) {
-
+    function calculateTokensOut(uint256 x) public view returns (uint256) {
         // Update the virtual balance for FOMO
-        uint256 newFOMOBalance = virtualFOMO + additionalFomo;
+        uint256 newFOMOBalance = virtualFOMO + x;
+
+        // uint256 _weweBalance = _getWeweBalance();
+        // assert(_weweBalance > 0);
 
         // y = (x*Y) / (x+X)
-        uint256 y = (additionalFomo * virtualWEWE) / newFOMOBalance;
+        uint256 y = (x * virtualWEWE) / newFOMOBalance;
 
         return y;
 

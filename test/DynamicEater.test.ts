@@ -50,6 +50,9 @@ describe("Dynamic Merge Contract", function () {
 			// const response = await merge.connect(otherAccount).merge.staticCall(ethers.parseEther("1000"));
 			// expect(response).to.equal(9);
 
+			let totalVested = await merge.totalVested();
+			expect(totalVested).to.equal(0);
+
 			const weweAmount = await merge.calculateTokensOut(ethers.parseEther("1"));
 			expect(weweAmount).to.equal(1248439450686641697n);
 
