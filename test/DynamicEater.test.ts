@@ -83,8 +83,8 @@ describe("Dynamic Merge Contract", function () {
 
 			// expect(totalVested).to.equal(992063492063492063492n);
 
-			// await merge.connect(otherAccount).merge(ethers.parseUnits("100000", 9));
-			// totalVested = await merge.totalVested();
+			await merge.connect(otherAccount).merge(ethers.parseUnits("100000", 9));
+			totalVested = await merge.totalVested();
 
 			// expect(totalVested).to.equal(992063492063492063492n);
 
