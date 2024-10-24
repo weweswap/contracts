@@ -73,6 +73,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     constructor(address _wewe, address _token, uint32 _vestingDuration, uint256 _virtualFOMO, uint256 _virtualWEWE) {
+        require(_wewe != address(0), "DynamicEater: Invalid WEWE address");
+        require(_token != address(0), "DynamicEater: Invalid token address");
         wewe = _wewe;
         token = _token;
         vestingDuration = _vestingDuration;
