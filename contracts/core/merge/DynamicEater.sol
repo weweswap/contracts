@@ -36,6 +36,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     function _getWeweBalance() internal view returns (uint256) {
         // Virtual WEWE balance in 10^18 and total vested in 10^18
+        require(virtualWEWE >= _totalVested, "DynamicEater: virtualWEWE less than total vested");
         return virtualWEWE - _totalVested;
     }
 
@@ -72,6 +73,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     constructor(address _wewe, address _token, uint32 _vestingDuration, uint256 _virtualFOMO, uint256 _virtualWEWE) {
+        require(_wewe != address(0), "DynamicEater: Invalid WEWE address");
+        require(_token != address(0), "DynamicEater: Invalid token address");
         wewe = _wewe;
         token = _token;
         vestingDuration = _vestingDuration;
@@ -86,8 +89,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         virtualWEWE = _virtualWEWE;
     }
 
-    function setWhiteList(address account) external onlyOwner {
-        whiteList[account] = true;
+    function setWhiteList(address account, bool status) external onlyOwner {
+        whiteList[account] = status;
     }
 
     function setVirtualWeWEBalance(uint256 value) external onlyOwner {
@@ -113,6 +116,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         // Update the virtual balance for FOMO
         // (x+X) where x is the additional FOMO
         uint256 newFOMOBalance = virtualFOMO + additionalFomo;
+        require(newFOMOBalance > 0, "DynamicEater: newFOMOBalance must be greater than zero");
 
         // y = (x*Y) / (x+X)
         uint256 Y = virtualWEWE;
