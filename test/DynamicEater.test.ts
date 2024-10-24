@@ -69,6 +69,9 @@ describe("Dynamic Merge Contract", function () {
 			weweAmount = await merge.calculateTokensOut(ethers.parseUnits("200", decimals));
 			expect(weweAmount).to.equal(200000000000000000000n);
 
+			weweAmount = await merge.calculateTokensOut(ethers.parseUnits("500", decimals));
+			expect(weweAmount).to.equal(384615384615384615384n);
+
 			// weweAmount = await merge.addFOMO(ethers.parseUnits("100", 9));
 			// expect(weweAmount).to.equal(111111111111111111111n);
 

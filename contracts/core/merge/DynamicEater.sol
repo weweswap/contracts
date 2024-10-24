@@ -127,17 +127,20 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     // Function to simulate adding 1 more FOMO and get the new price
     function _calculateTokensOut(uint256 additionalFomo) private view returns (uint256) {
         // Update the virtual balance for FOMO
+        // (x+X) where x is the additional FOMO
         uint256 newFOMOBalance = virtualFOMO + additionalFomo;
 
         // y = (x*Y) / (x+X)
-        uint256 y = (additionalFomo * virtualWEWE) / newFOMOBalance;
+        uint256 Y = virtualWEWE;
+        uint256 y = (additionalFomo * Y) / newFOMOBalance;
 
         return y;
     }
 
     function _merge(uint256 amount, address _token, address from) internal returns (uint256) {
         // x = amount in 10^18 and result is 10^18
-        uint256 weweToTransfer = _calculateTokensOut(amount);
+        uint256 x = amount + _totalVested;
+        uint256 weweToTransfer = _calculateTokensOut(x);
 
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
