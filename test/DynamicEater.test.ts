@@ -4,8 +4,6 @@ import { ethers } from "hardhat";
 
 describe("Dynamic Merge Contract", function () {
 	const decimals = 18;
-	const ONE_MILLION = ethers.parseUnits("1000000", decimals);
-	const WE_WE_TO_DEPOSIT = ethers.parseUnits("1000000", 18);
 
 	async function deployFixture() {
 		const [owner, otherAccount] = await ethers.getSigners();
@@ -43,14 +41,14 @@ describe("Dynamic Merge Contract", function () {
 	}
 
 	describe("Merge with dynamic rates", () => {
-		it.only("Should get price as percent at start of bonding curve", async () => {
+		it("Should get price as percent at start of bonding curve", async () => {
 			const { merge } = await loadFixture(deployFixture);
 
 			const price = await merge.getCurrentPrice();
 			expect(price).to.equal(1250);
 		});
 
-		it.only("Should calcuate rates with large numbers", async () => {
+		it("Should calcuate rates with large numbers", async () => {
 			const { merge, otherAccount } = await loadFixture(deployFixture);
 
 			// Deposit wewe to setup the merge
@@ -72,24 +70,8 @@ describe("Dynamic Merge Contract", function () {
 			weweAmount = await merge.calculateTokensOut(ethers.parseUnits("500", decimals));
 			expect(weweAmount).to.equal(384615384615384615384n);
 
-			// weweAmount = await merge.addFOMO(ethers.parseUnits("100", 9));
-			// expect(weweAmount).to.equal(111111111111111111111n);
-
-			// weweAmount = await merge.addFOMO(ethers.parseUnits("100000", 9));
-			// expect(weweAmount).to.equal(992063492063492063492n);
-
-			// await merge.connect(otherAccount).merge(ethers.parseUnits("100000", 9));
-			// totalVested = await merge.totalVested();
-
-			// expect(totalVested).to.equal(992063492063492063492n);
-
 			await merge.connect(otherAccount).merge(ethers.parseUnits("100000", 9));
 			totalVested = await merge.totalVested();
-
-			// expect(totalVested).to.equal(992063492063492063492n);
-
-			// weweAmount = await merge.calculateTokensOut(ethers.parseEther("1"));
-			// expect(weweAmount).to.equal(1248439450686641697n);
 		});
 	});
 });
