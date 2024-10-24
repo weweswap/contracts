@@ -56,29 +56,6 @@ describe("Dynamic Merge Contract", function () {
 
 			const weweAmount = await merge.calculateTokensOut(ethers.parseEther("1"));
 			expect(weweAmount).to.equal(1248439450686641697n);
-
-			// await expect(merge.connect(otherAccount).merge(ethers.parseEther("1")))
-			// 	.to.emit(merge, "Merged")
-			// 	.withArgs(otherAccount.address, ethers.parseEther("1"), ethers.parseEther("9"));
-
-			// const results = [];
-
-			// let vested = await merge.vestings(otherAccount.address);
-			// // console.log(vested.amount.toString());
-			// results.push(vested.amount.toString());
-
-			// await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
-			// vested = await merge.vestings(otherAccount.address);
-			// // console.log(vested.amount.toString());
-			// results.push(vested.amount.toString());
-
-			// await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
-
-			// vested = await merge.vestings(otherAccount.address);
-			// // console.log(vested.amount.toString());
-			// results.push(vested.amount.toString());
-
-			// console.table(results);
 		});
 	});
 });
