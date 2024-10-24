@@ -95,55 +95,46 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function calculateTokensOut(uint256 x) public view returns (uint256) {
-        // Update the virtual balance for FOMO
-        uint256 newFOMOBalance = virtualFOMO + x;
+        // Let X be the virtual balance of FOMO.  Leave for readibility
+        uint256 X = virtualFOMO;
+        uint256 newFOMOBalance = X + x;
 
-        // uint256 _weweBalance = _getWeweBalance();
-        // assert(_weweBalance > 0);
+        // Let Y be the virtual balance of WEWE. Leave for readibility
+        uint256 Y = virtualWEWE;
+        Y = _getWeweBalance();
 
         // y = (x*Y) / (x+X)
-        uint256 y = (x * virtualWEWE) / newFOMOBalance;
+        uint256 y = (x * Y) / newFOMOBalance;
 
         return y;
-
-        // // Update the virtual balance for FOMO
-        // uint256 newTokenBalance = virtualFOMO + x;
-
-        // uint256 _weweBalance = _getWeweBalance();
-        // assert(_weweBalance > 0);
-
-        // // y = (x*Y) / (x+X)
-        // uint256 y = (x * SCALING_FACTOR * _weweBalance) / newTokenBalance;
-
-        // return y;
     }
 
     function _merge(uint256 amount, address token, address from) internal returns (uint256) {
         // x = amount
         uint256 weweToTransfer = calculateTokensOut(amount);
 
-        // require(
-        //     weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
-        //     "DynamicEater: Insufficient token balance to transfer"
-        // );
+        require(
+            weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
+            "DynamicEater: Insufficient token balance to transfer"
+        );
 
-        // // Merge tokens from sender
-        // IERC20(token).transferFrom(from, address(this), amount);
+        // Merge tokens from sender
+        IERC20(token).transferFrom(from, address(this), amount);
 
-        // // If transfer, dont vest
-        // if (vestingDuration != 0) {
-        //     // Curent vested
-        //     uint256 vestedAmount = vestings[from].amount;
-        //     vestings[from] = Vesting({
-        //         amount: weweToTransfer + vestedAmount,
-        //         end: block.timestamp + vestingDuration * 1 minutes
-        //     });
+        // If transfer, dont vest
+        if (vestingDuration != 0) {
+            // Curent vested
+            uint256 vestedAmount = vestings[from].amount;
+            vestings[from] = Vesting({
+                amount: weweToTransfer + vestedAmount,
+                end: block.timestamp + vestingDuration * 1 minutes
+            });
 
-        //     _totalVested += weweToTransfer;
-        // } else {
-        //     // Transfer Wewe tokens to sender
-        //     IERC20(wewe).transfer(from, weweToTransfer);
-        // }
+            _totalVested += weweToTransfer;
+        } else {
+            // Transfer Wewe tokens to sender
+            IERC20(wewe).transfer(from, weweToTransfer);
+        }
 
         emit Merged(amount, from, weweToTransfer);
 
