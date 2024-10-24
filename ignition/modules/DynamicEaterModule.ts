@@ -8,7 +8,7 @@ export default buildModule("DynamicEaterModule", m => {
 	const vestingPeriod = 60;
 	const weweVirtualBalance = ethers.parseUnits("1000000", 18);
 	const tokenVirtualBalance = ethers.parseUnits("1200000", 9);
-	const merge = m.contract("DynamicEater", [WEWE_ADDRESS, TOKEN, vestingPeriod, weweVirtualBalance, tokenVirtualBalance]);
+	const merge = m.contract("DynamicEater", [WEWE_ADDRESS, TOKEN, vestingPeriod, tokenVirtualBalance, weweVirtualBalance]);
 
 	return { merge };
 });

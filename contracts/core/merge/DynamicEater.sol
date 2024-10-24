@@ -59,7 +59,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function getRate() external view returns (uint256) {
-        return _calculateTokensOut(1);
+        uint256 decimals = IERC20Metadata(token).decimals();
+        return _calculateTokensOut(10 ** decimals);
     }
 
     function setTreasury(address _treasury) external onlyOwner {
@@ -107,19 +108,30 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         return _calculateTokensOut(x);
     }
 
-    function _calculateTokensOut(uint256 x) public view returns (uint256) {
-        // Let X be the virtual balance of FOMO.  Leave for readibility
-        uint256 X = virtualFOMO;
-        uint256 newFOMOBalance = X + x;
+    // function _calculateTokensOut(uint256 x) public view returns (uint256) {
+    //     // Let X be the virtual balance of FOMO.  Leave for readibility
+    //     uint256 X = virtualFOMO;
+    //     uint256 newFOMOBalance = X + x;
 
-        // Let Y be the virtual balance of WEWE. Leave for readibility
-        uint256 Y = virtualWEWE;
-        Y = _getWeweBalance();
+    //     // Let Y be the virtual balance of WEWE. Leave for readibility
+    //     uint256 Y = virtualWEWE;
+    //     Y = _getWeweBalance();
+
+    //     // y = (x*Y) / (x+X)
+    //     uint256 y = (x * Y) / newFOMOBalance;
+
+    //     // Tokens out should be we we and 10^18
+    //     return y;
+    // }
+
+    // Function to simulate adding 1 more FOMO and get the new price
+    function _calculateTokensOut(uint256 additionalFomo) private view returns (uint256) {
+        // Update the virtual balance for FOMO
+        uint256 newFOMOBalance = virtualFOMO + additionalFomo;
 
         // y = (x*Y) / (x+X)
-        uint256 y = (x * Y) / newFOMOBalance;
+        uint256 y = (additionalFomo * virtualWEWE) / newFOMOBalance;
 
-        // Tokens out should be we we and 10^18
         return y;
     }
 
