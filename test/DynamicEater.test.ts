@@ -1,9 +1,9 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { int } from "hardhat/internal/core/params/argumentTypes";
 
 describe("Dynamic Merge Contract", function () {
-	const maxSupply = ethers.parseEther("600000");
 	const ONE_MILLION = ethers.parseEther("1000000");
 	const WE_WE_TO_DEPOSIT = ethers.parseEther("1000000");
 
@@ -18,7 +18,7 @@ describe("Dynamic Merge Contract", function () {
 		// Max supply of 1000 tokens to eat
 		const vestingPeriod = 60;
 		const Merge = await ethers.getContractFactory("DynamicEater");
-		const merge = await Merge.deploy(await wewe.getAddress(), await token.getAddress(), vestingPeriod, maxSupply);
+		const merge = await Merge.deploy(await wewe.getAddress(), await token.getAddress(), vestingPeriod);
 
 		const isPaused = await merge.paused();
 		expect(isPaused).to.be.false;
@@ -35,86 +35,11 @@ describe("Dynamic Merge Contract", function () {
 	}
 
 	describe("Merge with dynamic rates", () => {
-		// // Working with small value
-		// it.only("Should decrease deposit rates", async () => {
-		// 	const { merge, token, wewe, otherAccount } = await loadFixture(deployFixture);
+		it.only("Should get price as percent at start of bonding curve", async () => {
+			const { merge } = await loadFixture(deployFixture);
 
-		// 	const mergeAddress = await merge.getAddress();
-
-		// 	let rate = await merge.getRate();
-		// 	expect(rate).to.be.eq(12000000000n); // Starting rate should be 120%
-
-		// 	await merge.deposit(1000n);
-
-		// 	let totalVested = await merge.totalVested();
-		// 	expect(totalVested).to.be.eq(0);
-
-		// 	const slope = await merge.slope();
-		// 	expect(slope).to.be.eq(116666666666n);
-
-		// 	const reward = await merge.getTotalWeWe(100n);
-		// 	expect(reward).to.be.eq(120000116666666666n);
-
-		// 	// // Merge 100 vult to wewe
-		// 	// await merge.connect(otherAccount).merge(100n);
-		// 	// const vested = await merge.vestings(otherAccount.address);
-
-		// 	// expect(vested.amount).to.be.eq(50n);
-		// });
-
-		it.skip("Should calcuate rates with small numbers", async () => {
-			const { merge, token, wewe, otherAccount } = await loadFixture(deployFixture);
-
-			const mergeAddress = await merge.getAddress();
-
-			// Deposit wewe to setup the merge
-			await merge.deposit(WE_WE_TO_DEPOSIT);
-
-			// let scalar = await merge.getScalar(1000);
-			// // expect(reward).to.be.eq(120);
-			// expect(scalar).to.be.eq(11989);
-
-			// scalar = await merge.getScalar(10000);
-			// expect(scalar).to.be.approximately(11900, 100);
-
-			// // reward = await merge.getTotalWeWe(30000);
-			// // expect(reward).to.be.eq(117);
-
-			// // reward = await merge.getTotalWeWe(100000);
-			// // expect(reward).to.be.eq(109);
-
-			// scalar = await merge.getScalar(500000);
-			// expect(scalar).to.be.approximately(6200, 100);
-
-			// let weweRecieved = await merge.getTotalWeWe(1000);
-			// expect(weweRecieved).to.be.approximately(1570, 10);
-
-			// weweRecieved = await merge.getTotalWeWe(500000);
-			// expect(weweRecieved).to.be.approximately(403938, 10);
-
-			let totalVested = await merge.totalVested();
-			expect(totalVested).to.be.eq(0);
-
-			let weweBalance = await wewe.balanceOf(otherAccount.address);
-			expect(weweBalance).to.be.eq(0);
-
-			let tokenBalance = await token.balanceOf(otherAccount.address);
-			expect(tokenBalance).to.be.eq(100000);
-
-			// Merge 100,000 vult to wewe
-			await merge.connect(otherAccount).merge(100000);
-			// expect(await merge.totalVested()).to.be.eq(100000);
-
-			// not yet sent
-			weweBalance = await wewe.balanceOf(otherAccount.address);
-			expect(weweBalance).to.be.eq(0);
-
-			tokenBalance = await token.balanceOf(otherAccount.address);
-			expect(tokenBalance).to.be.eq(0);
-
-			// Get the vested amount
-			const vested = await merge.vestings(otherAccount.address);
-			expect(vested.amount).to.be.eq(141925);
+			const price = await merge.getCurrentPrice();
+			expect(price).to.equal(1250);
 		});
 
 		it.only("Should calcuate rates with large numbers", async () => {
@@ -122,14 +47,6 @@ describe("Dynamic Merge Contract", function () {
 
 			// Deposit wewe to setup the merge
 			await merge.deposit(ethers.parseEther("1000000"));
-
-			// let scalar = await merge.getScalar(ethers.parseEther("1000"));
-			// expect(scalar).to.be.eq(11989);
-
-			// let weweRecieved = await merge.getTotalWeWe(ethers.parseEther("1000"));
-			// // console.log(weweRecieved.toString());
-			// // expect(weweRecieved).to.be.approximately(1570, 10);
-
 			await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
 
 			let vested = await merge.vestings(otherAccount.address);
@@ -137,13 +54,35 @@ describe("Dynamic Merge Contract", function () {
 
 			await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
 
-			vested = await merge.vestings(otherAccount.address);
-			console.log(vested.amount.toString());
+			const values_to_test = [{ amount: ethers.parseEther("100000"), expected: ethers.parseEther("100000") }];
 
-			await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
+			const results = [];
 
-			vested = await merge.vestings(otherAccount.address);
-			console.log(vested.amount.toString());
+			for (let i = 0; i < 10; i++) {
+				const amount = values_to_test[i].amount;
+				const expected = values_to_test[i].expected;
+				
+				await merge.connect(otherAccount).merge(amount);
+				vested = await merge.vestings(otherAccount.address);
+
+				const result = {
+					amount: amount.toString(),
+					vested: vested.amount.toString(),
+					expected: expected.toString(),
+				}
+
+				results.push(result);
+			}
+
+			console.table(results);
+
+			// vested = await merge.vestings(otherAccount.address);
+			// console.log(vested.amount.toString());
+
+			// await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
+
+			// vested = await merge.vestings(otherAccount.address);
+			// console.log(vested.amount.toString());
 		});
 	});
 });

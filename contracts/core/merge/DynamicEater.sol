@@ -32,6 +32,14 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     uint256 public virtualFOMO; // FOMO balance
     uint256 public virtualWEWE; // WEWE balance
 
+    uint256 constant SCALING_FACTOR = 1_000;
+
+    function getCurrentPrice() public view returns (uint256) {
+        // Calculate the price with scaling factor (p = Y / X)
+        // Price in percentage, scaled by 1000 (i.e., 1.25% would be 12.5 scaled by 1000)
+        return (virtualWEWE * SCALING_FACTOR) / virtualFOMO;
+    }
+
     function canClaim(address account) external view returns (bool) {
         return vestings[account].end <= block.timestamp;
     }
@@ -56,27 +64,25 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         return _totalVested;
     }
 
-    constructor(address _wewe, address _vult, uint32 _vestingDuration, uint256 _maxSupply) {
+    constructor(address _wewe, address _vult, uint32 _vestingDuration) {
         wewe = _wewe;
         _token = _vult;
         vestingDuration = _vestingDuration;
-        maxSupply = _maxSupply;
 
-        virtualFOMO = 800;
-        virtualWEWE = 1000;
+        // Initial virtual balances
+        virtualFOMO = 800 * 1e18;
+        virtualWEWE = 1000 * 1e18;
     }
 
     function setWhiteList(address account) external onlyOwner {
         whiteList[account] = true;
     }
 
-    function setMaxSupply(uint256 _maxSupply) external onlyOwner {
+    function setVitualBalance(uint256 _maxSupply) external onlyOwner {
         maxSupply = _maxSupply;
     }
 
     function calculateTokensOut(uint256 x) public view returns (uint256) {
-        uint256 SCALING_FACTOR = 1_000;
-
         // Update the virtual balance for FOMO
         uint256 newTokenBalance = virtualFOMO + x;
 
@@ -147,11 +153,6 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     function deposit(uint256 amount) external onlyOwner {
         _deposit(amount);
     }
-
-    // function depositRequired() external onlyOwner {
-    //     uint256 amount = _getCurrentRate(maxSupply - _totalVested);
-    //     _deposit(amount);
-    // }
 
     function sweep() external onlyOwner {
         uint256 balance = IERC20(wewe).balanceOf(address(this));
