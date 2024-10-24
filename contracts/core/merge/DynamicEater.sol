@@ -16,21 +16,35 @@ struct Vesting {
 
 contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     int256 internal constant RATE_PRECISION = 100_000;
-    address internal _token;
+    address internal token;
     address public wewe;
     address public treasury;
 
     uint256 internal _totalVested;
     uint256 internal _currentHeld;
     uint256 public maxSupply; // Max supply of tokens to eat
-
-    int256 public constant maxRate = 12 * 10 ** 4; // 120% or 1.2
-    int256 public constant minRate = 5 * 10 ** 4; // 50% or 0.5
     uint32 public vestingDuration;
-    uint256 public ratio = 131; // scaled from 1.31
 
     mapping(address => Vesting) public vestings;
     mapping(address => bool) public whiteList;
+
+    // Initial virtual balances
+    uint256 public virtualFOMO; // FOMO balance
+    uint256 public virtualWEWE; // WEWE balance
+
+    uint256 constant SCALING_FACTOR = 1_000;
+
+    function _getWeweBalance() internal view returns (uint256) {
+        // Virtual WEWE balance in 10^18 and total vested in 10^18
+        return virtualWEWE - _totalVested;
+    }
+
+    function getCurrentPrice() public view returns (uint256) {
+        // Calculate the price with scaling factor (p = Y / X)
+        // Price in percentage, scaled by 1000 (i.e., 1.25% would be 12.5 scaled by 1000)
+        uint256 _weweBalance = _getWeweBalance();
+        return (_weweBalance * SCALING_FACTOR) / virtualFOMO;
+    }
 
     function canClaim(address account) external view returns (bool) {
         return vestings[account].end <= block.timestamp;
@@ -41,11 +55,12 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function getToken() external view returns (address) {
-        return _token;
+        return token;
     }
 
     function getRate() external view returns (uint256) {
-        return _getInstantaneousRate();
+        uint256 decimals = IERC20Metadata(token).decimals();
+        return _calculateTokensOut(10 ** decimals);
     }
 
     function setTreasury(address _treasury) external onlyOwner {
@@ -56,95 +71,89 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         return _totalVested;
     }
 
-    constructor(address _wewe, address _vult, uint32 _vestingDuration, uint256 _maxSupply) {
+    constructor(address _wewe, address _token, uint32 _vestingDuration, uint256 _virtualFOMO, uint256 _virtualWEWE) {
         wewe = _wewe;
-        _token = _vult;
+        token = _token;
         vestingDuration = _vestingDuration;
-        maxSupply = _maxSupply;
+
+        uint256 decimals = IERC20Metadata(_token).decimals();
+        if (decimals < 18) {
+            _virtualFOMO = _virtualFOMO * (10 ** (18 - decimals));
+        }
+
+        // Initial virtual balances in 10^18
+        virtualFOMO = _virtualFOMO;
+        virtualWEWE = _virtualWEWE;
     }
 
     function setWhiteList(address account) external onlyOwner {
         whiteList[account] = true;
     }
 
-    function setMaxSupply(uint256 _maxSupply) external onlyOwner {
-        maxSupply = _maxSupply;
+    function setVitualWeWEBalance(uint256 value) external onlyOwner {
+        virtualWEWE = value;
     }
 
-    function slope() public view returns (int256) {
-        int256 delta_x = int256(maxSupply) / 10 ** 18; // Scaling factor to 1
-        int256 _slope = (maxRate - minRate) / delta_x; // Calculating slope from max and min values
-        return _slope * 10 ** 4; // Scaling factor to 1_000
+    function setVitualTokenBalance(uint256 value) external onlyOwner {
+        virtualFOMO = value;
     }
 
-    // Calculate the instantaneous rate
-    function _getInstantaneousRate() internal view returns (uint256) {
-        uint256 x1 = _totalVested;
-        return _getRate(x1, x1 + 1);
-    }
-
-    // Calculate the amount of Wewe to transfer based on the current rate
-    function _getCurrentRate(uint256 amount) internal view returns (uint256) {
-        uint256 x1 = _totalVested;
-        return _getRate(x1, x1 + amount);
-    }
-
-    function getScalar(uint256 mergeAmount, uint256 y1) public view returns (uint256) {
-        uint8 decimals = IERC20Metadata(_token).decimals();
-        mergeAmount = mergeAmount / 10 ** decimals;
-
-        uint256 SCALE_FACTOR = 100;
-        mergeAmount = mergeAmount * SCALE_FACTOR;
-        uint256 intercept = 120 * SCALE_FACTOR;
-        // uint256 intercept = (120 - y1) * SCALE_FACTOR;
-        uint256 y_percents = intercept - mergeAmount / 8571;
-        return y_percents;
-    }
-
-    // Function to calculate rewards based on spending amount using a linear decay model
-    function getTotalWeWe(uint256 mergeAmount, uint256 y1) public view returns (uint256) {
-        uint256 SCALE_FACTOR = 100;
-        uint256 scalar = getScalar(mergeAmount, y1);
-        uint256 reward = (mergeAmount * ratio * scalar) / SCALE_FACTOR;
-
-        return reward / (SCALE_FACTOR * SCALE_FACTOR);
-    }
-
-    // x1 Lower bounds of the integral
-    // x2 Upper bounds of the integral
-    function _getRate(uint256 x1, uint256 x2) internal view returns (uint256) {
-        if (maxSupply == 0) {
-            return 0;
+    function calculateTokensOut(uint256 x) public view returns (uint256) {
+        // Check casting where x is the token value
+        uint256 decimals = IERC20Metadata(token).decimals();
+        if (decimals < 18) {
+            x = x * (10 ** (18 - IERC20Metadata(token).decimals()));
         }
 
-        // Slope is a constant, from max rate at 0 tokens, to min rate at max supply
-        int256 dxdy = (minRate - maxRate) / int256(maxSupply);
-        int256 intercept = maxRate * RATE_PRECISION;
-
-        // Calculate area using definite integration formula (y = mx + c) multiplied by 100_000 to keep precision
-        int256 area1 = ((dxdy * int256(x2 ** 2)) / 2) * RATE_PRECISION + intercept * int256(x2);
-        int256 area2 = ((dxdy * int256(x1 ** 2)) / 2) * RATE_PRECISION + intercept * int256(x1);
-        int256 area = area1 - area2;
-
-        // Adjust for the decimal factor used (divide by 100_000)
-        require(area >= 0, "Area calculation resulted in a negative value");
-        return uint256(area);
+        return _calculateTokensOut(x);
     }
 
-    function _merge(uint256 amount, address token, address from) internal {
-        // uint256 weweToTransfer = getTotalWeWe(_totalVested + amount, 0);
-        uint256 y1 = 0;
-        if (_totalVested > 0) y1 = (_totalVested / 8571) * 10 ** 9; // come down the pervious value to the y axis intercept
+    // function _calculateTokensOut(uint256 x) public view returns (uint256) {
+    //     // Let X be the virtual balance of FOMO.  Leave for readibility
+    //     uint256 X = virtualFOMO;
+    //     uint256 newFOMOBalance = X + x;
 
-        uint256 weweToTransfer = getTotalWeWe(amount, y1);
+    //     // Let Y be the virtual balance of WEWE. Leave for readibility
+    //     uint256 Y = virtualWEWE;
+    //     Y = _getWeweBalance();
+
+    //     // y = (x*Y) / (x+X)
+    //     uint256 y = (x * Y) / newFOMOBalance;
+
+    //     // Tokens out should be we we and 10^18
+    //     return y;
+    // }
+
+    // Function to simulate adding 1 more FOMO and get the new price
+    function _calculateTokensOut(uint256 additionalFomo) private view returns (uint256) {
+        // Update the virtual balance for FOMO
+        // (x+X) where x is the additional FOMO
+        uint256 newFOMOBalance = virtualFOMO + additionalFomo;
+
+        // y = (x*Y) / (x+X)
+        uint256 Y = virtualWEWE;
+        uint256 y = (additionalFomo * Y) / newFOMOBalance;
+
+        return y;
+    }
+
+    function _merge(uint256 amount, address _token, address from) internal returns (uint256) {
+        // x = amount in 10^18 and result is 10^18
+        uint256 x = amount + _totalVested;
+        uint256 weweToTransfer = _calculateTokensOut(x);
 
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
             "DynamicEater: Insufficient token balance to transfer"
         );
 
-        // Merge tokens from sender
-        IERC20(token).transferFrom(from, address(this), amount);
+        // Merge tokens from sender.  Down cast back to the token decimals
+        uint256 decimals = IERC20Metadata(token).decimals();
+        if (decimals < 18) {
+            amount = amount * (10 ** (18 - decimals));
+        }
+
+        IERC20(_token).transferFrom(from, address(this), amount);
 
         // If transfer, dont vest
         if (vestingDuration != 0) {
@@ -155,34 +164,55 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
                 end: block.timestamp + vestingDuration * 1 minutes
             });
 
+            // 10^18
             _totalVested += weweToTransfer;
         } else {
-            // Transfer Wewe tokens to sender
+            // Transfer Wewe tokens to sender in 10^18
             IERC20(wewe).transfer(from, weweToTransfer);
         }
 
-        emit Merged(amount, from);
+        emit Merged(amount, from, weweToTransfer);
+
+        return weweToTransfer;
     }
 
     function mergeAndSell(uint256 amount, IAMM amm, bytes calldata extraData) external nonReentrant whenNotPaused {
-        uint256 balance = IERC20(_token).balanceOf(msg.sender);
+        uint256 balance = IERC20(token).balanceOf(msg.sender);
         require(balance >= amount, "DynamicEater: Insufficient balance to eat");
 
-        _merge(amount, _token, msg.sender);
+        _merge(amount, token, msg.sender);
 
         // Approve the AMM to use the tokens now in this contract
-        IERC20(_token).approve(address(amm), amount);
+        IERC20(token).approve(address(amm), amount);
 
         // Sell the tokens, can fund the contract with the token
         address recipient = treasury == address(0) ? address(this) : treasury;
-        amm.sell(amount, _token, recipient, extraData);
+        amm.sell(amount, token, recipient, extraData);
     }
 
-    function merge(uint256 amount) external virtual whenNotPaused {
-        uint256 balance = IERC20(_token).balanceOf(msg.sender);
+    function merge(uint256 amount) external virtual whenNotPaused returns (uint256) {
+        uint256 balance = IERC20(token).balanceOf(msg.sender);
         require(balance >= amount, "DynamicEater: Insufficient balance to eat");
 
-        _merge(amount, _token, msg.sender);
+        // Check coins decimals.  Assume the input is in the same decimals as the token
+        uint256 decimals = IERC20Metadata(token).decimals();
+        if (decimals < 18) {
+            amount = amount * (10 ** (18 - decimals));
+        }
+
+        return _merge(amount, token, msg.sender);
+    }
+
+    function mergeAll() external virtual whenNotPaused returns (uint256) {
+        uint256 balance = IERC20(token).balanceOf(msg.sender);
+
+        // Check coins decimals
+        uint256 decimals = IERC20Metadata(token).decimals();
+        if (decimals < 18) {
+            balance = balance * (10 ** (18 - decimals));
+        }
+
+        return _merge(balance, token, msg.sender);
     }
 
     function claim() external whenNotPaused whenClaimable(msg.sender) {
@@ -194,11 +224,6 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     // @notice Fund this contract with wewe token
     function deposit(uint256 amount) external onlyOwner {
-        _deposit(amount);
-    }
-
-    function depositRequired() external onlyOwner {
-        uint256 amount = _getCurrentRate(maxSupply - _totalVested);
         _deposit(amount);
     }
 
@@ -216,10 +241,10 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         bytes calldata
     ) external nonReentrant whenNotPaused {
         // After wewe approve and call, it will call this function
-        require(_token != address(0), "DynamicEater: Token address not set");
+        require(token != address(0), "DynamicEater: Token address not set");
 
-        // Eat the underlying token "_token" with the amount of "amount"
-        _merge(amount, _token, from);
+        // Eat the underlying token "token" with the amount of "amount"
+        _merge(amount, token, from);
     }
 
     function togglePause() external onlyOwner {
@@ -250,7 +275,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     modifier whenSolvent(uint256 amountToMerge) {
-        uint256 newAmountToVest = (amountToMerge * _getCurrentRate(amountToMerge)) / 100_000;
+        uint256 newAmountToVest = 0;
         require(
             IERC20(wewe).balanceOf(address(this)) >= _totalVested + newAmountToVest,
             "DynamicEater: Insufficient Wewe balance"
@@ -258,6 +283,6 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         _;
     }
 
-    event Merged(uint256 amount, address indexed account);
+    event Merged(uint256 amount, address indexed account, uint256 weweAmount);
     event RateChanged(uint256 newRate);
 }

@@ -3,147 +3,93 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 describe("Dynamic Merge Contract", function () {
-	const maxSupply = ethers.parseEther("600000");
-	const ONE_MILLION = ethers.parseEther("1000000");
-	const WE_WE_TO_DEPOSIT = ethers.parseEther("1000000");
+	const decimals = 18;
+	const ONE_MILLION = ethers.parseUnits("1000000", decimals);
+	const WE_WE_TO_DEPOSIT = ethers.parseUnits("1000000", 18);
 
 	async function deployFixture() {
 		const [owner, otherAccount] = await ethers.getSigners();
 
 		const Wewe = await ethers.getContractFactory("Wewe");
 		const wewe = await Wewe.deploy();
-		const Token = await ethers.getContractFactory("MockToken");
-		const token = await Token.deploy("Token", "TKN");
+		
+		const Token = await ethers.getContractFactory("MockToken2");
+		const token = await Token.deploy("Token", "TKN", decimals);
 
 		// Max supply of 1000 tokens to eat
 		const vestingPeriod = 60;
+
+		const virtualFomo = ethers.parseUnits("800", decimals);
+		const virtualWeWe = ethers.parseUnits("1000", decimals);
+
 		const Merge = await ethers.getContractFactory("DynamicEater");
-		const merge = await Merge.deploy(await wewe.getAddress(), await token.getAddress(), vestingPeriod, maxSupply);
+		const merge = await Merge.deploy(await wewe.getAddress(), await token.getAddress(), vestingPeriod, virtualFomo, virtualWeWe);
 
 		const isPaused = await merge.paused();
 		expect(isPaused).to.be.false;
 
-		await token.transfer(otherAccount, ethers.parseEther("1000000"));
+		const deployedVirtualFomo = await merge.virtualFOMO();
+		expect(deployedVirtualFomo).to.equal(ethers.parseUnits("800", 18));
+
+		await token.transfer(otherAccount, ethers.parseUnits("1000000", decimals));
 
 		const mergeAddress = await merge.getAddress();
 
 		// Arrange
-		await wewe.approve(mergeAddress, ONE_MILLION);
+		await wewe.approve(mergeAddress, ethers.parseUnits("1000000", 18));
 		await token.connect(otherAccount).approve(mergeAddress, ONE_MILLION);
 
 		return { owner, otherAccount, token, wewe, merge };
 	}
 
 	describe("Merge with dynamic rates", () => {
-		// // Working with small value
-		// it.only("Should decrease deposit rates", async () => {
-		// 	const { merge, token, wewe, otherAccount } = await loadFixture(deployFixture);
+		it.only("Should get price as percent at start of bonding curve", async () => {
+			const { merge } = await loadFixture(deployFixture);
 
-		// 	const mergeAddress = await merge.getAddress();
-
-		// 	let rate = await merge.getRate();
-		// 	expect(rate).to.be.eq(12000000000n); // Starting rate should be 120%
-
-		// 	await merge.deposit(1000n);
-
-		// 	let totalVested = await merge.totalVested();
-		// 	expect(totalVested).to.be.eq(0);
-
-		// 	const slope = await merge.slope();
-		// 	expect(slope).to.be.eq(116666666666n);
-
-		// 	const reward = await merge.getTotalWeWe(100n);
-		// 	expect(reward).to.be.eq(120000116666666666n);
-
-		// 	// // Merge 100 vult to wewe
-		// 	// await merge.connect(otherAccount).merge(100n);
-		// 	// const vested = await merge.vestings(otherAccount.address);
-
-		// 	// expect(vested.amount).to.be.eq(50n);
-		// });
-
-		it.skip("Should calcuate rates with small numbers", async () => {
-			const { merge, token, wewe, otherAccount } = await loadFixture(deployFixture);
-
-			const mergeAddress = await merge.getAddress();
-
-			// Deposit wewe to setup the merge
-			await merge.deposit(WE_WE_TO_DEPOSIT);
-
-			// let scalar = await merge.getScalar(1000);
-			// // expect(reward).to.be.eq(120);
-			// expect(scalar).to.be.eq(11989);
-
-			// scalar = await merge.getScalar(10000);
-			// expect(scalar).to.be.approximately(11900, 100);
-
-			// // reward = await merge.getTotalWeWe(30000);
-			// // expect(reward).to.be.eq(117);
-
-			// // reward = await merge.getTotalWeWe(100000);
-			// // expect(reward).to.be.eq(109);
-
-			// scalar = await merge.getScalar(500000);
-			// expect(scalar).to.be.approximately(6200, 100);
-
-			// let weweRecieved = await merge.getTotalWeWe(1000);
-			// expect(weweRecieved).to.be.approximately(1570, 10);
-
-			// weweRecieved = await merge.getTotalWeWe(500000);
-			// expect(weweRecieved).to.be.approximately(403938, 10);
-
-			let totalVested = await merge.totalVested();
-			expect(totalVested).to.be.eq(0);
-
-			let weweBalance = await wewe.balanceOf(otherAccount.address);
-			expect(weweBalance).to.be.eq(0);
-
-			let tokenBalance = await token.balanceOf(otherAccount.address);
-			expect(tokenBalance).to.be.eq(100000);
-
-			// Merge 100,000 vult to wewe
-			await merge.connect(otherAccount).merge(100000);
-			// expect(await merge.totalVested()).to.be.eq(100000);
-
-			// not yet sent
-			weweBalance = await wewe.balanceOf(otherAccount.address);
-			expect(weweBalance).to.be.eq(0);
-
-			tokenBalance = await token.balanceOf(otherAccount.address);
-			expect(tokenBalance).to.be.eq(0);
-
-			// Get the vested amount
-			const vested = await merge.vestings(otherAccount.address);
-			expect(vested.amount).to.be.eq(141925);
+			const price = await merge.getCurrentPrice();
+			expect(price).to.equal(1250);
 		});
 
 		it.only("Should calcuate rates with large numbers", async () => {
 			const { merge, otherAccount } = await loadFixture(deployFixture);
 
 			// Deposit wewe to setup the merge
-			await merge.deposit(ethers.parseEther("1000000"));
+			await merge.deposit(ethers.parseEther("10000"));
 
-			// let scalar = await merge.getScalar(ethers.parseEther("1000"));
-			// expect(scalar).to.be.eq(11989);
+			let totalVested = await merge.totalVested();
+			expect(totalVested).to.equal(0);
 
-			// let weweRecieved = await merge.getTotalWeWe(ethers.parseEther("1000"));
-			// // console.log(weweRecieved.toString());
-			// // expect(weweRecieved).to.be.approximately(1570, 10);
+			// In 10^18 we we
+			let weweAmount = await merge.calculateTokensOut(ethers.parseUnits("1", decimals));
+			expect(weweAmount).to.equal(1248439450686641697n);
 
-			await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
+			weweAmount = await merge.calculateTokensOut(ethers.parseUnits("1", decimals));
+			expect(weweAmount).to.equal(1248439450686641697n);
 
-			let vested = await merge.vestings(otherAccount.address);
-			console.log(vested.amount.toString());
+			weweAmount = await merge.calculateTokensOut(ethers.parseUnits("200", decimals));
+			expect(weweAmount).to.equal(200000000000000000000n);
 
-			await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
+			weweAmount = await merge.calculateTokensOut(ethers.parseUnits("500", decimals));
+			expect(weweAmount).to.equal(384615384615384615384n);
 
-			vested = await merge.vestings(otherAccount.address);
-			console.log(vested.amount.toString());
+			// weweAmount = await merge.addFOMO(ethers.parseUnits("100", 9));
+			// expect(weweAmount).to.equal(111111111111111111111n);
 
-			await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
+			// weweAmount = await merge.addFOMO(ethers.parseUnits("100000", 9));
+			// expect(weweAmount).to.equal(992063492063492063492n);
 
-			vested = await merge.vestings(otherAccount.address);
-			console.log(vested.amount.toString());
+			// await merge.connect(otherAccount).merge(ethers.parseUnits("100000", 9));
+			// totalVested = await merge.totalVested();
+
+			// expect(totalVested).to.equal(992063492063492063492n);
+
+			// await merge.connect(otherAccount).merge(ethers.parseUnits("100000", 9));
+			// totalVested = await merge.totalVested();
+
+			// expect(totalVested).to.equal(992063492063492063492n);
+
+			// weweAmount = await merge.calculateTokensOut(ethers.parseEther("1"));
+			// expect(weweAmount).to.equal(1248439450686641697n);
 		});
 	});
 });
