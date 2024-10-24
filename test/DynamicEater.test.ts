@@ -48,7 +48,7 @@ describe("Dynamic Merge Contract", function () {
 			expect(price).to.equal(1250);
 		});
 
-		it("Should calcuate rates with large numbers", async () => {
+		it("Should calculate rates with large numbers", async () => {
 			const { merge, otherAccount } = await loadFixture(deployFixture);
 
 			// Deposit wewe to setup the merge

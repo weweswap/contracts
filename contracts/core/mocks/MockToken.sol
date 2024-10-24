@@ -45,11 +45,11 @@ contract MockToken2 is Context, IERC20, IERC20Metadata {
      * All two of these values are immutable: they can only be set once during
      * construction.
      */
-    constructor(string memory name_, string memory symbol_, uint8 decmails_) {
+    constructor(string memory name_, string memory symbol_, uint8 decimals_) {
         _name = name_;
         _symbol = symbol_;
-        _decimals = decmails_;
-        _mint(msg.sender, 1000000 * 10 ** decmails_);
+        _decimals = decimals_;
+        _mint(msg.sender, 1000000 * 10 ** decimals_);
     }
 
     /**

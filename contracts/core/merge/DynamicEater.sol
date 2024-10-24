@@ -252,7 +252,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     modifier onlyWhiteListed(address account) {
-        require(!paused(), "DynamicEater: Contract is paused");
+        require(whiteList[account], "DynamicEater: Caller is not whitelisted");
         _;
     }
 
@@ -267,9 +267,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     modifier whenSolvent(uint256 amountToMerge) {
-        uint256 newAmountToVest = 0;
         require(
-            IERC20(wewe).balanceOf(address(this)) >= _totalVested + newAmountToVest,
+            IERC20(wewe).balanceOf(address(this)) >= _totalVested + amountToMerge,
             "DynamicEater: Insufficient Wewe balance"
         );
         _;
