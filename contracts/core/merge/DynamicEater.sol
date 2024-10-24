@@ -35,6 +35,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     uint256 constant SCALING_FACTOR = 1_000;
 
     function _getWeweBalance() internal view returns (uint256) {
+        // Virtual WEWE balance in 10^18 and total vested in 10^18
         return virtualWEWE - _totalVested;
     }
 
@@ -58,7 +59,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function getRate() external view returns (uint256) {
-        return calculateTokensOut(1);
+        return _calculateTokensOut(1);
     }
 
     function setTreasury(address _treasury) external onlyOwner {
@@ -74,7 +75,12 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         token = _token;
         vestingDuration = _vestingDuration;
 
-        // Initial virtual balances
+        uint256 decimals = IERC20Metadata(_token).decimals();
+        if (decimals < 18) {
+            _virtualFOMO = _virtualFOMO * (10 ** (18 - decimals));
+        }
+
+        // Initial virtual balances in 10^18
         virtualFOMO = _virtualFOMO;
         virtualWEWE = _virtualWEWE;
     }
@@ -83,11 +89,25 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         whiteList[account] = true;
     }
 
-    function setVitualBalance(uint256 _maxSupply) external onlyOwner {
-        maxSupply = _maxSupply;
+    function setVitualWeWEBalance(uint256 value) external onlyOwner {
+        virtualWEWE = value;
+    }
+
+    function setVitualTokenBalance(uint256 value) external onlyOwner {
+        virtualFOMO = value;
     }
 
     function calculateTokensOut(uint256 x) public view returns (uint256) {
+        // Check casting where x is the token value
+        uint256 decimals = IERC20Metadata(token).decimals();
+        if (decimals < 18) {
+            x = x * (10 ** (18 - IERC20Metadata(token).decimals()));
+        }
+
+        return _calculateTokensOut(x);
+    }
+
+    function _calculateTokensOut(uint256 x) public view returns (uint256) {
         // Let X be the virtual balance of FOMO.  Leave for readibility
         uint256 X = virtualFOMO;
         uint256 newFOMOBalance = X + x;
@@ -99,20 +119,26 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         // y = (x*Y) / (x+X)
         uint256 y = (x * Y) / newFOMOBalance;
 
+        // Tokens out should be we we and 10^18
         return y;
     }
 
-    function _merge(uint256 amount, address token, address from) internal returns (uint256) {
-        // x = amount
-        uint256 weweToTransfer = calculateTokensOut(amount);
+    function _merge(uint256 amount, address _token, address from) internal returns (uint256) {
+        // x = amount in 10^18 and result is 10^18
+        uint256 weweToTransfer = _calculateTokensOut(amount);
 
         require(
             weweToTransfer <= IERC20(wewe).balanceOf(address(this)),
             "DynamicEater: Insufficient token balance to transfer"
         );
 
-        // Merge tokens from sender
-        IERC20(token).transferFrom(from, address(this), amount);
+        // Merge tokens from sender.  Down cast back to the token decimals
+        uint256 decimals = IERC20Metadata(token).decimals();
+        if (decimals < 18) {
+            amount = amount * (10 ** (18 - decimals));
+        }
+
+        IERC20(_token).transferFrom(from, address(this), amount);
 
         // If transfer, dont vest
         if (vestingDuration != 0) {
@@ -123,9 +149,10 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
                 end: block.timestamp + vestingDuration * 1 minutes
             });
 
+            // 10^18
             _totalVested += weweToTransfer;
         } else {
-            // Transfer Wewe tokens to sender
+            // Transfer Wewe tokens to sender in 10^18
             IERC20(wewe).transfer(from, weweToTransfer);
         }
 
@@ -152,11 +179,24 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         uint256 balance = IERC20(token).balanceOf(msg.sender);
         require(balance >= amount, "DynamicEater: Insufficient balance to eat");
 
+        // Check coins decimals.  Assume the input is in the same decimals as the token
+        uint256 decimals = IERC20Metadata(token).decimals();
+        if (decimals < 18) {
+            amount = amount * (10 ** (18 - decimals));
+        }
+
         return _merge(amount, token, msg.sender);
     }
 
     function mergeAll() external virtual whenNotPaused returns (uint256) {
         uint256 balance = IERC20(token).balanceOf(msg.sender);
+
+        // Check coins decimals
+        uint256 decimals = IERC20Metadata(token).decimals();
+        if (decimals < 18) {
+            balance = balance * (10 ** (18 - decimals));
+        }
+
         return _merge(balance, token, msg.sender);
     }
 
