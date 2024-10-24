@@ -46,43 +46,35 @@ describe("Dynamic Merge Contract", function () {
 			const { merge, otherAccount } = await loadFixture(deployFixture);
 
 			// Deposit wewe to setup the merge
-			await merge.deposit(ethers.parseEther("1000000"));
-			await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
+			// await merge.deposit(ethers.parseEther("10000"));
+			// const response = await merge.connect(otherAccount).merge.staticCall(ethers.parseEther("1000"));
+			// expect(response).to.equal(9);
 
-			let vested = await merge.vestings(otherAccount.address);
-			console.log(vested.amount.toString());
+			const weweAmount = await merge.calculateTokensOut(ethers.parseEther("1"));
+			expect(weweAmount).to.equal(1248439450686641697n);
 
-			await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
+			// await expect(merge.connect(otherAccount).merge(ethers.parseEther("1")))
+			// 	.to.emit(merge, "Merged")
+			// 	.withArgs(otherAccount.address, ethers.parseEther("1"), ethers.parseEther("9"));
 
-			const values_to_test = [{ amount: ethers.parseEther("100000"), expected: ethers.parseEther("100000") }];
+			// const results = [];
 
-			const results = [];
+			// let vested = await merge.vestings(otherAccount.address);
+			// // console.log(vested.amount.toString());
+			// results.push(vested.amount.toString());
 
-			for (let i = 0; i < 10; i++) {
-				const amount = values_to_test[i].amount;
-				const expected = values_to_test[i].expected;
-				
-				await merge.connect(otherAccount).merge(amount);
-				vested = await merge.vestings(otherAccount.address);
-
-				const result = {
-					amount: amount.toString(),
-					vested: vested.amount.toString(),
-					expected: expected.toString(),
-				}
-
-				results.push(result);
-			}
-
-			console.table(results);
-
+			// await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
 			// vested = await merge.vestings(otherAccount.address);
-			// console.log(vested.amount.toString());
+			// // console.log(vested.amount.toString());
+			// results.push(vested.amount.toString());
 
 			// await merge.connect(otherAccount).merge(ethers.parseEther("100000"));
 
 			// vested = await merge.vestings(otherAccount.address);
-			// console.log(vested.amount.toString());
+			// // console.log(vested.amount.toString());
+			// results.push(vested.amount.toString());
+
+			// console.table(results);
 		});
 	});
 });
