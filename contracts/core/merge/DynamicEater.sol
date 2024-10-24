@@ -87,8 +87,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         virtualWEWE = _virtualWEWE;
     }
 
-    function setWhiteList(address account) external onlyOwner {
-        whiteList[account] = true;
+    function setWhiteList(address account, bool status) external onlyOwner {
+        whiteList[account] = status;
     }
 
     function setVitualWeWEBalance(uint256 value) external onlyOwner {
