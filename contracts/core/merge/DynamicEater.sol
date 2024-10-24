@@ -114,6 +114,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         // Update the virtual balance for FOMO
         // (x+X) where x is the additional FOMO
         uint256 newFOMOBalance = virtualFOMO + additionalFomo;
+        require(newFOMOBalance > 0, "DynamicEater: newFOMOBalance must be greater than zero");
 
         // y = (x*Y) / (x+X)
         uint256 Y = virtualWEWE;
