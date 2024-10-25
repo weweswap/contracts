@@ -10,15 +10,16 @@
 		"listPositions": "npx hardhat --network localhost run ./scripts/listPositions.ts",
 		"format:write": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.ts'",
 		"format:check": "prettier --check 'contracts/**/*.sol' 'scripts/**/*.ts'",
-		"prettier": "npm run format:check --all",
-		"prettier:fix": "npm run format:write --all",
+		"prettier": "yarn run format:check --all",
+		"prettier:fix": "yarn run format:write --all",
 		"prepare": "husky",
 		"deploy:chaos:base": "npx hardhat ignition deploy ignition/modules/CHAOS.ts --network base --verify",
 		"deploy:farm:base": "npx hardhat ignition deploy ignition/modules/Farm.ts --network base --verify",
 		"deploy:bro:base": "npx hardhat ignition deploy ignition/modules/BroMerge.ts --network base --verify",
 		"deploy:factory": "npx hardhat ignition deploy ignition/modules/MergeFactory.ts --network base --verify",
 		"deploy:uni": "npx hardhat ignition deploy ignition/modules/UniAdaptor.ts --network base --verify",
-		"deploy:mergewithmarket": "npx hardhat ignition deploy ignition/modules/MergeWithMarket.ts --network base --verify"
+		"deploy:mergewithmarket": "npx hardhat ignition deploy ignition/modules/MergeWithMarket.ts --network base --verify",
+		"deploy:dynamic:base": "npx hardhat ignition deploy ignition/modules/DynamicEaterModule.ts --network base --verify"
 	},
 	"devDependencies": {
 		"@nomicfoundation/hardhat-ethers": "^3.0.8",
@@ -36,6 +37,8 @@
 		"prettier": "^3.2.5",
 		"prettier-plugin-solidity": "^1.3.1",
 		"ts-jest": "^29.2.5",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.6.3",
 		"wait-on": "^8.0.0"
 	},
 	"dependencies": {
