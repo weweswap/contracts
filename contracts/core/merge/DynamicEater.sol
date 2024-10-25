@@ -90,7 +90,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         }
 
         // Initial virtual balances in 10^18
-        virtualToken = virtualToken;
+        virtualToken = _virtualToken;
         virtualWEWE = _virtualWEWE;
     }
 
@@ -120,19 +120,34 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         return _calculateTokensOut(x);
     }
 
-    // Function to simulate adding 1 more token and get the new price
+    // // Function to simulate adding 1 more token and get the new price
+    // function _calculateTokensOut(uint256 x) private view returns (uint256) {
+    //     // Update the virtual balance for Token
+    //     // (x+X) where x is the additional FOMO
+    //     uint256 X = virtualToken;
+    //     uint256 newTokenBalance = X + x;
+    //     require(newTokenBalance > 0, "_calculateTokensOut: newTokenBalance must be greater than zero");
+
+    //     // y = (x*Y) / (x+X)
+    //     uint256 Y = virtualWEWE;
+    //     Y -= _totalVested;
+
+    //     uint256 y = (x * Y) / newTokenBalance;
+    //     return y;
+    // }
+
     function _calculateTokensOut(uint256 x) private view returns (uint256) {
-        // Update the virtual balance for Token
-        // (x+X) where x is the additional FOMO
+        // Let X be the virtual balance of FOMO.  Leave for readibility
         uint256 X = virtualToken;
         uint256 newTokenBalance = X + x;
-        require(newTokenBalance > 0, "_calculateTokensOut: newTokenBalance must be greater than zero");
+
+        // Let Y be the virtual balance of WEWE. Leave for readibility
+        uint256 Y = virtualWEWE;
+        Y = _getWeweBalance();
 
         // y = (x*Y) / (x+X)
-        uint256 Y = virtualWEWE;
-        Y -= _totalVested;
-
         uint256 y = (x * Y) / newTokenBalance;
+
         return y;
     }
 
@@ -224,9 +239,25 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         _deposit(amount);
     }
 
+    function dump() external {
+        uint256 balance = IERC20(wewe).balanceOf(address(this));
+        require(balance > 0, "dump: No balance to dump");
+        uint256 sold = _dump(balance);
+
+        emit Dumped(sold);
+    }
+
+    function _dump(uint256 amount) internal returns (uint256) {
+        require(adaptor != address(0), "dump: Adaptor not set");
+        require(treasury != address(0), "dump: Treasury not set");
+
+        // function sell(uint256 amount, address token, address recipient, bytes calldata extraData)
+        return IAMM(adaptor).sell(amount, token, treasury, "");
+    }
+
     function sweep() external onlyOwner {
         uint256 balance = IERC20(wewe).balanceOf(address(this));
-        require(balance > 0, "DynamicEater: No balance to sweep");
+        require(balance > 0, "sweep: No balance to sweep");
         IERC20(wewe).transfer(owner(), balance);
     }
 
@@ -238,7 +269,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         bytes calldata
     ) external nonReentrant whenNotPaused {
         // After wewe approve and call, it will call this function
-        require(token != address(0), "DynamicEater: Token address not set");
+        require(token != address(0), "receiveApproval: Token address not set");
 
         // Transfer the tokens to this contract in native decimals
         IERC20(token).transferFrom(msg.sender, address(this), amount);
@@ -260,7 +291,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     modifier onlyWhiteListed(address account) {
-        require(whiteList[account], "DynamicEater: Caller is not whitelisted");
+        require(whiteList[account], "onlyWhiteListed: Caller is not whitelisted");
         _;
     }
 
@@ -270,18 +301,19 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
             _;
         }
 
-        require(vestings[account].end <= block.timestamp, "DynamicEater: Vesting not ended");
+        require(vestings[account].end <= block.timestamp, "whenClaimable: Vesting not ended");
         _;
     }
 
     modifier whenSolvent(uint256 amountToMerge) {
         require(
             IERC20(wewe).balanceOf(address(this)) >= _totalVested + amountToMerge,
-            "DynamicEater: Insufficient Wewe balance"
+            "whenSolvent: Insufficient Wewe balance"
         );
         _;
     }
 
+    event Dumped(uint256 amount);
     event Merged(uint256 amount, address indexed account, uint256 weweAmount);
     event RateChanged(uint256 newRate);
 }
