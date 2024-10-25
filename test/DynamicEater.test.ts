@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("Dynamic Merge Contract", function () {
+describe("Dynamic Merge / Eater Contract", function () {
 	const decimals = 18;
 
 	async function deployFixture() {
@@ -35,7 +35,7 @@ describe("Dynamic Merge Contract", function () {
 
 		// Arrange
 		await wewe.approve(mergeAddress, ethers.parseUnits("1000000", 18));
-		await token.connect(otherAccount).approve(mergeAddress, ONE_MILLION);
+		await token.connect(otherAccount).approve(mergeAddress, ethers.parseUnits("1000000", decimals));
 
 		return { owner, otherAccount, token, wewe, merge };
 	}
@@ -77,8 +77,8 @@ describe("Dynamic Merge Contract", function () {
 		it("Should add user to white list", async () => {
 			const { merge, otherAccount } = await loadFixture(deployFixture);
 
-			await merge.addWhitelist(otherAccount.address);
-			const isWhitelisted = await merge.whitelist(otherAccount.address);
+			await merge.addWhiteList(otherAccount.address, true);
+			const isWhitelisted = await merge.whiteList(otherAccount.address);
 			expect(isWhitelisted).to.be.true;
 		});
 	});
