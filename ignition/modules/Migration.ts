@@ -10,7 +10,15 @@ const ARRAKIS_V2_RESOLVER_ADDRESS = "0x4faFE3078F0aFa3048AfD19522e047EC764FBF48"
 
 export default buildModule("MigrationModule", m => {
 	const fee = 10000;
-	const migration = m.contract("Migration", [NonFungiblePositionManager, SWAP_ROUTER_ADDRESS, ARRAKIS_V2_ADDRESS, ARRAKIS_V2_RESOLVER_ADDRESS, WEWE_ADDRESS, USDC_ADDRESS, fee]);
+	const migration = m.contract("Migration", [
+		NonFungiblePositionManager,
+		SWAP_ROUTER_ADDRESS,
+		ARRAKIS_V2_ADDRESS,
+		ARRAKIS_V2_RESOLVER_ADDRESS,
+		WEWE_ADDRESS,
+		USDC_ADDRESS,
+		fee,
+	]);
 
 	return { migration };
 });

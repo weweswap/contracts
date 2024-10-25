@@ -10,7 +10,7 @@ describe("Dynamic Merge / Eater Contract", function () {
 
 		const Wewe = await ethers.getContractFactory("Wewe");
 		const wewe = await Wewe.deploy();
-		
+
 		const Token = await ethers.getContractFactory("MockToken2");
 		const token = await Token.deploy("Token", "TKN", decimals);
 

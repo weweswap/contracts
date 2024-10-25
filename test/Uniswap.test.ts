@@ -79,9 +79,9 @@ describe("UniswapV3 Adaptor", () => {
 			expect(await mergeWithMarket.getToken()).to.be.eq(USDC_ADDRESS);
 		});
 
-        // Not working but is replaced by new contract
-        // Also, .skip is not working...
-        // @todo: Fix this test
+		// Not working but is replaced by new contract
+		// Also, .skip is not working...
+		// @todo: Fix this test
 		// it.skip("Should call uniswap router via the adaptor", async () => {
 		// 	const { uniswapAdaptor, holder } = await deployFixture("UniswapV3ViaRouter");
 

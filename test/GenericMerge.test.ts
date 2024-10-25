@@ -50,8 +50,8 @@ describe("Generic merge contract", () => {
 			const { merge, owner } = await deployFixture();
 
 			expect(await merge.vestingDuration()).to.equal(0);
-			
-			await merge.connect(owner).setVestingDuration(1440)
+
+			await merge.connect(owner).setVestingDuration(1440);
 
 			expect(await merge.vestingDuration()).to.equal(1440);
 		});
@@ -133,7 +133,6 @@ describe("Generic merge contract", () => {
 
 			// Non-owner attempts to call sweep
 			await expect(merge.connect(owner).sweep()).to.be.revertedWith("Pausable: not paused");
-
 		});
 
 		it("should allow only the owner to call sweep", async () => {
@@ -198,7 +197,11 @@ describe("Generic merge contract", () => {
 
 			await merge.setRate(100000);
 
-			const [weweBalanceBefore, tokenBalanceBefore, tokenBalance2Before] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address), token.balanceOf(otherAccount2.address)]);
+			const [weweBalanceBefore, tokenBalanceBefore, tokenBalance2Before] = await Promise.all([
+				wewe.balanceOf(otherAccount.address),
+				token.balanceOf(otherAccount.address),
+				token.balanceOf(otherAccount2.address),
+			]);
 
 			expect(weweBalanceBefore).to.equal(0);
 			expect(tokenBalanceBefore).to.equal(1000);
@@ -222,7 +225,11 @@ describe("Generic merge contract", () => {
 
 			await merge.setRate(100000);
 
-			const [weweBalanceBefore, tokenBalanceBefore, tokenBalance2Before] = await Promise.all([wewe.balanceOf(otherAccount.address), token.balanceOf(otherAccount.address), token.balanceOf(otherAccount2.address)]);
+			const [weweBalanceBefore, tokenBalanceBefore, tokenBalance2Before] = await Promise.all([
+				wewe.balanceOf(otherAccount.address),
+				token.balanceOf(otherAccount.address),
+				token.balanceOf(otherAccount2.address),
+			]);
 
 			expect(weweBalanceBefore).to.equal(0);
 			expect(tokenBalanceBefore).to.equal(1000);
