@@ -73,5 +73,13 @@ describe("Dynamic Merge Contract", function () {
 			await merge.connect(otherAccount).merge(ethers.parseUnits("100000", 9));
 			totalVested = await merge.totalVested();
 		});
+
+		it("Should add user to white list", async () => {
+			const { merge, otherAccount } = await loadFixture(deployFixture);
+
+			await merge.addWhitelist(otherAccount.address);
+			const isWhitelisted = await merge.whitelist(otherAccount.address);
+			expect(isWhitelisted).to.be.true;
+		});
 	});
 });
