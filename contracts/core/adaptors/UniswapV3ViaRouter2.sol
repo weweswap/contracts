@@ -26,15 +26,25 @@ contract UniswapV3ViaRouter2 is BaseUniRouter, ISellAMM {
         token = _token;
 
         IERC20(_token).approve(router, type(uint256).max);
+        fee = 1000;
     }
 
     function sell(uint256 amount, address recipient) external returns (uint256) {
+        return _sell(amount, recipient, msg.sender);
+    }
+
+    function sellAll(address recipient) external returns (uint256) {
+        uint256 balance = IERC20(token).balanceOf(msg.sender);
+        return _sell(balance, recipient, msg.sender);
+    }
+
+    function _sell(uint256 amount, address recipient, address from) private returns (uint256) {
         uint24 feeTokenWeth = 10000;
         uint24 feeWethToUsdc = 500;
         uint24 feeUsdcToWewe = 10000;
 
         bytes memory path = abi.encodePacked(token, feeTokenWeth, wrappedETH, feeWethToUsdc, USDC, feeUsdcToWewe, wewe);
-        uint256 amountOut = _swapMultihop(token, amount, path, msg.sender, recipient, 0);
+        uint256 amountOut = _swapMultihop(token, amount, path, from, recipient, 0);
 
         emit Sold(amount, amountOut, token, recipient);
         return amountOut;
