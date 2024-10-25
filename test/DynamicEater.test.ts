@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("Dynamic Merge / Eater Contract", function () {
+describe.only("Dynamic Merge / Eater Contract", function () {
 	const decimals = 18;
 
 	async function deployFixture() {
@@ -26,7 +26,7 @@ describe("Dynamic Merge / Eater Contract", function () {
 		const isPaused = await merge.paused();
 		expect(isPaused).to.be.false;
 
-		const deployedVirtualFomo = await merge.virtualFOMO();
+		const deployedVirtualFomo = await merge.virtualToken();
 		expect(deployedVirtualFomo).to.equal(ethers.parseUnits("800", 18));
 
 		await token.transfer(otherAccount, ethers.parseUnits("1000000", decimals));

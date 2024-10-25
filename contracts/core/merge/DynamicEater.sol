@@ -33,6 +33,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     uint256 public virtualWEWE; // WEWE balance
 
     uint256 constant SCALING_FACTOR = 1_000;
+    address public adaptor;
 
     function name() external view returns (string memory) {
         return string.concat("WeWe: ", IERC20Metadata(token).name());
@@ -95,6 +96,10 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     function addWhiteList(address account, bool status) external onlyOwner {
         whiteList[account] = status;
+    }
+
+    function setAdaptor(address _token) external onlyOwner {
+        token = _token;
     }
 
     function setVirtualWeWEBalance(uint256 value) external onlyOwner {
