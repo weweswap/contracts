@@ -1,0 +1,175 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Hack",
+  "sourceName": "contracts/core/adaptors/Hack.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amountOut",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        }
+      ],
+      "name": "Bought",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amountOut",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        }
+      ],
+      "name": "Sold",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "extraData",
+          "type": "bytes"
+        }
+      ],
+      "name": "buy",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "extraData",
+          "type": "bytes"
+        }
+      ],
+      "name": "sell",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "extraData",
+          "type": "bytes"
+        }
+      ],
+      "name": "sellAndBuy",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60808060405234610016576101ee908161001c8239f35b600080fdfe608080604052600436101561001357600080fd5b600090813560e01c90816303679454146101385781632454b7101461005b575063987bb07b1461004257600080fd5b346100585761005036610143565b505050505080fd5b80fd5b90503461010e576020816064818561007236610143565b50506323b872dd60e01b85525033600485015273e92e74661f0582d52fc0051aedd6fdf4d26a1f86602485015260448401919091526001600160a01b03165af1801561012d576100c8575b602082604051908152f35b60203d8111610126575b601f8101601f1916820167ffffffffffffffff8111838210176101125760209183916040528101031261010e57518015150361005857386100bd565b5080fd5b634e487b7160e01b84526041600452602484fd5b503d6100d2565b6040513d84823e3d90fd5b823461005857610050365b60806003198201126101b357600435916001600160a01b039160243583811681036101b3579260443590811681036101b3579160643567ffffffffffffffff928382116101b357806023830112156101b35781600401359384116101b357602484830101116101b3576024019190565b600080fdfea2646970667358221220a880bab5f7c69efc0239af79b5432ab9ff5a4a1584454aaf6e6b54720023f95064736f6c63430008130033",
+  "deployedBytecode": "0x608080604052600436101561001357600080fd5b600090813560e01c90816303679454146101385781632454b7101461005b575063987bb07b1461004257600080fd5b346100585761005036610143565b505050505080fd5b80fd5b90503461010e576020816064818561007236610143565b50506323b872dd60e01b85525033600485015273e92e74661f0582d52fc0051aedd6fdf4d26a1f86602485015260448401919091526001600160a01b03165af1801561012d576100c8575b602082604051908152f35b60203d8111610126575b601f8101601f1916820167ffffffffffffffff8111838210176101125760209183916040528101031261010e57518015150361005857386100bd565b5080fd5b634e487b7160e01b84526041600452602484fd5b503d6100d2565b6040513d84823e3d90fd5b823461005857610050365b60806003198201126101b357600435916001600160a01b039160243583811681036101b3579260443590811681036101b3579160643567ffffffffffffffff928382116101b357806023830112156101b35781600401359384116101b357602484830101116101b3576024019190565b600080fdfea2646970667358221220a880bab5f7c69efc0239af79b5432ab9ff5a4a1584454aaf6e6b54720023f95064736f6c63430008130033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
