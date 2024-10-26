@@ -89,7 +89,7 @@ const config: HardhatUserConfig = {
 					},
 				},
 			},
-			blockGasLimit: 60000000, // Network block gasLimit
+			blockGasLimit: 600000000, // Network block gasLimit
 		},
 	},
 };
