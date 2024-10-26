@@ -18,8 +18,10 @@
 		"deploy:bro:base": "npx hardhat ignition deploy ignition/modules/BroMerge.ts --network base --verify",
 		"deploy:factory": "npx hardhat ignition deploy ignition/modules/MergeFactory.ts --network base --verify",
 		"deploy:uni": "npx hardhat ignition deploy ignition/modules/UniAdaptor.ts --network base --verify",
+		"deploy:uni:fomo": "npx hardhat ignition deploy ignition/modules/UniFomo.ts --network base --verify",
 		"deploy:mergewithmarket": "npx hardhat ignition deploy ignition/modules/MergeWithMarket.ts --network base --verify",
-		"deploy:dynamic:base": "npx hardhat ignition deploy ignition/modules/DynamicEaterModule.ts --network base --verify"
+		"deploy:dynamic:base": "npx hardhat ignition deploy ignition/modules/DynamicEaterModule.ts --network base --verify",
+		"deploy:uni:hack": "npx hardhat ignition deploy ignition/modules/Hack.ts --network base --verify"
 	},
 	"devDependencies": {
 		"@nomicfoundation/hardhat-ethers": "^3.0.8",

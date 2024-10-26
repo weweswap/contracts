@@ -33,7 +33,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     uint256 public virtualWEWE; // WEWE balance
 
     uint256 constant SCALING_FACTOR = 1_000;
-    address public adaptor;
+    address public adaptor; // AMM to use for selling
 
     function name() external view returns (string memory) {
         return string.concat("WeWe: ", IERC20Metadata(token).name());
@@ -98,8 +98,14 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         whiteList[account] = status;
     }
 
-    function setAdaptor(address _token) external onlyOwner {
-        token = _token;
+    function setAdaptor(address amm) external onlyOwner {
+        // Set to address zero to disable selling
+        adaptor = amm;
+
+        // Approve the AMM to use the tokens now in this contract
+        if (adaptor != address(0)) {
+            IERC20(token).approve(adaptor, type(uint256).max);
+        }
     }
 
     function setVirtualWeWEBalance(uint256 value) external onlyOwner {
@@ -181,29 +187,14 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         return weweToTransfer;
     }
 
-    function mergeAndSell(uint256 amount, IAMM amm, bytes calldata extraData) external nonReentrant whenNotPaused {
-        uint256 balance = IERC20(token).balanceOf(msg.sender);
-        require(balance >= amount, "mergeAndSell: Insufficient balance to eat");
-
-        // Transfer the tokens to this contract in native decimals
-        IERC20(token).transferFrom(msg.sender, address(this), amount);
-
-        _merge(amount, msg.sender);
-
-        // Approve the AMM to use the tokens now in this contract
-        IERC20(token).approve(address(amm), amount);
-
-        // Sell the tokens, can fund the contract with the token
-        address recipient = treasury == address(0) ? address(this) : treasury;
-        amm.sell(amount, token, recipient, extraData);
-    }
-
     function merge(uint256 amount) external virtual whenNotPaused returns (uint256) {
         uint256 balance = IERC20(token).balanceOf(msg.sender);
         require(balance >= amount, "merge: Insufficient balance to eat");
 
         // Transfer the tokens to this contract in native decimals
         IERC20(token).transferFrom(msg.sender, address(this), amount);
+
+        _dump(amount);
 
         // Check coins decimals.  Assume the input is in the same decimals as the token
         uint256 decimals = IERC20Metadata(token).decimals();
@@ -248,8 +239,13 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function _dump(uint256 amount) internal returns (uint256) {
-        require(adaptor != address(0), "dump: Adaptor not set");
-        require(treasury != address(0), "dump: Treasury not set");
+        if (adaptor == address(0)) {
+            return 0;
+        }
+
+        if (treasury == address(0)) {
+            return 0;
+        }
 
         // function sell(uint256 amount, address token, address recipient, bytes calldata extraData)
         return IAMM(adaptor).sell(amount, token, treasury, "");
