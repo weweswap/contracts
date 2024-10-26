@@ -67,7 +67,7 @@ contract UniswapV2 is IAMM, Ownable {
         IERC20(token).transferFrom(msg.sender, address(this), amount);
 
         // We want to receive USDC for the token we send
-        IUniswapV2(factory).swap(amount, 0, recipient, extraData);
+        IUniswapV2(pair).swap(amount, 0, recipient, extraData);
         uint256 balance = IERC20(token).balanceOf(address(this));
 
         if (balance > 0) {

@@ -12,10 +12,25 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 
 interface IUniswapV2 {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+    function swapExactTokensForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external returns (uint[] memory amounts);
+    function swapExactTokensForETH(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external returns (uint[] memory amounts);
+    function getAmountsOut(uint amountIn, address[] memory path) external view returns (uint[] memory amounts);
 }
 
 contract Fomo is IAMM, Ownable {
+    uint24 public fee = 3000;
     struct PairData {
         address pair;
         bytes data; // Pair specific data such as bin step of TraderJoeV2, pool fee of Uniswap V3, etc.
@@ -25,29 +40,19 @@ contract Fomo is IAMM, Ownable {
     address private constant wrappedETH = 0x4200000000000000000000000000000000000006;
     address private constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address public constant factory = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
+    address public constant v2router = 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24;
     address public constant treasury = 0xe92E74661F0582d52FC0051aedD6fDF4d26A1F86;
     address public constant fomo = 0xd327d36EB6E1f250D191cD62497d08b4aaa843Ce;
+    address internal constant v3router = 0x2626664c2603336E57B271c5C0b26F421741e481;
 
-    function getUSDCTokenPair(address token) external view returns (address) {
-        return _getUSDCTokenPair(token);
-    }
+    constructor() Ownable() {}
 
-    function getWethTokenPair(address token) external view returns (address) {
-        return _getWethTokenPair(token);
-    }
-
-    function _getUSDCTokenPair(address token) private view returns (address) {
-        return IUniswapV2(factory).getPair(token, 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
-    }
-
-    function _getWethTokenPair(address token) private view returns (address) {
-        return IUniswapV2(factory).getPair(token, wrappedETH);
-    }
-
-    constructor() Ownable() {
-    }
-
-    function buy(uint256 amount, address token, address recipient, bytes calldata extraData) external returns (uint256) {
+    function buy(
+        uint256 amount,
+        address token,
+        address recipient,
+        bytes calldata extraData
+    ) external returns (uint256) {
         revert("Not implemented");
     }
 
@@ -57,24 +62,69 @@ contract Fomo is IAMM, Ownable {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        address pair = IUniswapV2(factory).getPair(token, 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
-        if (pair == address(0)) {
-            return 0;
-        }
-
-        IERC20(token).approve(pair, type(uint256).max);
         IERC20(token).transferFrom(msg.sender, address(this), amount);
 
+        IERC20(token).approve(v2router, type(uint256).max);
+
         // We want to receive USDC for the token we send
-        IUniswapV2(factory).swap(amount, 0, recipient, extraData);
-        uint256 balance = IERC20(token).balanceOf(address(this));
+        uint256 deadline = 9999999999; // block.timestamp;
+        address[] memory path = new address[](2);
+        path[0] = token;
+        path[1] = wrappedETH;
 
-        if (balance > 0) {
-            // Make sure to transfer the remaining token to the treasury
-            IERC20(token).transfer(treasury, balance);
-        }
+        // Use this to check slippage
+        uint256[] memory amounts = IUniswapV2(v2router).getAmountsOut(amount, path);
 
-        return amount;
+        IUniswapV2(v2router).swapExactTokensForTokens(amount, 0, path, address(this), deadline);
+
+        // uint256 balance = IERC20(token).balanceOf(address(this));
+
+        // if (balance > 0) {
+        //     // Make sure to transfer the remaining token to the treasury
+        //     IERC20(token).transfer(treasury, balance);
+        // }
+
+        // address weth_usd_pair = IUniswapV2(factory).getPair(token, wrappedETH);
+        // if (weth_usd_pair == address(0)) {
+        //     return 0;
+        // }
+
+        // IERC20(token).approve(weth_usd_pair, type(uint256).max);
+        // IUniswapV2(weth_usd_pair).swap(amount, 0, recipient, extraData);
+
+        // return amount;
+    }
+
+    function _v3swap(
+        address tokenIn,
+        address tokenOut,
+        address from,
+        address recipient,
+        uint256 amountIn,
+        uint256 amountOutMinimum
+    ) internal returns (uint256 amountOut) {
+        ISwapRouter swapRouter = ISwapRouter(v3router);
+
+        // Transfer the specified amount of TOKEN to this contract.
+        TransferHelper.safeTransferFrom(tokenIn, from, address(this), amountIn);
+
+        // Approve the router to spend TOKEN.
+        TransferHelper.safeApprove(tokenIn, address(swapRouter), amountIn);
+
+        // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.
+        // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: tokenIn,
+            tokenOut: tokenOut,
+            fee: fee,
+            recipient: recipient, // send back to the caller, this could be the merge contract
+            amountIn: amountIn,
+            amountOutMinimum: amountOutMinimum,
+            sqrtPriceLimitX96: 0
+        });
+
+        // The call to `exactInputSingle` executes the swap.
+        amountOut = swapRouter.exactInputSingle(params);
     }
 
     function sellAndBuy(
@@ -82,7 +132,7 @@ contract Fomo is IAMM, Ownable {
         address token,
         address recipient,
         bytes calldata extraData
-    ) external returns (uint256){
+    ) external returns (uint256) {
         revert("Not implemented");
     }
 }

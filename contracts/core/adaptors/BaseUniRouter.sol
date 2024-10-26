@@ -87,7 +87,6 @@ abstract contract BaseUniRouter is Ownable {
         ISwapRouter swapRouter = ISwapRouter(router);
 
         TransferHelper.safeTransferFrom(tokenIn, from, address(this), amountIn);
-
         TransferHelper.safeApprove(tokenIn, address(swapRouter), amountIn);
 
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
