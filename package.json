@@ -1,6 +1,7 @@
 {
 	"name": "hardhat-project",
 	"scripts": {
+		"build": "hardhat compile",
 		"coverage": "npx hardhat coverage",
 		"compile": "hardhat compile",
 		"test": "hardhat test",
