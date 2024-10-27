@@ -2,7 +2,6 @@ import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 
 import { WEWE_ADDRESS, USDC_ADDRESS, WETH_ADDRESS } from "./constants";
-import { setBlockGasLimit } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("Fomo Adaptor", () => {
 	async function deployFixture(TYPE: string = "Fomo", vestingPeriod: number = 0) {
@@ -27,14 +26,16 @@ describe("Fomo Adaptor", () => {
 
 		const fomo = await ethers.getContractAt("IERC20", "0xd327d36EB6E1f250D191cD62497d08b4aaa843Ce");
 		const weth = await ethers.getContractAt("IERC20", WETH_ADDRESS);
+		const usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);
+		const wewe = await ethers.getContractAt("IERC20", WEWE_ADDRESS);
 		const holder = await ethers.getSigner(test_holder);
 
-		return { adaptor, holder, fomo, weth };
+		return { adaptor, holder, fomo, weth, usdc, wewe };
 	}
 
 	describe.only("FOMO", () => {
 		it("Should test route", async () => {
-			const { adaptor, holder, fomo, weth } = await deployFixture();
+			const { adaptor, holder, fomo, weth, usdc, wewe } = await deployFixture();
 			
 			const balance = await fomo.balanceOf(holder.address);
 			expect(balance).to.be.gt(ethers.parseUnits("1", 9));
@@ -56,8 +57,15 @@ describe("Fomo Adaptor", () => {
 			const balance_adaptor = await fomo.balanceOf(adaptor_address);
 			expect(balance_adaptor).to.be.eq(0);
 
+			// we wont have this in the end
 			const weth_balance = await weth.balanceOf(adaptor_address);
-			expect(weth_balance).to.be.gt(0);
+			expect(weth_balance).to.be.eq(0);
+
+			const usdc_balance = await usdc.balanceOf(adaptor_address);
+			expect(usdc_balance).to.be.eq(0);
+
+			const wewe_balance = await wewe.balanceOf(adaptor_address);
+			expect(wewe_balance).to.be.gt(0);
 		});
 	});
 });

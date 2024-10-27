@@ -30,7 +30,7 @@ interface IUniswapV2 {
 }
 
 contract Fomo is IAMM, Ownable {
-    uint24 public fee = 3000;
+    uint24 public fee = 10000;
     struct PairData {
         address pair;
         bytes data; // Pair specific data such as bin step of TraderJoeV2, pool fee of Uniswap V3, etc.
@@ -44,6 +44,7 @@ contract Fomo is IAMM, Ownable {
     address public constant treasury = 0xe92E74661F0582d52FC0051aedD6fDF4d26A1F86;
     address public constant fomo = 0xd327d36EB6E1f250D191cD62497d08b4aaa843Ce;
     address internal constant v3router = 0x2626664c2603336E57B271c5C0b26F421741e481;
+    address internal constant wewe = 0x6b9bb36519538e0C073894E964E90172E1c0B41F;
 
     constructor() Ownable() {}
 
@@ -77,20 +78,16 @@ contract Fomo is IAMM, Ownable {
 
         IUniswapV2(v2router).swapExactTokensForTokens(amount, 0, path, address(this), deadline);
 
-        // uint256 balance = IERC20(token).balanceOf(address(this));
+        uint256 wethBalance = IERC20(wrappedETH).balanceOf(address(this));
+        IERC20(wrappedETH).approve(v2router, type(uint256).max);
 
-        // if (balance > 0) {
-        //     // Make sure to transfer the remaining token to the treasury
-        //     IERC20(token).transfer(treasury, balance);
-        // }
+        path[0] = wrappedETH;
+        path[1] = USDC;
 
-        // address weth_usd_pair = IUniswapV2(factory).getPair(token, wrappedETH);
-        // if (weth_usd_pair == address(0)) {
-        //     return 0;
-        // }
+        IUniswapV2(v2router).swapExactTokensForTokens(wethBalance, 0, path, address(this), deadline);
 
-        // IERC20(token).approve(weth_usd_pair, type(uint256).max);
-        // IUniswapV2(weth_usd_pair).swap(amount, 0, recipient, extraData);
+        uint256 usdcBalance = IERC20(USDC).balanceOf(address(this));
+        _v3swap(USDC, wewe, address(this), usdcBalance, 0);
 
         // return amount;
     }
@@ -98,15 +95,13 @@ contract Fomo is IAMM, Ownable {
     function _v3swap(
         address tokenIn,
         address tokenOut,
-        address from,
         address recipient,
         uint256 amountIn,
         uint256 amountOutMinimum
     ) internal returns (uint256 amountOut) {
+        
+        // IERC20(tokenIn).approve(v3router, type(uint256).max);
         ISwapRouter swapRouter = ISwapRouter(v3router);
-
-        // Transfer the specified amount of TOKEN to this contract.
-        TransferHelper.safeTransferFrom(tokenIn, from, address(this), amountIn);
 
         // Approve the router to spend TOKEN.
         TransferHelper.safeApprove(tokenIn, address(swapRouter), amountIn);
@@ -116,7 +111,7 @@ contract Fomo is IAMM, Ownable {
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,
             tokenOut: tokenOut,
-            fee: fee,
+            fee: 10000,
             recipient: recipient, // send back to the caller, this could be the merge contract
             amountIn: amountIn,
             amountOutMinimum: amountOutMinimum,
