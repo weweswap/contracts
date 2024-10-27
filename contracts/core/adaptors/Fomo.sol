@@ -31,10 +31,6 @@ interface IUniswapV2 {
 
 contract Fomo is IAMM, Ownable {
     uint24 public fee = 10000;
-    struct PairData {
-        address pair;
-        bytes data; // Pair specific data such as bin step of TraderJoeV2, pool fee of Uniswap V3, etc.
-    }
 
     // Router https://docs.uniswap.org/contracts/v3/reference/deployments/base-deployments
     address private constant wrappedETH = 0x4200000000000000000000000000000000000006;
@@ -68,7 +64,7 @@ contract Fomo is IAMM, Ownable {
         IERC20(token).approve(v2router, type(uint256).max);
 
         // We want to receive USDC for the token we send
-        uint256 deadline = 9999999999; // block.timestamp;
+        uint256 deadline = block.timestamp;
         address[] memory path = new address[](2);
         path[0] = token;
         path[1] = wrappedETH;
@@ -87,9 +83,12 @@ contract Fomo is IAMM, Ownable {
         IUniswapV2(v2router).swapExactTokensForTokens(wethBalance, 0, path, address(this), deadline);
 
         uint256 usdcBalance = IERC20(USDC).balanceOf(address(this));
-        _v3swap(USDC, wewe, address(this), usdcBalance, 0);
+        uint256 amountOut = _v3swap(USDC, wewe, address(this), usdcBalance, 0);
 
-        // return amount;
+        // Transfer the WETH to the treasury or recipient
+        IERC20(wewe).transfer(treasury, amountOut);
+
+        return amountOut;
     }
 
     function _v3swap(
@@ -100,11 +99,8 @@ contract Fomo is IAMM, Ownable {
         uint256 amountOutMinimum
     ) internal returns (uint256 amountOut) {
         
-        // IERC20(tokenIn).approve(v3router, type(uint256).max);
+        IERC20(tokenIn).approve(v3router, type(uint256).max);
         ISwapRouter swapRouter = ISwapRouter(v3router);
-
-        // Approve the router to spend TOKEN.
-        TransferHelper.safeApprove(tokenIn, address(swapRouter), amountIn);
 
         // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.
         // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.

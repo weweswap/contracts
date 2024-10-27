@@ -65,7 +65,11 @@ describe("Fomo Adaptor", () => {
 			expect(usdc_balance).to.be.eq(0);
 
 			const wewe_balance = await wewe.balanceOf(adaptor_address);
-			expect(wewe_balance).to.be.gt(0);
+			expect(wewe_balance).to.be.eq(0);
+
+			// we we should be in the treasury
+			const treasury_balance = await wewe.balanceOf("0xe92E74661F0582d52FC0051aedD6fDF4d26A1F86");
+			expect(treasury_balance).to.be.gt(0);
 		});
 	});
 });
