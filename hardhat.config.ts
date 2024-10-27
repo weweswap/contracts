@@ -79,7 +79,7 @@ const config: HardhatUserConfig = {
 		hardhat: {
 			forking: {
 				url: process.env.FORKING_URL as string,
-				// blockNumber: 19197423,
+				// blockNumber: 21568138,
 				enabled: true,
 			},
 			chains: {
@@ -89,7 +89,7 @@ const config: HardhatUserConfig = {
 					},
 				},
 			},
-			blockGasLimit: 60000000 // Network block gasLimit
+			blockGasLimit: 2100000, // 6000000000, // Network block gasLimit
 		},
 	},
 };
