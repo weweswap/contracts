@@ -45,7 +45,6 @@ contract Fomo is IAMM, Ownable {
     constructor() Ownable() {
         IERC20(wrappedETH).approve(v2router, type(uint256).max);
         IERC20(USDC).approve(v2router, type(uint256).max);
-        IERC20(wewe).approve(v3router, type(uint256).max);
     }
 
     function buy(
