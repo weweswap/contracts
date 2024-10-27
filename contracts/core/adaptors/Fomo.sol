@@ -85,8 +85,9 @@ contract Fomo is IAMM, Ownable {
         uint256 usdcBalance = IERC20(USDC).balanceOf(address(this));
         uint256 amountOut = _v3swap(USDC, wewe, address(this), usdcBalance, 0);
 
-        // Transfer the WETH to the treasury or recipient
-        IERC20(wewe).transfer(treasury, amountOut);
+        // Transfer the WETH to the treasury or recipient.  If recipient is address(0), send to treasury
+        recipient = recipient == address(0) ? treasury : recipient;
+        IERC20(wewe).transfer(recipient, amountOut);
 
         return amountOut;
     }

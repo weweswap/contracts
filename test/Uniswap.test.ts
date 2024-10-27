@@ -33,7 +33,7 @@ describe("Fomo Adaptor", () => {
 		return { adaptor, holder, fomo, weth, usdc, wewe };
 	}
 
-	describe.only("FOMO", () => {
+	describe("FOMO", () => {
 		it("Should test route", async () => {
 			const { adaptor, holder, fomo, weth, usdc, wewe } = await deployFixture();
 			
