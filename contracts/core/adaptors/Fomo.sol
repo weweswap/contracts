@@ -42,7 +42,11 @@ contract Fomo is IAMM, Ownable {
     address internal constant v3router = 0x2626664c2603336E57B271c5C0b26F421741e481;
     address internal constant wewe = 0x6b9bb36519538e0C073894E964E90172E1c0B41F;
 
-    constructor() Ownable() {}
+    constructor() Ownable() {
+        IERC20(wrappedETH).approve(v2router, type(uint256).max);
+        IERC20(USDC).approve(v2router, type(uint256).max);
+        IERC20(wewe).approve(v3router, type(uint256).max);
+    }
 
     function buy(
         uint256 amount,
@@ -60,7 +64,6 @@ contract Fomo is IAMM, Ownable {
         bytes calldata extraData
     ) external returns (uint256) {
         IERC20(token).transferFrom(msg.sender, address(this), amount);
-
         IERC20(token).approve(v2router, type(uint256).max);
 
         // We want to receive USDC for the token we send
@@ -75,8 +78,6 @@ contract Fomo is IAMM, Ownable {
         IUniswapV2(v2router).swapExactTokensForTokens(amount, 0, path, address(this), deadline);
 
         uint256 wethBalance = IERC20(wrappedETH).balanceOf(address(this));
-        IERC20(wrappedETH).approve(v2router, type(uint256).max);
-
         path[0] = wrappedETH;
         path[1] = USDC;
 
