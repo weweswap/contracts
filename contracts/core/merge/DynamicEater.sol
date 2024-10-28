@@ -117,6 +117,11 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         virtualToken = value;
     }
 
+    function setMaxSupply(uint256 value) external onlyOwner {
+        // Set to 0 to disable max supply
+        maxSupply = value;
+    }
+
     function calculateTokensOut(uint256 x) public view returns (uint256) {
         // Check casting where x is the token value
         uint256 decimals = IERC20Metadata(token).decimals();
@@ -142,7 +147,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         return y;
     }
 
-    function _merge(uint256 amount, address from) internal whe returns (uint256) {
+    function _merge(uint256 amount, address from) internal whenLessThanMaxSupply(amount) returns (uint256) {
         // x = amount in 10^18 and result is 10^18
         uint256 weweToTransfer = _calculateTokensOut(amount);
 
@@ -272,6 +277,11 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     function _deposit(uint256 amount) internal {
         IERC20(wewe).transferFrom(msg.sender, address(this), amount);
+    }
+
+    modifier whenLessThanMaxSupply(uint256 amount) {
+        require(_totalVested > amount + _totalVested, "whenLessThanMaxSupply: More than max supply");
+        _;
     }
 
     modifier onlyWhiteListed(address account, uint256 amount) {
