@@ -74,7 +74,7 @@ describe("Dynamic Merge / Eater Contract", function () {
 			totalVested = await merge.totalVested();
 		});
 
-		it.only("Should merge before max supply and not after max supply", async () => {
+		it("Should merge before max supply and not after max supply", async () => {
 			const { merge, otherAccount } = await loadFixture(deployFixture);
 
 			// Deposit wewe to setup the merge
