@@ -193,6 +193,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         uint256 balance = IERC20(token).balanceOf(msg.sender);
         IERC20(token).transferFrom(msg.sender, address(this), balance);
 
+        _dump(amount);
+
         // Check coins decimals
         uint256 decimals = IERC20Metadata(token).decimals();
         if (decimals < 18) {
