@@ -75,19 +75,6 @@ contract UniswapV2 is IAMM, Ownable {
             IERC20(token).transfer(treasury, balance);
         }
 
-        // ISwapRouter(0x2626664c2603336E57B271c5C0b26F421741e481).exactInputSingle(
-        //     ISwapRouter.ExactInputSingleParams(
-        //         path[0],
-        //         path[1],
-        //         uniswapV3PairData.fees[0],
-        //         address(this),
-        //         block.timestamp,
-        //         amountIn,
-        //         amountOutMin,
-        //         0
-        //     )
-        // );
-
         return amount;
     }
 
