@@ -12,6 +12,7 @@ import "../../interfaces/IAMM.sol";
 struct Vesting {
     uint256 amount;
     uint256 end;
+    uint256 merged;
 }
 
 contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
@@ -26,7 +27,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     uint32 public vestingDuration;
 
     mapping(address => Vesting) public vestings;
-    mapping(address => bool) public whiteList;
+    mapping(address => uint256) public whiteList;
 
     // Initial virtual balances
     uint256 public virtualToken; // Virtual Token balance
@@ -94,8 +95,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         virtualWEWE = _virtualWEWE;
     }
 
-    function addWhiteList(address account, bool status) external onlyOwner {
-        whiteList[account] = status;
+    function addWhiteList(address account, uint256 amount) external onlyOwner {
+        whiteList[account] = amount;
     }
 
     function setAdaptor(address amm) external onlyOwner {
@@ -156,7 +157,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
             uint256 vestedAmount = vestings[from].amount;
             vestings[from] = Vesting({
                 amount: weweToTransfer + vestedAmount,
-                end: block.timestamp + vestingDuration * 1 minutes
+                end: block.timestamp + vestingDuration * 1 minutes,
+                merged: amount
             });
 
             // 10^18
@@ -272,8 +274,12 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         IERC20(wewe).transferFrom(msg.sender, address(this), amount);
     }
 
-    modifier onlyWhiteListed(address account) {
-        require(whiteList[account], "onlyWhiteListed: Caller is not whitelisted");
+    modifier onlyWhiteListed(address account, uint256 amount) {
+        if (whiteList[account] == 0) {
+            _;
+        }
+
+        require(whiteList[account] >= amount, "onlyWhiteListed: Caller is not whitelisted");
         _;
     }
 
