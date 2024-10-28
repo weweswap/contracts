@@ -142,7 +142,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         return y;
     }
 
-    function _merge(uint256 amount, address from) internal returns (uint256) {
+    function _merge(uint256 amount, address from) internal whe returns (uint256) {
         // x = amount in 10^18 and result is 10^18
         uint256 weweToTransfer = _calculateTokensOut(amount);
 
