@@ -88,6 +88,14 @@ describe("Dynamic Merge / Eater Contract", function () {
 			expect(totalVested).to.be.greaterThan(0);
 
 			await expect(merge.connect(otherAccount).merge(ethers.parseUnits("1", 9))).to.be.revertedWith("whenLessThanMaxSupply: More than max supply");
+
+			// Turn off max supply
+			await merge.setMaxSupply(0);
+
+			await merge.connect(otherAccount).merge(ethers.parseUnits("100000", decimals));
+			totalVested = await merge.totalVested();
+
+			expect(totalVested).to.be.greaterThan(0);
 		});
 
 		it("Should add user to white list", async () => {

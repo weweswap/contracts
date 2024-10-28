@@ -148,7 +148,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function _merge(uint256 amount, address from) internal returns (uint256) {
-        require(maxSupply >= amount + _totalMerged, "whenLessThanMaxSupply: More than max supply");
+        require(maxSupply >= amount + _totalMerged || maxSupply == 0, "whenLessThanMaxSupply: More than max supply");
 
         // x = amount in 10^18 and result is 10^18
         uint256 weweToTransfer = _calculateTokensOut(amount);
