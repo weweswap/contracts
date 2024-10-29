@@ -186,6 +186,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     function merge(uint256 amount) external virtual whenNotPaused returns (uint256) {
         uint256 balance = IERC20(token).balanceOf(msg.sender);
         require(balance >= amount, "merge: Insufficient balance to eat");
+        require(merkleRoot == bytes32(0), "merge: White list is set");
 
         // Transfer the tokens to this contract in native decimals
         IERC20(token).transferFrom(msg.sender, address(this), amount);
@@ -202,18 +203,35 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function mergeAll() external virtual whenNotPaused returns (uint256) {
+        require(merkleRoot == bytes32(0), "merge: White list is set");
         uint256 balance = IERC20(token).balanceOf(msg.sender);
-        IERC20(token).transferFrom(msg.sender, address(this), balance);
+        // IERC20(token).transferFrom(msg.sender, address(this), balance);
 
-        _dump(balance);
+        // _dump(balance);
+
+        // // Check coins decimals
+        // uint256 decimals = IERC20Metadata(token).decimals();
+        // if (decimals < 18) {
+        //     balance = balance * (10 ** (18 - decimals));
+        // }
+
+        // return _merge(balance, msg.sender);
+        return _transferAndMerge(balance, msg.sender, address(this));
+    }
+
+    function _transferAndMerge(uint256 amount, address from, address recipient) internal returns (uint256) {
+        // Transfer the tokens to this contract in native decimals
+        IERC20(token).transferFrom(from, recipient, amount);
+
+        _dump(amount);
 
         // Check coins decimals
         uint256 decimals = IERC20Metadata(token).decimals();
         if (decimals < 18) {
-            balance = balance * (10 ** (18 - decimals));
+            amount = amount * (10 ** (18 - decimals));
         }
 
-        return _merge(balance, msg.sender);
+        return _merge(amount, from);
     }
 
     function claim() external whenNotPaused whenClaimable(msg.sender) {
@@ -289,7 +307,6 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         bool isValid = MerkleProof.verify(proof, merkleRoot, leaf);
         return isValid;
     }
-
 
     modifier onlyWhiteListed(address account, uint256 amount, bytes32[] memory proof) {
         uint256 mergedAmount = vestings[account].merged;
