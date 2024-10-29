@@ -22,7 +22,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     address public treasury;
 
     uint256 internal _totalVested;
-    uint256 internal _currentHeld;
+    uint256 internal _totalMerged;
     uint256 public maxSupply; // Max supply of tokens to eat
     uint32 public vestingDuration;
 
@@ -117,6 +117,11 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         virtualToken = value;
     }
 
+    function setMaxSupply(uint256 value) external onlyOwner {
+        // Set to 0 to disable max supply
+        maxSupply = value;
+    }
+
     function calculateTokensOut(uint256 x) public view returns (uint256) {
         // Check casting where x is the token value
         uint256 decimals = IERC20Metadata(token).decimals();
@@ -143,6 +148,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function _merge(uint256 amount, address from) internal returns (uint256) {
+        require(maxSupply >= amount + _totalMerged || maxSupply == 0, "whenLessThanMaxSupply: More than max supply");
+
         // x = amount in 10^18 and result is 10^18
         uint256 weweToTransfer = _calculateTokensOut(amount);
 
@@ -168,6 +175,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
             IERC20(wewe).transfer(from, weweToTransfer);
         }
 
+        _totalMerged += amount;
         emit Merged(amount, from, weweToTransfer);
 
         return weweToTransfer;
@@ -273,6 +281,11 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     function _deposit(uint256 amount) internal {
         IERC20(wewe).transferFrom(msg.sender, address(this), amount);
     }
+
+    // modifier whenLessThanMaxSupply(uint256 amount) {
+    //     require(_totalMerged > amount + _totalMerged, "whenLessThanMaxSupply: More than max supply");
+    //     _;
+    // }
 
     modifier onlyWhiteListed(address account, uint256 amount) {
         if (whiteList[account] == 0) {
