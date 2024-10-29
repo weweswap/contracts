@@ -282,11 +282,6 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         IERC20(wewe).transferFrom(msg.sender, address(this), amount);
     }
 
-    // modifier whenLessThanMaxSupply(uint256 amount) {
-    //     require(_totalMerged > amount + _totalMerged, "whenLessThanMaxSupply: More than max supply");
-    //     _;
-    // }
-
     modifier onlyWhiteListed(address account, uint256 amount) {
         if (whiteList[account] == 0) {
             _;
