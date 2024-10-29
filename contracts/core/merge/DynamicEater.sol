@@ -29,7 +29,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     uint32 public vestingDuration;
 
     mapping(address => Vesting) public vestings;
-    mapping(address => uint256) public whiteList;
+    bytes32 public merkleRoot;
 
     // Initial virtual balances
     uint256 public virtualToken; // Virtual Token balance
@@ -97,8 +97,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         virtualWEWE = _virtualWEWE;
     }
 
-    function addWhiteListProof(address account, uint256 amount) external onlyOwner {
-        whiteList[account] = amount;
+    function setMerkleRoot(bytes32 calldata root) external onlyOwner {
+        merkleRoot = root;
     }
 
     function setAdaptor(address amm) external onlyOwner {
@@ -284,9 +284,23 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         IERC20(wewe).transferFrom(msg.sender, address(this), amount);
     }
 
-    modifier onlyWhiteListed(address account, uint256 amount) {
+    function _validateLeaf(bytes32[] memory proof, bytes32 leaf) private view returns (bool) {
+        // Verify the Merkle proof
+        bool isValid = MerkleProof.verify(proof, merkleRoot, leaf);
+        return isValid;
+    }
+
+
+    modifier onlyWhiteListed(address account, uint256 amount, bytes32[] memory proof) {
         uint256 mergedAmount = vestings[account].merged;
-        require(whiteList[account] >= amount + mergedAmount, "onlyWhiteListed: Caller is not whitelisted");
+        require(amount < mergedAmount, "onlyWhiteListed: Already merged");
+
+        // Hash amount and address
+        bytes32 leaf = keccak256(abi.encodePacked(account, amount));
+        require(_validateLeaf(proof, leaf), "onlyWhiteListed: Invalid proof");
+
+        bool isValid = MerkleProof.verify(proof, merkleRoot, leaf);
+        return isValid;
         _;
     }
 

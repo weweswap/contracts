@@ -1,0 +1,22 @@
+[
+    {
+      "address": "0x1234567890123456789012345678901234567890",      
+      "proofHex": [
+        "9c815d267695a27e31cae56d7434d686344cb6582144c7cf6e99a15760e1202e",
+        "0781ee542188d9c116713ebfafbc3ddcfb8d7b349de616a3fa00e2cb7e0505e4"
+        ]
+    },
+    {
+      "address": "0x1234567890123456789012345678901234567891",
+      "proofHex": [
+        "af245a1a793dde3cd4eaa0815493071836d9edbaef821a7627da94d94b1d94ec",
+        "0781ee542188d9c116713ebfafbc3ddcfb8d7b349de616a3fa00e2cb7e0505e4"
+        ]
+    },
+    {
+      "address": "0x1234567890123456789012345678901234567892",
+      "proofHex": [
+        "2721cbb1e55401fe5d6ba92a517aeb2fca77a96c29d00cc01e0efea229a45198"
+        ]
+    }
+]

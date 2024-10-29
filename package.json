@@ -57,6 +57,8 @@
 		"chai": "^4.2.0",
 		"dotenv": "^16.4.5",
 		"hardhat-gas-reporter": "^1.0.8",
+		"keccak256": "^1.0.6",
+		"merkletreejs": "^0.4.0",
 		"solidity-coverage": "^0.8.13",
 		"typechain": "^8.3.0"
 	},
