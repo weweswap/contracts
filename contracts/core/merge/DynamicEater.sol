@@ -22,7 +22,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     address public treasury;
 
     uint256 internal _totalVested;
-    uint256 internal _currentHeld;
+    uint256 internal _totalMerged;
     uint256 public maxSupply; // Max supply of tokens to eat
     uint32 public vestingDuration;
 
@@ -42,7 +42,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     function _getWeweBalance() internal view returns (uint256) {
         // Virtual WEWE balance in 10^18 and total vested in 10^18
-        require(virtualWEWE >= _totalVested, "DynamicEater: virtualWEWE less than total vested");
+        require(virtualWEWE >= _totalVested, "_getWeweBalance: virtualWEWE less than total vested");
         return virtualWEWE - _totalVested;
     }
 
@@ -117,6 +117,11 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         virtualToken = value;
     }
 
+    function setMaxSupply(uint256 value) external onlyOwner {
+        // Set to 0 to disable max supply
+        maxSupply = value;
+    }
+
     function calculateTokensOut(uint256 x) public view returns (uint256) {
         // Check casting where x is the token value
         uint256 decimals = IERC20Metadata(token).decimals();
@@ -143,6 +148,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function _merge(uint256 amount, address from) internal returns (uint256) {
+        require(maxSupply >= amount + _totalMerged || maxSupply == 0, "_merge: More than max supply");
+
         // x = amount in 10^18 and result is 10^18
         uint256 weweToTransfer = _calculateTokensOut(amount);
 
@@ -168,6 +175,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
             IERC20(wewe).transfer(from, weweToTransfer);
         }
 
+        _totalMerged += amount;
         emit Merged(amount, from, weweToTransfer);
 
         return weweToTransfer;
@@ -235,6 +243,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
             return 0;
         }
 
+        // Sell the Wewe tokens for the underlying token... This is the sell function
         // function sell(uint256 amount, address token, address recipient, bytes calldata extraData)
         return IAMM(adaptor).sell(amount, token, treasury, "");
     }

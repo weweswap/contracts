@@ -74,6 +74,30 @@ describe("Dynamic Merge / Eater Contract", function () {
 			totalVested = await merge.totalVested();
 		});
 
+		it("Should merge before max supply and not after max supply", async () => {
+			const { merge, otherAccount } = await loadFixture(deployFixture);
+
+			// Deposit wewe to setup the merge
+			await merge.deposit(ethers.parseEther("10000"));
+			await merge.setMaxSupply(ethers.parseUnits("100000", decimals));
+
+			await merge.connect(otherAccount).merge(ethers.parseUnits("100000", decimals));
+
+			// Tokens
+			let totalVested = await merge.totalVested();
+			expect(totalVested).to.be.greaterThan(0);
+
+			await expect(merge.connect(otherAccount).merge(ethers.parseUnits("1", 9))).to.be.revertedWith("whenLessThanMaxSupply: More than max supply");
+
+			// Turn off max supply
+			await merge.setMaxSupply(0);
+
+			await merge.connect(otherAccount).merge(ethers.parseUnits("100000", decimals));
+			totalVested = await merge.totalVested();
+
+			expect(totalVested).to.be.greaterThan(0);
+		});
+
 		it("Should add user to white list", async () => {
 			const { merge, otherAccount } = await loadFixture(deployFixture);
 
