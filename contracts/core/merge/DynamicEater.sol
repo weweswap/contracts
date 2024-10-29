@@ -97,7 +97,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         virtualWEWE = _virtualWEWE;
     }
 
-    function addWhiteListProof(bytes32 proof) external onlyOwner {
+    function addWhiteListProof(address account, uint256 amount) external onlyOwner {
         whiteList[account] = amount;
     }
 
@@ -285,7 +285,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     modifier onlyWhiteListed(address account, uint256 amount) {
-        require(whiteList[account] >= amount, "onlyWhiteListed: Caller is not whitelisted");
+        uint256 mergedAmount = vestings[account].merged;
+        require(whiteList[account] >= amount + mergedAmount, "onlyWhiteListed: Caller is not whitelisted");
         _;
     }
 
