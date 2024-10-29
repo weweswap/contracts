@@ -6,6 +6,8 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+
 import "../../interfaces/IWeweReceiver.sol";
 import "../../interfaces/IAMM.sol";
 
@@ -42,7 +44,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     function _getWeweBalance() internal view returns (uint256) {
         // Virtual WEWE balance in 10^18 and total vested in 10^18
-        require(virtualWEWE >= _totalVested, "DynamicEater: virtualWEWE less than total vested");
+        require(virtualWEWE >= _totalVested, "_getWeweBalance: virtualWEWE less than total vested");
         return virtualWEWE - _totalVested;
     }
 
@@ -95,7 +97,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         virtualWEWE = _virtualWEWE;
     }
 
-    function addWhiteList(address account, uint256 amount) external onlyOwner {
+    function addWhiteListProof(bytes32 proof) external onlyOwner {
         whiteList[account] = amount;
     }
 
@@ -148,7 +150,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function _merge(uint256 amount, address from) internal returns (uint256) {
-        require(maxSupply >= amount + _totalMerged || maxSupply == 0, "whenLessThanMaxSupply: More than max supply");
+        require(maxSupply >= amount + _totalMerged || maxSupply == 0, "_getWeweBalance: More than max supply");
 
         // x = amount in 10^18 and result is 10^18
         uint256 weweToTransfer = _calculateTokensOut(amount);
@@ -283,10 +285,6 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     modifier onlyWhiteListed(address account, uint256 amount) {
-        if (whiteList[account] == 0) {
-            _;
-        }
-
         require(whiteList[account] >= amount, "onlyWhiteListed: Caller is not whitelisted");
         _;
     }
