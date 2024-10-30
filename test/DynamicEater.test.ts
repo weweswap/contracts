@@ -7,7 +7,6 @@ describe("Dynamic Merge / Eater Contract", function () {
 
 	async function deployFixture() {
 		const [owner, otherAccount] = await ethers.getSigners();
-		console.log("otherAccount: ", otherAccount.address);
 
 		const Wewe = await ethers.getContractFactory("Wewe");
 		const wewe = await Wewe.deploy();
@@ -113,16 +112,14 @@ describe("Dynamic Merge / Eater Contract", function () {
 
 			await merge.deposit(ethers.parseEther("10000"));
 
-			const amount = ethers.parseUnits("100", decimals);
 			let totalVested = await merge.totalVested();
 			expect(totalVested).to.be.eq(0);
 
-			await merge.setMerkleRoot("b92498d4761195ca86d782ca3347c434f5f51112c84800b97dbe9a4e34160e68");
-			const proof = [
-				"9c815d267695a27e31cae56d7434d686344cb6582144c7cf6e99a15760e1202e",
-				"0781ee542188d9c116713ebfafbc3ddcfb8d7b349de616a3fa00e2cb7e0505e4",
-			];
-			await expect(merge.connect(otherAccount).mergeWithProof(amount, proof)).to.emit(merge, "Merged");
+			await merge.setMerkleRoot("0x403ff023bd4c929b68c940e8c21016d996bdd7b4ddd73cd42e82b2de3a8bcca3");
+			const proof = ["0x28dca11b2244051b40a1b04eadce9617f1274a546431424e61362b8de7dddf89"];
+
+			await expect(merge.connect(otherAccount).mergeWithProof(42, proof)).to.revertedWith("onlyWhiteListed: Invalid proof");
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, proof)).to.emit(merge, "Merged");
 		});
 	});
 });
