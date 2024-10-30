@@ -3,7 +3,7 @@ const keccak256 = require("keccak256");
 
 const whiteList = [
 	{
-		address: "0x1234567890123456789012345678901234567890",
+		address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
 		amount: 1000
 	},
     {
@@ -20,7 +20,7 @@ const leaves = whiteList.map(({ address, amount }) => keccak256(address + amount
 const tree = new MerkleTree(leaves, keccak256);
 const rootHash = tree.getRoot().toString("hex");
 
-console.log(rootHash);
+console.log("Root hash: ", rootHash);
 
 const proofs = [];
 

@@ -202,6 +202,14 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         return _merge(amount, msg.sender);
     }
 
+    function mergeWithProof(
+        uint256 amount,
+        bytes32[] calldata proof
+    ) external virtual whenNotPaused onlyWhiteListed(msg.sender, amount, proof) returns (uint256) {
+        require(merkleRoot != bytes32(0), "mergeWithProof: White list not set");
+        return _transferAndMerge(amount, msg.sender, address(this));
+    }
+
     function mergeAll() external virtual whenNotPaused returns (uint256) {
         require(merkleRoot == bytes32(0), "merge: White list is set");
         uint256 balance = IERC20(token).balanceOf(msg.sender);
@@ -300,7 +308,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
     modifier onlyWhiteListed(address account, uint256 amount, bytes32[] memory proof) {
         uint256 mergedAmount = vestings[account].merged;
-        require(amount < mergedAmount, "onlyWhiteListed: Already merged");
+        require(mergedAmount < amount + mergedAmount, "onlyWhiteListed: Already merged");
 
         // Hash amount and address
         bytes32 leaf = keccak256(abi.encodePacked(account, amount));

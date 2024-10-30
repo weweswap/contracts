@@ -102,12 +102,27 @@ describe("Dynamic Merge / Eater Contract", function () {
 		it.only("Should be able to merge when merkle root is bytes 0", async () => {
 			const { merge, otherAccount } = await loadFixture(deployFixture);
 
-			await expect(merge.connect(otherAccount).merge(ethers.parseUnits("10", decimals))).to.emit(merge, "Merged");
+			await merge.deposit(ethers.parseEther("10000"));
 
+			const amount = ethers.parseUnits("100", decimals);
+			await expect(merge.connect(otherAccount).merge(amount)).to.emit(merge, "Merged");
+		});
+
+		it.only("Should be able to merge with proof", async () => {
+			const { merge, otherAccount } = await loadFixture(deployFixture);
+
+			await merge.deposit(ethers.parseEther("10000"));
+
+			const amount = ethers.parseUnits("100", decimals);
 			let totalVested = await merge.totalVested();
-			expect(totalVested).to.be.greaterThan(0);
+			expect(totalVested).to.be.eq(0);
 
-			// await merge.setMerkleRoot("0x
+			await merge.setMerkleRoot("b92498d4761195ca86d782ca3347c434f5f51112c84800b97dbe9a4e34160e68");
+			const proof = [
+				"9c815d267695a27e31cae56d7434d686344cb6582144c7cf6e99a15760e1202e",
+				"0781ee542188d9c116713ebfafbc3ddcfb8d7b349de616a3fa00e2cb7e0505e4",
+			];
+			await expect(merge.connect(otherAccount).mergeWithProof(amount, proof)).to.emit(merge, "Merged");
 		});
 	});
 });
