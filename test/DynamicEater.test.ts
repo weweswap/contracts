@@ -7,6 +7,7 @@ describe("Dynamic Merge / Eater Contract", function () {
 
 	async function deployFixture() {
 		const [owner, otherAccount] = await ethers.getSigners();
+		console.log("otherAccount: ", otherAccount.address);
 
 		const Wewe = await ethers.getContractFactory("Wewe");
 		const wewe = await Wewe.deploy();
@@ -98,10 +99,15 @@ describe("Dynamic Merge / Eater Contract", function () {
 			expect(totalVested).to.be.greaterThan(0);
 		});
 
-		it("Should add user to white list", async () => {
+		it.only("Should be able to merge when merkle root is bytes 0", async () => {
 			const { merge, otherAccount } = await loadFixture(deployFixture);
 
-			await merge.addWhiteList(otherAccount.address, ethers.parseUnits("1", 9));
+			await expect(merge.connect(otherAccount).merge(ethers.parseUnits("10", decimals))).to.emit(merge, "Merged");
+
+			let totalVested = await merge.totalVested();
+			expect(totalVested).to.be.greaterThan(0);
+
+			// await merge.setMerkleRoot("0x
 		});
 	});
 });
