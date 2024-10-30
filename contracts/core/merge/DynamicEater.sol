@@ -97,7 +97,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         virtualWEWE = _virtualWEWE;
     }
 
-    function setMerkleRoot(bytes32 calldata root) external onlyOwner {
+    function setMerkleRoot(bytes32 root) external onlyOwner {
         merkleRoot = root;
     }
 
@@ -205,17 +205,6 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     function mergeAll() external virtual whenNotPaused returns (uint256) {
         require(merkleRoot == bytes32(0), "merge: White list is set");
         uint256 balance = IERC20(token).balanceOf(msg.sender);
-        // IERC20(token).transferFrom(msg.sender, address(this), balance);
-
-        // _dump(balance);
-
-        // // Check coins decimals
-        // uint256 decimals = IERC20Metadata(token).decimals();
-        // if (decimals < 18) {
-        //     balance = balance * (10 ** (18 - decimals));
-        // }
-
-        // return _merge(balance, msg.sender);
         return _transferAndMerge(balance, msg.sender, address(this));
     }
 
@@ -317,7 +306,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         require(_validateLeaf(proof, leaf), "onlyWhiteListed: Invalid proof");
 
         bool isValid = MerkleProof.verify(proof, merkleRoot, leaf);
-        return isValid;
+        require(isValid, "onlyWhiteListed: Invalid proof");
         _;
     }
 
