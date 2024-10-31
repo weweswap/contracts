@@ -81,7 +81,7 @@ To perform the tests, the state of the blockchain needs to be deterministic. To 
 
 ## Setting up white lists
 
-White listed addresses can be set by creating the merkle root. The merkle root can be created by running the following command:
+White listed addresses can be set by creating the merkle root on the Merge contract. The merkle root can be created by running the following command:
 
 ```bash
 yarn install
