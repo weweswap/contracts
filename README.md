@@ -141,7 +141,7 @@ The white list can be turned off by setting the merkle root to `bytes(0)`.  Then
 
 ## Example proofs
 
-```json
+```text
 Value: [ '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', '1000' ]
 Proof: [
   '0x28dca11b2244051b40a1b04eadce9617f1274a546431424e61362b8de7dddf89'
