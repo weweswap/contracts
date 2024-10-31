@@ -79,4 +79,71 @@ To perform the tests, the state of the blockchain needs to be deterministic. To 
 | UniAdapter                 | 0xbAf371aC1d393cC6e155E1A51Ad8E9d7674151c5 | Base    |
 
 
+# Setting white lits
+
+White listed addresses can be set by creating the merkle root. The merkle root can be created by running the following command:
+
+```bash
+yarn install
+node scripts/merkle-root.js address.csv
+```
+
+The `address.csv` file should have the following format:  Note, this file should be considered private and should not be shared.
+
+```csv
+address,amount
+0x70997970C51812dc3A010C7d01b50e0d17dc79C8,100000000000000000000
+```
+
+The merkle root will be printed to the console, eg `0x403ff023bd4c929b68c940e8c21016d996bdd7b4ddd73cd42e82b2de3a8bcca3`. This merkle root can be used to set the white list in the contract by the owner.
+
+```solidity
+function setWhiteList(bytes32 merkleRoot) public onlyOwner {
+    _merkleRoot = merkleRoot;
+}
+```
+
+The front end will then need to:
+
+1. Find the proof array for the address.  This could be fetched from the server or be client side.
+2. Call the contract with the proof array and the address
+
+```solidity
+function mergeWithProof(address account, uint256 amount, bytes32[] calldata proof) public {
+    // ... check if the account is in the merkle tree
+}
+```
+
+## Turning off white list
+
+The white list can be turned off by setting the merkle root to `bytes(0)`.  Then the contract will allow any address to merge, via `merge(uint256 amount)` or `mergeAll()`.
+
+```solidity
+
+    function merge(uint256 amount) external virtual whenNotPaused returns (uint256) {
+        // ... check if the account is in the merkle tree
+    }
+
+    function mergeAll() external virtual whenNotPaused returns (uint256) {
+        // ... check if the account is in the merkle tree
+    }
+```
+
 ## Example proofs
+
+```json
+Value: [ '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', '1000' ]
+Proof: [
+  '0x28dca11b2244051b40a1b04eadce9617f1274a546431424e61362b8de7dddf89'
+]
+Value: [ '0x1234567890123456789012345678901234567891', '500' ]
+Proof: [
+  '0xd575cdd1b7c6bdb5f45cf3f369c820b372528a8348abff17865199699970da6b',
+  '0xef8897c94eaa91defb5bcf5eb1d3253c361a8315e842f60bb237531e4804e0f6'
+]
+Value: [ '0x1234567890123456789012345678901234567892', '200' ]
+Proof: [
+  '0x42aa8518982d354cd43d37da6736f2e914ad098f7f3ee8f1b23a878eb8317680',
+  '0xef8897c94eaa91defb5bcf5eb1d3253c361a8315e842f60bb237531e4804e0f6'
+]
+```
