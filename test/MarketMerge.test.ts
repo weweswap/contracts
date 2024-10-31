@@ -1,7 +1,8 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("MarketMerge", () => {
+// Contracts are deleted but these tess are still useful
+describe.skip("MarketMerge", () => {
 	async function deployFixture() {
 		// Reset the blockchain to a deterministic state
 		await ethers.provider.send("hardhat_reset", [

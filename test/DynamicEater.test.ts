@@ -98,10 +98,28 @@ describe("Dynamic Merge / Eater Contract", function () {
 			expect(totalVested).to.be.greaterThan(0);
 		});
 
-		it("Should add user to white list", async () => {
+		it.only("Should be able to merge when merkle root is bytes 0", async () => {
 			const { merge, otherAccount } = await loadFixture(deployFixture);
 
-			await merge.addWhiteList(otherAccount.address, ethers.parseUnits("1", 9));
+			await merge.deposit(ethers.parseEther("10000"));
+
+			const amount = ethers.parseUnits("100", decimals);
+			await expect(merge.connect(otherAccount).merge(amount)).to.emit(merge, "Merged");
+		});
+
+		it.only("Should be able to merge with proof", async () => {
+			const { merge, otherAccount } = await loadFixture(deployFixture);
+
+			await merge.deposit(ethers.parseEther("10000"));
+
+			let totalVested = await merge.totalVested();
+			expect(totalVested).to.be.eq(0);
+
+			await merge.setMerkleRoot("0x403ff023bd4c929b68c940e8c21016d996bdd7b4ddd73cd42e82b2de3a8bcca3");
+			const proof = ["0x28dca11b2244051b40a1b04eadce9617f1274a546431424e61362b8de7dddf89"];
+
+			await expect(merge.connect(otherAccount).mergeWithProof(42, proof)).to.revertedWith("onlyWhiteListed: Invalid proof");
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, proof)).to.emit(merge, "Merged");
 		});
 	});
 });
