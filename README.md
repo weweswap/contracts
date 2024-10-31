@@ -108,6 +108,16 @@ The front end will then need to:
 1. Find the proof array for the address.  This could be fetched from the server or be client side.
 2. Call the contract with the proof array and the address
 
+```text
+{
+    Address: { '0x1234567890123456789012345678901234567891' },
+    Proof: [
+    '0xd575cdd1b7c6bdb5f45cf3f369c820b372528a8348abff17865199699970da6b',
+    '0xef8897c94eaa91defb5bcf5eb1d3253c361a8315e842f60bb237531e4804e0f6'
+    ]
+}
+```
+
 ```solidity
 function mergeWithProof(address account, uint256 amount, bytes32[] calldata proof) public {
     // ... check if the account is in the merkle tree
