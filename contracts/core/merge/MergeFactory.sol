@@ -3,7 +3,7 @@
 pragma solidity ^0.8.19;
 
 import "../../interfaces/IMergeV2.sol";
-import {MergeWithMarket} from "./MergeWithMarket.sol";
+import {DynamicEater} from "./DynamicEater.sol";
 import {GenericMerge} from "./GenericMerge.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -11,7 +11,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract MergeFactory is Ownable {
     enum MergeType {
         Generic,
-        WithMarket
+        DynamicEater
     }
 
     address public constant wewe = 0x6b9bb36519538e0C073894E964E90172E1c0B41F;
@@ -29,15 +29,7 @@ contract MergeFactory is Ownable {
         return tokens.length;
     }
 
-    function createMerge(address token, uint256 rate, uint32 vestingDuration) external onlyDeployer returns (address) {
-        require(merges[token] == address(0), "MergeFactory: Merge already exists");
-        address merge = address(new MergeWithMarket(token, wewe, vestingDuration));
-        IMergeV2(merge).setRate(rate);
-        _setMerge(token, merge);
-        return merge;
-    }
-
-    function createMergeWithType(
+    function createMergeWith(
         address token,
         uint256 rate,
         uint32 vestingDuration,
@@ -52,11 +44,11 @@ contract MergeFactory is Ownable {
             return merge;
         }
 
-        if (mergeType == MergeType.WithMarket) {
-            address merge = address(new MergeWithMarket(token, wewe, vestingDuration));
-            IMergeV2(merge).setRate(rate);
-            _setMerge(token, merge);
-            return merge;
+        if (mergeType == MergeType.DynamicEater) {
+            // address merge = address(new DynamicEater(token, wewe, vestingDuration));
+            // IMergeV2(merge).setRate(rate);
+            // _setMerge(token, merge);
+            // return merge;
         }
 
         revert("MergeFactory: Invalid merge type");

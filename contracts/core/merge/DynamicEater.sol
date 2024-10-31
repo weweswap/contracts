@@ -6,6 +6,8 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+
 import "../../interfaces/IWeweReceiver.sol";
 import "../../interfaces/IAMM.sol";
 
@@ -27,7 +29,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     uint32 public vestingDuration;
 
     mapping(address => Vesting) public vestings;
-    mapping(address => uint256) public whiteList;
+    bytes32 public merkleRoot;
 
     // Initial virtual balances
     uint256 public virtualToken; // Virtual Token balance
@@ -95,8 +97,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         virtualWEWE = _virtualWEWE;
     }
 
-    function addWhiteList(address account, uint256 amount) external onlyOwner {
-        whiteList[account] = amount;
+    function setMerkleRoot(bytes32 root) external onlyOwner {
+        merkleRoot = root;
     }
 
     function setAdaptor(address amm) external onlyOwner {
@@ -184,6 +186,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     function merge(uint256 amount) external virtual whenNotPaused returns (uint256) {
         uint256 balance = IERC20(token).balanceOf(msg.sender);
         require(balance >= amount, "merge: Insufficient balance to eat");
+        require(merkleRoot == bytes32(0), "merge: White list is set");
 
         // Transfer the tokens to this contract in native decimals
         IERC20(token).transferFrom(msg.sender, address(this), amount);
@@ -199,19 +202,33 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         return _merge(amount, msg.sender);
     }
 
-    function mergeAll() external virtual whenNotPaused returns (uint256) {
-        uint256 balance = IERC20(token).balanceOf(msg.sender);
-        IERC20(token).transferFrom(msg.sender, address(this), balance);
+    function mergeWithProof(
+        uint256 amount,
+        bytes32[] calldata proof
+    ) external virtual nonReentrant whenNotPaused onlyWhiteListed(msg.sender, amount, proof) returns (uint256) {
+        require(merkleRoot != bytes32(0), "mergeWithProof: White list not set");
+        return _transferAndMerge(amount, msg.sender, address(this));
+    }
 
-        _dump(balance);
+    function mergeAll() external virtual whenNotPaused returns (uint256) {
+        require(merkleRoot == bytes32(0), "merge: White list is set");
+        uint256 balance = IERC20(token).balanceOf(msg.sender);
+        return _transferAndMerge(balance, msg.sender, address(this));
+    }
+
+    function _transferAndMerge(uint256 amount, address from, address recipient) internal returns (uint256) {
+        // Transfer the tokens to this contract in native decimals
+        IERC20(token).transferFrom(from, recipient, amount);
+
+        _dump(amount);
 
         // Check coins decimals
         uint256 decimals = IERC20Metadata(token).decimals();
         if (decimals < 18) {
-            balance = balance * (10 ** (18 - decimals));
+            amount = amount * (10 ** (18 - decimals));
         }
 
-        return _merge(balance, msg.sender);
+        return _merge(amount, from);
     }
 
     function claim() external whenNotPaused whenClaimable(msg.sender) {
@@ -283,12 +300,21 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         IERC20(wewe).transferFrom(msg.sender, address(this), amount);
     }
 
-    modifier onlyWhiteListed(address account, uint256 amount) {
-        if (whiteList[account] == 0) {
-            _;
-        }
+    function _validateLeaf(bytes32[] memory proof, bytes32 leaf) private view returns (bool) {
+        // Verify the Merkle proof
+        bool isValid = MerkleProof.verify(proof, merkleRoot, leaf);
+        return isValid;
+    }
 
-        require(whiteList[account] >= amount, "onlyWhiteListed: Caller is not whitelisted");
+    modifier onlyWhiteListed(address account, uint256 amount, bytes32[] memory proof) {
+        require(merkleRoot != bytes32(0), "onlyWhiteListed: White list not set");
+        uint256 mergedAmount = vestings[account].merged;
+        require(mergedAmount < amount + mergedAmount, "onlyWhiteListed: Already merged");
+
+        // Hash amount and address
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(account, amount))));
+        require(_validateLeaf(proof, leaf), "onlyWhiteListed: Invalid proof");
+
         _;
     }
 
