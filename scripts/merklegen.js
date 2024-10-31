@@ -1,18 +1,38 @@
 const { StandardMerkleTree } = require("@openzeppelin/merkle-tree");
+const fs = require("fs");
 
-const whiteList = [
-	["0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "1000"],
-	["0x1234567890123456789012345678901234567891", "500"],
-	["0x1234567890123456789012345678901234567892", "200"]
-];
+const genProof = (csvPath, outputPath) => {
+	const csv = fs.readFileSync(csvPath, "utf-8");
+	const lines = csv.split("\n").filter(Boolean);
+	const whiteList = lines.map((line) => line.split(","));
+	const tree = StandardMerkleTree.of(whiteList, ["address", "uint256"]);
+	const rootHash = tree.root;
 
-const tree2 = StandardMerkleTree.of(whiteList, ["address", "uint256"]);
-const rootHash2 = tree2.root;
+	console.log("Root hash:", rootHash);
 
-console.log("Root hash 2: ", rootHash2);
+	// const output = {
+	// 	rootHash,
+	// 	proofs: tree.elements.map((_, i) => tree.getProof(i))
+	// };
 
-for (const [i, v] of tree2.entries()) {
-	const proof = tree2.getProof(i);
-	console.log("Value:", v);
-	console.log("Proof:", proof);
+	const output = [];
+
+	for (const [i, v] of tree.entries()) {
+		const proof = tree.getProof(i);
+		console.log("Value:", v);
+		console.log("Proof:", proof);
+
+		output.push({
+			value: v,
+			proof: proof
+		});
+	}
+
+	fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
+	
+	console.table(output);
+	console.log("Proofs generated and saved to", outputPath);
+
 }
+
+genProof("./whitelist.csv", "whitelist.json");
