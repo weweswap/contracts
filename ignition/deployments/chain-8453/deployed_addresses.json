@@ -1,7 +1,3 @@
 {
-  "DynamicEaterModule#DynamicEater": "0x711Aadc66281E42Ecc7f6f4b91d47F4aB792AF5f",
-  "UniFomo#UniswapV3ViaRouterFomo": "0xb867A9a334A8b21FF397e5335f2cFaf8C57F99B8",
-  "HackModule#Hack": "0x9129304aDf3D5437f0225E4863cA9802473606b2",
-  "UniAdaptor2Module#UniswapV3ViaRouter2": "0x38A1bA0ba360E02B3263d8847C93cA01b1AD2A88",
-  "FomoAdaptorModule#Fomo": "0x310Dd8BE3f1DDCd28923a01DC771790324810c8E"
+  "DynamicEaterModule#DynamicEater": "0xa931E644538768707cf75c26B899440e4302D3Ca"
 }
