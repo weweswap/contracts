@@ -79,7 +79,7 @@ To perform the tests, the state of the blockchain needs to be deterministic. To 
 | UniAdapter                 | 0xbAf371aC1d393cC6e155E1A51Ad8E9d7674151c5 | Base    |
 
 
-# Setting white lits
+## Setting up white lists
 
 White listed addresses can be set by creating the merkle root. The merkle root can be created by running the following command:
 
