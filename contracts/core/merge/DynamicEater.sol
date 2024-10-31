@@ -205,7 +205,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     function mergeWithProof(
         uint256 amount,
         bytes32[] calldata proof
-    ) external virtual whenNotPaused onlyWhiteListed(msg.sender, amount, proof) returns (uint256) {
+    ) external virtual nonReentrant whenNotPaused onlyWhiteListed(msg.sender, amount, proof) returns (uint256) {
         require(merkleRoot != bytes32(0), "mergeWithProof: White list not set");
         return _transferAndMerge(amount, msg.sender, address(this));
     }
