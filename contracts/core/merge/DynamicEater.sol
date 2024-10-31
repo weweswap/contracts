@@ -311,13 +311,9 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         require(mergedAmount < amount + mergedAmount, "onlyWhiteListed: Already merged");
 
         // Hash amount and address
-        // bytes32 leaf = keccak256(abi.encodePacked(account, amount));
         bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(account, amount))));
-        // bytes32 leaf = 0x40fac08bf73016dc8743fff8afaefb4ecbc3a3a4984c55a9c11b403914157b25;
         require(_validateLeaf(proof, leaf), "onlyWhiteListed: Invalid proof");
 
-        // bool isValid = MerkleProof.verify(proof, merkleRoot, leaf);
-        // require(isValid, "onlyWhiteListed: Invalid proof");
         _;
     }
 
