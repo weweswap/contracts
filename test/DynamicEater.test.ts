@@ -98,7 +98,7 @@ describe("Dynamic Merge / Eater Contract", function () {
 			expect(totalVested).to.be.greaterThan(0);
 		});
 
-		it.only("Should be able to merge when merkle root is bytes 0", async () => {
+		it("Should be able to merge when merkle root is bytes 0", async () => {
 			const { merge, otherAccount } = await loadFixture(deployFixture);
 
 			await merge.deposit(ethers.parseEther("10000"));
@@ -107,7 +107,7 @@ describe("Dynamic Merge / Eater Contract", function () {
 			await expect(merge.connect(otherAccount).merge(amount)).to.emit(merge, "Merged");
 		});
 
-		it.only("Should be able to merge with proof", async () => {
+		it("Should be able to merge with proof", async () => {
 			const { merge, otherAccount } = await loadFixture(deployFixture);
 
 			await merge.deposit(ethers.parseEther("10000"));
