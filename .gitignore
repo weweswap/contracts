@@ -12,3 +12,4 @@ node_modules
 # solidity-coverage files
 /coverage
 /coverage.json
+scripts/csvs/export-tokenholders-for-contract-0xd327d36eb6e1f250d191cd62497d08b4aaa843ce.csv
