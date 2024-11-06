@@ -121,5 +121,22 @@ describe("Dynamic Merge / Eater Contract", function () {
 			await expect(merge.connect(otherAccount).mergeWithProof(42, proof)).to.revertedWith("onlyWhiteListed: Invalid proof");
 			await expect(merge.connect(otherAccount).mergeWithProof(1000, proof)).to.emit(merge, "Merged");
 		});
+
+		it("Should not be able to replay proof", async () => {
+			const { merge, otherAccount } = await loadFixture(deployFixture);
+
+			await merge.deposit(ethers.parseEther("10000"));
+
+			let totalVested = await merge.totalVested();
+			expect(totalVested).to.be.eq(0);
+
+			await merge.setMerkleRoot("0x403ff023bd4c929b68c940e8c21016d996bdd7b4ddd73cd42e82b2de3a8bcca3");
+			const proof = ["0x28dca11b2244051b40a1b04eadce9617f1274a546431424e61362b8de7dddf89"];
+
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, proof)).to.emit(merge, "Merged");
+
+			// Replay proof
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, proof)).to.revertedWith("onlyWhiteListed: Already merged");
+		});
 	});
 });
