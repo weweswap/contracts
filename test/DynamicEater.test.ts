@@ -85,17 +85,21 @@ describe("Dynamic Merge / Eater Contract", function () {
 
 			// Tokens
 			let totalVested = await merge.totalVested();
+			let totalMerged = await merge.totalMerged();
 			expect(totalVested).to.be.greaterThan(0);
+			expect(totalMerged).to.eq(100000000000000000000000n);
 
-			await expect(merge.connect(otherAccount).merge(ethers.parseUnits("1", 9))).to.be.revertedWith("whenLessThanMaxSupply: More than max supply");
+			await expect(merge.connect(otherAccount).merge(ethers.parseUnits("1", 9))).to.be.revertedWith("_merge: More than max supply");
 
 			// Turn off max supply
 			await merge.setMaxSupply(0);
 
 			await merge.connect(otherAccount).merge(ethers.parseUnits("100000", decimals));
 			totalVested = await merge.totalVested();
+			totalMerged = await merge.totalMerged();
 
 			expect(totalVested).to.be.greaterThan(0);
+			expect(totalMerged).to.eq(200000000000000000000000n);
 		});
 
 		it("Should be able to merge when merkle root is bytes 0", async () => {
@@ -118,8 +122,86 @@ describe("Dynamic Merge / Eater Contract", function () {
 			await merge.setMerkleRoot("0x403ff023bd4c929b68c940e8c21016d996bdd7b4ddd73cd42e82b2de3a8bcca3");
 			const proof = ["0x28dca11b2244051b40a1b04eadce9617f1274a546431424e61362b8de7dddf89"];
 
-			await expect(merge.connect(otherAccount).mergeWithProof(42, proof)).to.revertedWith("onlyWhiteListed: Invalid proof");
-			await expect(merge.connect(otherAccount).mergeWithProof(1000, proof)).to.emit(merge, "Merged");
+			await expect(merge.connect(otherAccount).mergeWithProof(10000, 1000, proof)).to.revertedWith("onlyWhiteListed: Invalid proof");
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, 1000, proof)).to.emit(merge, "Merged");
+
+			totalVested = await merge.totalVested();
+			const totalMerged = await merge.totalMerged();
+
+			expect(totalVested).to.be.greaterThan(0);
+			expect(totalMerged).to.eq(1000);
+		});
+
+		it("Should be able to merge multiple times with proof", async () => {
+			const { merge, otherAccount } = await loadFixture(deployFixture);
+
+			await merge.deposit(ethers.parseEther("10000"));
+
+			let totalVested = await merge.totalVested();
+			let totalMerged = await merge.totalMerged();
+			expect(totalVested).to.be.eq(0);
+			expect(totalMerged).to.be.eq(0);
+
+			await merge.setMerkleRoot("0x403ff023bd4c929b68c940e8c21016d996bdd7b4ddd73cd42e82b2de3a8bcca3");
+			const proof = ["0x28dca11b2244051b40a1b04eadce9617f1274a546431424e61362b8de7dddf89"];
+
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, 100, proof)).to.emit(merge, "Merged");
+
+			totalVested = await merge.totalVested();
+			totalMerged = await merge.totalMerged();
+			let vested = await merge.vestings(otherAccount.address);
+
+			expect(totalVested).to.be.greaterThan(0);
+			expect(totalMerged).to.eq(100);
+			expect(vested.merged).to.eq(100);
+			expect(vested.amount).to.eq(124);
+
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, 100, proof)).to.emit(merge, "Merged");
+
+			totalMerged = await merge.totalMerged();
+			vested = await merge.vestings(otherAccount.address);
+			expect(totalMerged).to.eq(200);
+			expect(vested.merged).to.eq(200);
+			expect(vested.amount).to.eq(248);
+
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, 800, proof)).to.emit(merge, "Merged");
+			totalMerged = await merge.totalMerged();
+			vested = await merge.vestings(otherAccount.address);
+			expect(totalMerged).to.eq(1000);
+			expect(vested.merged).to.eq(1000);
+
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, 1, proof)).to.be.revertedWith("onlyWhiteListed: Already merged");
+		});
+
+		it("Should be perform partial merges", async () => {
+			const { merge, otherAccount } = await loadFixture(deployFixture);
+
+			await merge.deposit(ethers.parseEther("10000"));
+
+			let totalVested = await merge.totalVested();
+			let totalMerged = await merge.totalMerged();
+			expect(totalVested).to.be.eq(0);
+			expect(totalMerged).to.be.eq(0);
+
+			await merge.setMerkleRoot("0x403ff023bd4c929b68c940e8c21016d996bdd7b4ddd73cd42e82b2de3a8bcca3");
+			const proof = ["0x28dca11b2244051b40a1b04eadce9617f1274a546431424e61362b8de7dddf89"];
+
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, 500, proof)).to.emit(merge, "Merged");
+
+			totalVested = await merge.totalVested();
+			totalMerged = await merge.totalMerged();
+			let vested = await merge.vestings(otherAccount.address);
+
+			expect(totalVested).to.be.greaterThan(0);
+			expect(totalMerged).to.eq(500);
+			expect(vested.merged).to.eq(500);
+
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, 1000, proof)).to.emit(merge, "Merged");
+
+			totalMerged = await merge.totalMerged();
+			vested = await merge.vestings(otherAccount.address);
+			expect(totalMerged).to.eq(1000);
+			expect(vested.merged).to.eq(1000);
 		});
 
 		it("Should not be able to replay proof", async () => {
@@ -133,10 +215,10 @@ describe("Dynamic Merge / Eater Contract", function () {
 			await merge.setMerkleRoot("0x403ff023bd4c929b68c940e8c21016d996bdd7b4ddd73cd42e82b2de3a8bcca3");
 			const proof = ["0x28dca11b2244051b40a1b04eadce9617f1274a546431424e61362b8de7dddf89"];
 
-			await expect(merge.connect(otherAccount).mergeWithProof(1000, proof)).to.emit(merge, "Merged");
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, 1000, proof)).to.emit(merge, "Merged");
 
 			// Replay proof
-			await expect(merge.connect(otherAccount).mergeWithProof(1000, proof)).to.revertedWith("onlyWhiteListed: Already merged");
+			await expect(merge.connect(otherAccount).mergeWithProof(1000, 1000, proof)).to.revertedWith("onlyWhiteListed: Already merged");
 		});
 	});
 });

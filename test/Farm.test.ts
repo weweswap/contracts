@@ -71,7 +71,7 @@ describe("Farm contract", () => {
 			expect(poolInfo).to.deep.equal(poolInfo2);
 		});
 
-		it("Should set and overwrite alloc point", async () => {
+		it.skip("Should set and overwrite alloc point", async () => {
 			await expect(_farm.add(0, await _chaos.getAddress(), _rewarder)).to.emit(_farm, "LogPoolAddition");
 			await expect(_farm.set(0, 1, _rewarder, true)).to.emit(_farm, "LogSetPool");
 

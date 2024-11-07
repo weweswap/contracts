@@ -24,7 +24,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     address public treasury;
 
     uint256 internal _totalVested;
-    uint256 internal _totalMerged;
+    uint256 public totalMerged;
     uint256 public maxSupply; // Max supply of tokens to eat
     uint32 public vestingDuration;
 
@@ -150,8 +150,8 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function _merge(uint256 amount, address from) internal returns (uint256) {
-        require(maxSupply >= amount + _totalMerged || maxSupply == 0, "_merge: More than max supply");
-
+        require(maxSupply >= amount + totalMerged || maxSupply == 0, "_merge: More than max supply");
+        
         // x = amount in 10^18 and result is 10^18
         uint256 weweToTransfer = _calculateTokensOut(amount);
 
@@ -164,10 +164,11 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         if (vestingDuration != 0) {
             // Curent vested
             uint256 vestedAmount = vestings[from].amount;
+            uint256 merged = vestings[from].merged;
             vestings[from] = Vesting({
                 amount: weweToTransfer + vestedAmount,
                 end: block.timestamp + vestingDuration * 1 minutes,
-                merged: amount
+                merged: merged + amount
             });
 
             // 10^18
@@ -177,7 +178,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
             IERC20(wewe).transfer(from, weweToTransfer);
         }
 
-        _totalMerged += amount;
+        totalMerged += amount;
         emit Merged(amount, from, weweToTransfer);
 
         return weweToTransfer;
@@ -203,10 +204,19 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
     }
 
     function mergeWithProof(
+        uint256 allocation,
         uint256 amount,
         bytes32[] calldata proof
-    ) external virtual nonReentrant whenNotPaused onlyWhiteListed(msg.sender, amount, proof) returns (uint256) {
+    ) external virtual nonReentrant whenNotPaused onlyWhiteListed(msg.sender, allocation, proof) returns (uint256) {
         require(merkleRoot != bytes32(0), "mergeWithProof: White list not set");
+        require(allocation >= amount, "mergeWithProof: Insufficient allocation");
+        require(amount > 0 && allocation >= amount, "mergeWithProof: Invalid amount");
+        
+        if (amount > allocation - vestings[msg.sender].merged) {
+            // Only merge the delta
+            amount = allocation - vestings[msg.sender].merged;
+        }
+        
         return _transferAndMerge(amount, msg.sender, address(this));
     }
 
