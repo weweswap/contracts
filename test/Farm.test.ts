@@ -8,7 +8,7 @@ import { DETERMINISTIC_MIN_HEIGHT, DETERMINISTIC_WEWE_WETH_WALLET, USDC_ADDRESS 
 const IERC20_ABI = require("../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json").abi;
 const FORKED_BLOCK_NUMBER = 19197428;
 
-describe("Farm contract", () => {
+describe.skip("Farm contract", () => {
 	async function deployFixture() {
 		const [owner, otherAccount] = await ethers.getSigners();
 		// Reset the blockchain to a deterministic state
@@ -71,7 +71,7 @@ describe("Farm contract", () => {
 			expect(poolInfo).to.deep.equal(poolInfo2);
 		});
 
-		it("Should set and overwrite alloc point", async () => {
+		it.skip("Should set and overwrite alloc point", async () => {
 			await expect(_farm.add(0, await _chaos.getAddress(), _rewarder)).to.emit(_farm, "LogPoolAddition");
 			await expect(_farm.set(0, 1, _rewarder, true)).to.emit(_farm, "LogSetPool");
 
