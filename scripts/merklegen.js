@@ -30,6 +30,16 @@ const genProof = (csvPath, decimals, outputPath) => {
 		// remove quotes
 		amount = amount.replace(/"/g, "");
 
+		if (isNaN(amount)) {
+			console.log("Invalid amount:", amount);
+			continue;
+		}
+
+		if (amount < 1400) {
+			console.log("Amount must be an integer:", amount);
+			continue;
+		}
+
 		// convert amount to wei
 		const amountAsBigInt = ethers.parseUnits(amount, decimals);
 
@@ -61,4 +71,4 @@ const genProof = (csvPath, decimals, outputPath) => {
 }
 
 // genProof("./whitelist.csv", "whitelist.json");
-genProof("./scripts/csvs/export-tokenholders-for-contract-0xd327d36eb6e1f250d191cd62497d08b4aaa843ce.csv", 9, "whitelist.json");
+genProof("./scripts/csvs/boomer.csv", 18, "boomer.json");
