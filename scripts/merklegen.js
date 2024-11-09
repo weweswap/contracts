@@ -44,7 +44,7 @@ const genProof = (csvPath, decimals, outputPath) => {
 			const amountAsBigInt = ethers.parseUnits(amount, decimals);
 
 			if (amountAsBigInt > ethers.parseUnits("140", decimals)) {
-				whiteList[i] = [address, amountAsBigInt.toString()];
+				whiteList.push([address, amountAsBigInt.toString()]);
 			}
 		} catch (e) {
 			console.log("Error at line", i + 1, ":", e);
@@ -72,9 +72,9 @@ const genProof = (csvPath, decimals, outputPath) => {
 		console.log("Error:", e);
 	}
 
-	fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
+	fs.writeFileSync(outputPath, JSON.stringify(whiteList, null, 2));
 
-	console.table(output);
+	console.table(whiteList);
 	console.log("Proofs generated and saved to", outputPath);
 };
 
