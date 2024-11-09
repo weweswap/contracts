@@ -8,68 +8,75 @@ const genProof = (csvPath, decimals, outputPath) => {
 	const whiteList = [];
 
 	for (let i = 0; i < lines.length; i++) {
-		
-		// use regex to split by comma, but ignore commas within quotes
-		const row = lines[i].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+		try {
+			// use regex to split by comma, but ignore commas within quotes
+			const row = lines[i].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
 
-		let address = row[0];
-		// remove quotes
-		address = address.replace(/"/g, '');
+			let address = row[0];
+			// remove quotes
+			address = address.replace(/"/g, "");
 
-		// test if address is valid using ethers
-		if (!ethers || !ethers.isAddress(address)) {
-			console.log("Invalid address:", address);
-			continue;
-		}
+			// test if address is valid using ethers
+			if (!ethers || !ethers.isAddress(address)) {
+				console.log("Invalid address:", address);
+				continue;
+			}
 
-		let amount = row[1];
-		if (!amount) {
-			console.log("Invalid amount: ", amount);
-			continue;
-		}
+			let amount = row[1];
+			if (!amount) {
+				console.log("Invalid amount: ", amount);
+				continue;
+			}
 
-		// remove commas
-		amount = amount.replace(/,/g, "");
+			// remove commas
+			amount = amount.replace(/,/g, "");
 
-		// remove quotes
-		amount = amount.replace(/"/g, "");
+			// remove quotes
+			amount = amount.replace(/"/g, "");
 
-		if (isNaN(amount)) {
-			console.log("Invalid amount:", amount);
-			continue;
-		}
+			if (isNaN(amount)) {
+				console.log("Invalid amount:", amount);
+				continue;
+			}
 
-		// convert amount to wei
-		console.log("Amount:", amount);
-		const amountAsBigInt = ethers.parseUnits(amount, decimals);
+			// convert amount to wei
+			console.log("Amount:", amount);
+			const amountAsBigInt = ethers.parseUnits(amount, decimals);
 
-		if (amountAsBigInt > ethers.parseUnits("140", decimals)) {
-			whiteList[i] = [address, amountAsBigInt.toString()];
+			if (amountAsBigInt > ethers.parseUnits("140", decimals)) {
+				whiteList[i] = [address, amountAsBigInt.toString()];
+			}
+		} catch (e) {
+			console.log("Error at line", i + 1, ":", e);
 		}
 	}
 
-	const tree = StandardMerkleTree.of(whiteList, ["address", "uint256"]);
-	const rootHash = tree.root;
-
-	console.log("Root hash:", rootHash);
 	const output = [];
+	try {
+		const tree = StandardMerkleTree.of(whiteList, ["address", "uint256"]);
+		const rootHash = tree.root;
 
-	for (const [i, v] of tree.entries()) {
-		const proof = tree.getProof(i);
-		console.log("Value:", v);
-		console.log("Proof:", proof);
+		console.log("Root hash:", rootHash);
 
-		output.push({
-			value: v,
-			proof: proof
-		});
+		for (const [i, v] of tree.entries()) {
+			const proof = tree.getProof(i);
+			console.log("Value:", v);
+			console.log("Proof:", proof);
+
+			output.push({
+				value: v,
+				proof: proof
+			});
+		}
+	} catch (e) {
+		console.log("Error:", e);
 	}
 
 	fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
-	
+
 	console.table(output);
 	console.log("Proofs generated and saved to", outputPath);
-}
+};
 
 // genProof("./whitelist.csv", "whitelist.json");
 genProof("./scripts/csvs/boomer.csv", 18, "boomer.json");
