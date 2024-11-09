@@ -17,12 +17,16 @@ const genProof = (csvPath, decimals, outputPath) => {
 		address = address.replace(/"/g, '');
 
 		// test if address is valid using ethers
-		if (!ethers.isAddress(address)) {
+		if (!ethers || !ethers.isAddress(address)) {
 			console.log("Invalid address:", address);
 			continue;
 		}
 
 		let amount = row[1];
+		if (!amount) {
+			console.log("Invalid amount: ", amount);
+			continue;
+		}
 
 		// remove commas
 		amount = amount.replace(/,/g, "");
@@ -35,17 +39,14 @@ const genProof = (csvPath, decimals, outputPath) => {
 			continue;
 		}
 
-		if (amount < 1400) {
-			console.log("Amount must be an integer:", amount);
-			continue;
-		}
-
 		// convert amount to wei
+		console.log("Amount:", amount);
 		const amountAsBigInt = ethers.parseUnits(amount, decimals);
 
-		whiteList[i] = [address, amountAsBigInt.toString()];
+		if (amountAsBigInt > ethers.parseUnits("140", decimals)) {
+			whiteList[i] = [address, amountAsBigInt.toString()];
+		}
 	}
-
 
 	const tree = StandardMerkleTree.of(whiteList, ["address", "uint256"]);
 	const rootHash = tree.root;
