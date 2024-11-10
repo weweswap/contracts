@@ -22,7 +22,6 @@ contract UniswapV2 is IAMM, Ownable {
         bytes data; // Pair specific data such as bin step of TraderJoeV2, pool fee of Uniswap V3, etc.
     }
 
-
     // Router https://docs.uniswap.org/contracts/v3/reference/deployments/base-deployments
     address private constant wrappedETH = 0x4200000000000000000000000000000000000006;
     address private constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
@@ -38,7 +37,7 @@ contract UniswapV2 is IAMM, Ownable {
     }
 
     function _getUSDCTokenPair(address token) private view returns (address) {
-        return IUniswapV2(factory).getPair(token, 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
+        return IUniswapV2(factory).getPair(token, USDC);
     }
 
     function _getWethTokenPair(address token) private view returns (address) {
@@ -58,7 +57,7 @@ contract UniswapV2 is IAMM, Ownable {
         address recipient,
         bytes calldata extraData
     ) external returns (uint256) {
-        address pair = IUniswapV2(factory).getPair(token, 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
+        address pair = IUniswapV2(factory).getPair(token, USDC);
         if (pair == address(0)) {
             return 0;
         }
