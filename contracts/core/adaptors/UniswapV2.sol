@@ -10,11 +10,7 @@ import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IQuoterV2 } from "@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol";
-
-interface IUniswapV2 {
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
-}
+import { IUniswapV2 } from "./IUniswapV2.sol";
 
 contract UniswapV2 is IAMM, Ownable {
     struct PairData {
