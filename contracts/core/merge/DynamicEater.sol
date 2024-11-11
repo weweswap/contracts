@@ -207,16 +207,19 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         uint256 allocation,
         uint256 amount,
         bytes32[] calldata proof
-    ) external virtual nonReentrant whenNotPaused onlyWhiteListed(msg.sender, allocation, proof) returns (uint256) {
+    ) external virtual nonReentrant whenNotPaused returns (uint256) {
         require(merkleRoot != bytes32(0), "mergeWithProof: White list not set");
-        require(allocation >= amount, "mergeWithProof: Insufficient allocation");
-        require(amount > 0 && allocation >= amount, "mergeWithProof: Invalid amount");
-        
+
+        // Hash amount and address
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(msg.sender, amount))));
+        require(_validateLeaf(proof, leaf), "mergeWithProof: Invalid proof");
+
         if (amount > allocation - vestings[msg.sender].merged) {
             // Only merge the delta
             amount = allocation - vestings[msg.sender].merged;
         }
-        
+
+        require(allocation >= amount, "mergeWithProof: Insufficient allocation");
         return _transferAndMerge(amount, msg.sender, address(this));
     }
 
@@ -316,17 +319,17 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         return isValid;
     }
 
-    modifier onlyWhiteListed(address account, uint256 amount, bytes32[] memory proof) {
-        require(merkleRoot != bytes32(0), "onlyWhiteListed: White list not set");
-        uint256 mergedAmount = vestings[account].merged;
-        require(mergedAmount < amount, "onlyWhiteListed: Already merged");
+    // modifier onlyWhiteListed(address account, uint256 amount, bytes32[] memory proof) {
+    //     require(merkleRoot != bytes32(0), "onlyWhiteListed: White list not set");
+    //     uint256 mergedAmount = vestings[account].merged;
+    //     require(mergedAmount < amount, "onlyWhiteListed: Already merged");
 
-        // Hash amount and address
-        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(account, amount))));
-        require(_validateLeaf(proof, leaf), "onlyWhiteListed: Invalid proof");
+    //     // Hash amount and address
+    //     bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(account, amount))));
+    //     require(_validateLeaf(proof, leaf), "onlyWhiteListed: Invalid proof");
 
-        _;
-    }
+    //     _;
+    // }
 
     modifier whenClaimable(address account) {
         // Set to 0 to disable vesting
