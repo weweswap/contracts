@@ -211,7 +211,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         require(merkleRoot != bytes32(0), "mergeWithProof: White list not set");
 
         // Hash amount and address
-        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(msg.sender, amount))));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(msg.sender, allocation))));
         require(_validateLeaf(proof, leaf), "mergeWithProof: Invalid proof");
 
         if (amount > allocation - vestings[msg.sender].merged) {
@@ -219,6 +219,7 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
             amount = allocation - vestings[msg.sender].merged;
         }
 
+        require(amount > 0, "mergeWithProof: Already merged");
         require(allocation >= amount, "mergeWithProof: Insufficient allocation");
         return _transferAndMerge(amount, msg.sender, address(this));
     }
@@ -318,18 +319,6 @@ contract DynamicEater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
         bool isValid = MerkleProof.verify(proof, merkleRoot, leaf);
         return isValid;
     }
-
-    // modifier onlyWhiteListed(address account, uint256 amount, bytes32[] memory proof) {
-    //     require(merkleRoot != bytes32(0), "onlyWhiteListed: White list not set");
-    //     uint256 mergedAmount = vestings[account].merged;
-    //     require(mergedAmount < amount, "onlyWhiteListed: Already merged");
-
-    //     // Hash amount and address
-    //     bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(account, amount))));
-    //     require(_validateLeaf(proof, leaf), "onlyWhiteListed: Invalid proof");
-
-    //     _;
-    // }
 
     modifier whenClaimable(address account) {
         // Set to 0 to disable vesting

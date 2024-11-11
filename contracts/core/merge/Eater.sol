@@ -43,7 +43,6 @@ abstract contract Eater is IWeweReceiver, ReentrancyGuard, Pausable, Ownable {
 
         // Merge tokens from sender
         IERC20(token).transferFrom(from, address(this), amount);
-
         uint256 vestedAmount = vestings[from].amount;
 
         // If transfer, dont vest
