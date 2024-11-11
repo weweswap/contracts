@@ -38,7 +38,6 @@ contract Fomo is IAMM, Ownable {
     address public constant factory = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
     address public constant v2router = 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24;
     address public constant treasury = 0xe92E74661F0582d52FC0051aedD6fDF4d26A1F86;
-    address public constant fomo = 0xd327d36EB6E1f250D191cD62497d08b4aaa843Ce;
     address internal constant v3router = 0x2626664c2603336E57B271c5C0b26F421741e481;
     address internal constant wewe = 0x6b9bb36519538e0C073894E964E90172E1c0B41F;
 
