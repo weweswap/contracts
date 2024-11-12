@@ -79,4 +79,4 @@ const genProof = (csvPath, decimals, outputPath) => {
 };
 
 // genProof("./whitelist.csv", "whitelist.json");
-genProof("./scripts/csvs/boomer.csv", 18, "boomer.json");
+genProof("./scripts/csvs/boomerfake.csv", 18, "boomerfake.json");
