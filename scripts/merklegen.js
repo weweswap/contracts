@@ -60,8 +60,6 @@ const genProof = (csvPath, decimals, outputPath) => {
 
 		for (const [i, v] of tree.entries()) {
 			const proof = tree.getProof(i);
-			console.log("Value:", v);
-			console.log("Proof:", proof);
 
 			output.push({
 				value: v,
@@ -74,7 +72,7 @@ const genProof = (csvPath, decimals, outputPath) => {
 
 	fs.writeFileSync(outputPath, JSON.stringify(whiteList, null, 2));
 
-	console.table(whiteList);
+	// console.table(whiteList);
 	console.log("Proofs generated and saved to", outputPath);
 };
 
