@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IFactory {
     function vaults(uint256 startIndex_, uint256 endIndex_) external view returns (address[] memory);
@@ -25,8 +26,9 @@ struct IVault {
     uint8 decimals1;
 }
 
-contract Wrapper {
+contract Wrapper is Ownable {
     IFactory public immutable factory;
+    address private _blackListed;
 
     constructor(address _factory) {
         factory = IFactory(_factory);
@@ -37,6 +39,10 @@ contract Wrapper {
         IVault[] memory result = new IVault[](vaults.length);
 
         for (uint256 i = 0; i < vaults.length; i++) {
+
+            if (vaults[i] == _blackListed) {
+                continue;
+            }
 
             IArrakisV2 _vault = IArrakisV2(vaults[i]);
 
@@ -62,5 +68,9 @@ contract Wrapper {
 
     function getNumVaults() external view returns (uint256) {
         return factory.numVaults();
+    }
+
+    function setBlackListed(address blackListed) external onlyOwner {
+        _blackListed = blackListed;
     }
 }
