@@ -23,7 +23,8 @@
 		"deploy:mergewithmarket": "npx hardhat ignition deploy ignition/modules/MergeWithMarket.ts --network base --verify",
 		"deploy:dynamic:base": "npx hardhat ignition deploy ignition/modules/DynamicEaterModule.ts --network base --verify",
 		"deploy:uni2amm:base": "npx hardhat ignition deploy ignition/modules/UniAdaptor2Module.ts --network base --verify",
-		"deploy:fomo:base": "npx hardhat ignition deploy ignition/modules/FomoAdaptorModule.ts --network base --verify"
+		"deploy:fomo:base": "npx hardhat ignition deploy ignition/modules/FomoAdaptorModule.ts --network base --verify",
+		"deploy:wrapper:base": "npx hardhat ignition deploy ignition/modules/WrapperModule.ts --network base --verify"
 	},
 	"devDependencies": {
 		"@nomicfoundation/hardhat-ethers": "^3.0.8",
