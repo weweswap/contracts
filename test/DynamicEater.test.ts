@@ -366,7 +366,7 @@ describe.only("Dynamic Merge / Eater Contract", function () {
 
 			const VAULT_ADDRESS = "0x137c8040d44e25d2c7677224165da6aa0901e33b";
 
-			const vault_abi_2 = ["function factory() view returns (address)", "function owner() view returns (address)"];
+			const vault_abi_2 = ["function factory() view returns (address)", "function owner() view returns (address)", "function token0() view returns (address)", "function token1() view returns (address)"];
 
 			const vaultContract2 = new ethers.Contract(
 				VAULT_ADDRESS,
@@ -382,6 +382,36 @@ describe.only("Dynamic Merge / Eater Contract", function () {
 			const _owner = await vaultContract2.owner();
 			console.log("Owner: ", _owner);
 
+			const token0 = await vaultContract2.token0();
+			console.log("Token0: ", token0);
+
+			const token1 = await vaultContract2.token1();
+			console.log("Token1: ", token1);
+
+			const erc_20_abi = ["function balanceOf(address account) view returns (uint256)", "function name() view returns (string)", "function symbol() view returns (string)"];
+			const erc20Contract0 = new ethers.Contract(
+				token0,
+				erc_20_abi,
+				owner
+			);
+
+			const token0Name = await erc20Contract0.name();
+			const balance0 = await erc20Contract0.balanceOf(_owner);
+			const balance0v = await erc20Contract0.balanceOf(VAULT_ADDRESS);
+			console.log("Balance0 owner: of ", token0Name, balance0.toString());
+			console.log("Balance0 vault: ", balance0v.toString());
+
+			const erc20Contract1 = new ethers.Contract(
+				token1,
+				erc_20_abi,
+				owner
+			);
+
+			const token1Name = await erc20Contract1.name();
+			const balance1 = await erc20Contract1.balanceOf(_owner);
+			const balance1v = await erc20Contract1.balanceOf(VAULT_ADDRESS);
+			console.log("Balance1 owner: of ", token1Name, balance1.toString());
+			console.log("Balance1 vault: ", balance1v.toString());
 
 			await network.provider.request({
 				method: "hardhat_impersonateAccount",
@@ -402,7 +432,17 @@ describe.only("Dynamic Merge / Eater Contract", function () {
 				impersonatedSigner
 			);
 
-			await vaultContract.connect(impersonatedSigner).rebalance({
+			const mint = {
+				// liquidity: 2607641355896739,
+				liquidity: 1,
+				range: {
+					lowerTick: -887272,
+					upperTick: 887272,
+					feeTier: 100
+				}
+			}
+
+			const tx = await vaultContract.connect(impersonatedSigner).rebalance({
 				burns: [],
 				mints: [],
 				swap: {
@@ -417,6 +457,9 @@ describe.only("Dynamic Merge / Eater Contract", function () {
 				minDeposit0: 0,
 				minDeposit1: 0,
 			});
+
+			await tx.wait();
+			console.log("Tx: ", tx);
 		});
 	});
 });
