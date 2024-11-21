@@ -9,16 +9,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MergeFactory is Ownable {
-    enum MergeType {
-        Generic,
-        DynamicEater
-    }
-
     address public constant wewe = 0x6b9bb36519538e0C073894E964E90172E1c0B41F;
     address[] public tokens;
     // token => merge
     mapping(address => address) public merges;
-    mapping(address => MergeType) public mergeTypes;
     mapping(address => bool) public allowedDeployers;
 
     constructor() {
@@ -29,27 +23,26 @@ contract MergeFactory is Ownable {
         return tokens.length;
     }
 
-    function createMergeWith(
+    function deployMerge(
         address token,
         uint256 rate,
-        uint32 vestingDuration,
-        MergeType mergeType
+        uint32 vestingDuration
     ) external onlyDeployer returns (address) {
         require(merges[token] == address(0), "MergeFactory: Merge already exists");
 
-        if (mergeType == MergeType.Generic) {
-            address merge = address(new GenericMerge(wewe, token, vestingDuration));
-            IMergeV2(merge).setRate(rate);
-            _setMerge(token, merge);
-            return merge;
-        }
+        // if (mergeType == MergeType.Generic) {
+        //     address merge = address(new GenericMerge(wewe, token, vestingDuration));
+        //     IMergeV2(merge).setRate(rate);
+        //     _setMerge(token, merge);
+        //     return merge;
+        // }
 
-        if (mergeType == MergeType.DynamicEater) {
-            // address merge = address(new DynamicEater(token, wewe, vestingDuration));
-            // IMergeV2(merge).setRate(rate);
-            // _setMerge(token, merge);
-            // return merge;
-        }
+        // if (mergeType == MergeType.DynamicEater) {
+        //     // address merge = address(new DynamicEater(token, wewe, vestingDuration));
+        //     // IMergeV2(merge).setRate(rate);
+        //     // _setMerge(token, merge);
+        //     // return merge;
+        // }
 
         revert("MergeFactory: Invalid merge type");
     }
@@ -59,23 +52,13 @@ contract MergeFactory is Ownable {
         _setMerge(token, merge);
     }
 
-    function setMergeWithType(address merge, MergeType mergeType) external onlyOwner {
-        address token = IMergeV2(merge).getToken();
-        _setMerge(token, merge);
-        mergeTypes[token] = mergeType;
-    }
-
-    function setType(address token, MergeType mergeType) external onlyOwner {
-        mergeTypes[token] = mergeType;
-    }
-
     function _setMerge(address token, address merge) internal {
         require(token != address(0), "MergeFactory: Invalid merge");
         require(merges[token] == address(0), "MergeFactory: Merge already exists");
         tokens.push(token);
         merges[token] = merge;
 
-        emit MergeCreated(token, merge);
+        emit MergeDeployed(token, merge);
     }
 
     function setAllowedDeployer(address deployer, bool allowed) external onlyOwner {
@@ -87,5 +70,5 @@ contract MergeFactory is Ownable {
         _;
     }
 
-    event MergeCreated(address indexed token, address indexed merge);
+    event MergeDeployed(address indexed token, address indexed merge);
 }

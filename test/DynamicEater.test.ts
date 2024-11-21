@@ -1,6 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 
 describe.only("Dynamic Merge / Eater Contract", function () {
 	const decimals = 18;
@@ -221,6 +221,202 @@ describe.only("Dynamic Merge / Eater Contract", function () {
 
 			// Replay proof
 			await expect(merge.connect(otherAccount).mergeWithProof(1000, 1000, proof)).to.revertedWith("mergeWithProof: Already merged");
+		});
+	});
+
+	describe.only("Vaults", () => {
+		it("Should test vault", async function () {
+			const { owner } = await deployFixture();
+
+			const vault_abi = [{
+				"inputs": [
+					{
+						"components": [
+							{
+								"components": [
+									{
+										"internalType": "uint128",
+										"name": "liquidity",
+										"type": "uint128"
+									},
+									{
+										"components": [
+											{
+												"internalType": "int24",
+												"name": "lowerTick",
+												"type": "int24"
+											},
+											{
+												"internalType": "int24",
+												"name": "upperTick",
+												"type": "int24"
+											},
+											{
+												"internalType": "uint24",
+												"name": "feeTier",
+												"type": "uint24"
+											}
+										],
+										"internalType": "struct Range",
+										"name": "range",
+										"type": "tuple"
+									}
+								],
+								"internalType": "struct PositionLiquidity[]",
+								"name": "burns",
+								"type": "tuple[]"
+							},
+							{
+								"components": [
+									{
+										"internalType": "uint128",
+										"name": "liquidity",
+										"type": "uint128"
+									},
+									{
+										"components": [
+											{
+												"internalType": "int24",
+												"name": "lowerTick",
+												"type": "int24"
+											},
+											{
+												"internalType": "int24",
+												"name": "upperTick",
+												"type": "int24"
+											},
+											{
+												"internalType": "uint24",
+												"name": "feeTier",
+												"type": "uint24"
+											}
+										],
+										"internalType": "struct Range",
+										"name": "range",
+										"type": "tuple"
+									}
+								],
+								"internalType": "struct PositionLiquidity[]",
+								"name": "mints",
+								"type": "tuple[]"
+							},
+							{
+								"components": [
+									{
+										"internalType": "bytes",
+										"name": "payload",
+										"type": "bytes"
+									},
+									{
+										"internalType": "address",
+										"name": "router",
+										"type": "address"
+									},
+									{
+										"internalType": "uint256",
+										"name": "amountIn",
+										"type": "uint256"
+									},
+									{
+										"internalType": "uint256",
+										"name": "expectedMinReturn",
+										"type": "uint256"
+									},
+									{
+										"internalType": "bool",
+										"name": "zeroForOne",
+										"type": "bool"
+									}
+								],
+								"internalType": "struct SwapPayload",
+								"name": "swap",
+								"type": "tuple"
+							},
+							{
+								"internalType": "uint256",
+								"name": "minBurn0",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "minBurn1",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "minDeposit0",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "minDeposit1",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Rebalance",
+						"name": "rebalanceParams_",
+						"type": "tuple"
+					}
+				],
+				"name": "rebalance",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}];
+
+			const VAULT_ADDRESS = "0x137c8040d44e25d2c7677224165da6aa0901e33b";
+
+			const vault_abi_2 = ["function factory() view returns (address)", "function owner() view returns (address)"];
+
+			const vaultContract2 = new ethers.Contract(
+				VAULT_ADDRESS,
+				vault_abi_2,
+				owner
+			);
+
+			const factory = await vaultContract2.factory();
+			console.log("Factory: ", factory);
+
+			expect(factory).to.be.eq("0x33128a8fC17869897dcE68Ed026d694621f6FDfD");
+
+			const _owner = await vaultContract2.owner();
+			console.log("Owner: ", _owner);
+
+
+			await network.provider.request({
+				method: "hardhat_impersonateAccount",
+				params: [_owner],
+			});
+
+			// send some eth to the impersonated account from owner
+			await owner.sendTransaction({
+				to: _owner,
+				value: ethers.parseEther("1.0"),
+			});
+
+			const impersonatedSigner = await ethers.getSigner(_owner);
+
+			const vaultContract = new ethers.Contract(
+				VAULT_ADDRESS,
+				vault_abi,
+				impersonatedSigner
+			);
+
+			await vaultContract.connect(impersonatedSigner).rebalance({
+				burns: [],
+				mints: [],
+				swap: {
+					payload: "0x",
+					router: ethers.ZeroAddress,
+					amountIn: 0,
+					expectedMinReturn: 0,
+					zeroForOne: false
+				},
+				minBurn0: 0,
+				minBurn1: 0,
+				minDeposit0: 0,
+				minDeposit1: 0,
+			});
 		});
 	});
 });
